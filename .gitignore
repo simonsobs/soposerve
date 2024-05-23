@@ -1,0 +1,8 @@
+*.vscode
+
+*.ruff_cache
+
+*.egg-info
+*.pyc
+
+env*
