@@ -25,7 +25,7 @@ class User(Document):
 
 class File(Document):
     name: str
-    uploader: Link[User]
+    uploader: str
     uuid: str
     bucket: str
     size: int

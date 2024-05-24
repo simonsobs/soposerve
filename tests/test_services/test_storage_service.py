@@ -12,7 +12,7 @@ async def test_create_storage_item(
 ):
     file, put = await storage_service.create(
         name="test_file.txt",
-        uploader=created_user,
+        uploader=created_user.name,
         size=1234,
         checksum="FakeChecksum",
         storage=storage,

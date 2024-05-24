@@ -6,7 +6,7 @@ import uuid
 
 from asyncer import asyncify
 
-from soposerve.database import File, User
+from soposerve.database import File
 from soposerve.storage import Storage
 
 
@@ -20,7 +20,7 @@ GLOBAL_BUCKET_NAME = "global"
 
 async def create(
     name: str,
-    uploader: User,
+    uploader: str,
     size: int,
     checksum: str,
     storage: Storage,
@@ -35,7 +35,7 @@ async def create(
     )
 
     put = await asyncify(storage.put)(
-        name=file.name, uploader=file.uploader.name, uuid=file.uuid, bucket=file.bucket
+        name=file.name, uploader=file.uploader, uuid=file.uuid, bucket=file.bucket
     )
 
     return file, put
@@ -46,7 +46,7 @@ async def read(
     storage: Storage,
 ) -> str:
     return await asyncify(storage.get)(
-        name=file.name, uploader=file.uploader.name, uuid=file.uuid, bucket=file.bucket
+        name=file.name, uploader=file.uploader, uuid=file.uuid, bucket=file.bucket
     )
 
 
@@ -55,6 +55,6 @@ async def delete(
     storage: Storage,
 ):
     await asyncify(storage.delete)(
-        name=file.name, uploader=file.uploader.name, uuid=file.uuid, bucket=file.bucket
+        name=file.name, uploader=file.uploader, uuid=file.uuid, bucket=file.bucket
     )
     return
