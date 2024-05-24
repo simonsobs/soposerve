@@ -6,7 +6,7 @@ and uses the MinIO tools.
 import datetime
 
 from minio import Minio
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Storage(BaseModel):
@@ -17,11 +17,16 @@ class Storage(BaseModel):
     client: Minio | None = None
     expires: datetime.timedelta = datetime.timedelta(days=1)
 
-    def __post_model_init__(self, __context):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def model_post_init(self, __context):
         self.client = Minio(
-            url=self.url,
+            self.url,
             access_key=self.access_key,
             secret_key=self.secret_key,
+            # TODO: Come back and make these secure..?
+            secure=False,
+            cert_check=False,
         )
     
     def object_name(

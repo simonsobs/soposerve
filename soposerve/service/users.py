@@ -7,7 +7,7 @@ from soposerve.database import Privilege, User
 
 # TODO: Settings
 API_KEY_BYTES = 256
-def API_KEY(): secrets.token_urlsafe(API_KEY_BYTES)
+def API_KEY(): return secrets.token_urlsafe(API_KEY_BYTES)
 
 
 # TODO: Centralised exceptions?
@@ -17,7 +17,7 @@ class UserNotFound(Exception):
 async def create(name: str, privileges: list[Privilege]) -> User:
     user = User(
         name=name,
-        apikey=API_KEY(),
+        api_key=API_KEY(),
         privileges=privileges,
         # TODO: Compliance
         compliance=None
@@ -50,7 +50,8 @@ async def update(name: str, privileges: list[Privilege] | None, refresh_key: boo
 
 
 async def delete(name: str):
-    await read(name=name).delete()
+    user = await read(name=name)
+    await user.delete()
 
     return
 

@@ -12,10 +12,10 @@ from soposerve.storage import Storage
 
 # TODO: Settings
 def UUID():
-    uuid.uuid4()
+    return str(uuid.uuid4())
 
 
-GLOBAL_BUCKET_NAME = "global_bucket"
+GLOBAL_BUCKET_NAME = "global"
 
 
 async def create(

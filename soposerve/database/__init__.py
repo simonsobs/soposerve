@@ -4,8 +4,8 @@ The database access layer for SOPO. Uses MongoDB and Beanie.
 
 from enum import Enum
 
-from beanie import BackLink, BeanieModel, Link
-from pydantic import BaseModel
+from beanie import BackLink, Document, Link
+from pydantic import BaseModel, Field
 
 
 class Privilege(Enum):
@@ -16,14 +16,14 @@ class Privilege(Enum):
 class ComplianceInformation(BaseModel):
     nersc_username: str | None
 
-class User(BeanieModel):
+class User(Document):
     name: str
     api_key: str
     privileges: list[Privilege]
 
     compliance: ComplianceInformation | None
 
-class File(BeanieModel):
+class File(Document):
     name: str
     uploader: Link[User]
     uuid: str
@@ -31,17 +31,17 @@ class File(BeanieModel):
     size: int
     checksum: str
 
-class Product(BeanieModel):
+class Product(Document):
     name: str
     description: str
     owner: Link[User]
     sources: list[File]
     collections: list[Link["Collection"]]
 
-class Collection(BeanieModel):
+class Collection(Document):
     name: str
     description: str
-    products: list[BackLink[Product]]
+    products: list[BackLink[Product]] = Field(json_schema_extra={"original_field":"collections"})
 
 BEANIE_MODELS = [
     User,
