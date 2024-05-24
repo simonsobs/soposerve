@@ -55,6 +55,19 @@ async def create(
 
     return product, presigned
 
+async def confirm(
+    name: str,
+    storage: Storage
+) -> bool:
+    product = await read(name)
+
+    for file in product.sources:
+        if not await storage_service.confirm(file=file, storage=storage):
+            return False
+        
+    return True
+    
+
 
 async def read(name: str) -> Product:
     potential = await Product.find(

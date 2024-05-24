@@ -40,3 +40,15 @@ def test_simple_uploaded_file(simple_uploaded_file, storage):
 
     # Check the contents.
     assert response.content == b"\x00" * 1234
+
+
+def test_existing_object(simple_uploaded_file, storage):
+    assert storage.confirm(**simple_uploaded_file)
+
+def test_non_existing_object(storage):
+    assert not storage.confirm(
+        name="non_existing_file.txt",
+        uploader="test_uploader",
+        uuid="1234-1234-1234",
+        bucket="testbucket"
+    )

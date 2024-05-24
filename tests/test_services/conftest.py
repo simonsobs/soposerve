@@ -80,9 +80,15 @@ async def created_full_product(database, storage, created_user):
         storage=storage
     )
 
+    assert not await product.confirm(PRODUCT_NAME, storage)
+
     with io.BytesIO(FILE_CONTENTS) as f:
         for put in file_puts.values():
+            # Must go back to the start or we write 0 bytes!
+            f.seek(0)
             requests.put(put, f)
+
+    assert await product.confirm(PRODUCT_NAME, storage)
 
     yield data
 

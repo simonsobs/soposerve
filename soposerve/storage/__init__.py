@@ -6,6 +6,7 @@ and uses the MinIO tools.
 import datetime
 
 from minio import Minio
+from minio.error import S3Error
 from pydantic import BaseModel, ConfigDict
 
 
@@ -58,6 +59,27 @@ class Storage(BaseModel):
             ),
             expires=self.expires
         )
+    
+    def confirm(self, name: str, uploader: str, uuid: str, bucket: str) -> bool:
+        """
+        Checks whether an object exists.
+        """
+
+        self.bucket(name=bucket)
+
+        try:
+            self.client.get_object_tags(
+                bucket_name=bucket,
+                object_name=self.object_name(
+                    filename=name,
+                    uploader=uploader,
+                    uuid=uuid,
+                )
+            )
+
+            return True
+        except S3Error:
+            return False
 
     def get(self, name: str, uploader: str, uuid: str, bucket: str) -> str:
         """
