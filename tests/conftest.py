@@ -3,6 +3,7 @@ from testcontainers.minio import MinioContainer
 
 from soposerve.storage import Storage
 
+### -- MinIO storage service fixtures -- ###
 
 @pytest.fixture(scope="session")
 def storage_container():

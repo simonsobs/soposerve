@@ -86,7 +86,9 @@ async def update(
 async def add_collection(name: str, collection: Collection) -> Product:
     product = await read(name=name)
 
-    await product.set({Product.collections: product.collections + [collection]})
+    product.collections = product.collections + [collection]
+
+    await product.save()
 
     return product
 
@@ -94,9 +96,9 @@ async def add_collection(name: str, collection: Collection) -> Product:
 async def remove_collection(name: str, collection: Collection) -> Product:
     product = await read(name=name)
 
-    await product.set(
-        {Product.collections: [c for c in product.collections if c != collection]}
-    )
+    product.collections = [c for c in product.collections if c.name != collection.name]
+
+    await product.save()
 
     return product
 

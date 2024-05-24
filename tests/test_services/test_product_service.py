@@ -2,47 +2,10 @@
 Tests for just the product service.
 """
 
-import io
-
 import pytest
-import pytest_asyncio
-import requests
 
-from soposerve.service import product
+from soposerve.service import product, users
 
-
-@pytest_asyncio.fixture(scope="session")
-async def created_full_product(database, storage, created_user):
-    PRODUCT_NAME = "My Favourite Product"
-    PRODUCT_DESCRIPTION = "The best product ever."
-    FILE_CONTENTS = b"0x0" * 1024
-    SOURCES = [
-        product.PreUploadFile(
-            name=f"test_{x}.txt",
-            size=1024,
-            checksum="eh_whatever"
-        ) for x in range(4)
-    ]
-
-    data, file_puts = await product.create(
-        name=PRODUCT_NAME,
-        description=PRODUCT_DESCRIPTION,
-        sources=SOURCES,
-        user=created_user,
-        storage=storage
-    )
-
-    with io.BytesIO(FILE_CONTENTS) as f:
-        for put in file_puts.values():
-            requests.put(put, f)
-
-    yield data
-
-    await product.delete(
-        name=data.name,
-        storage=storage,
-        data=True
-    )
 
 @pytest.mark.asyncio(scope="session")
 async def test_get_existing_file(created_full_product, database):
@@ -58,3 +21,58 @@ async def test_get_existing_file(created_full_product, database):
 async def test_get_missing_file(database):
     with pytest.raises(product.ProductNotFound):
         await product.read(name="Missing Product")
+
+
+@pytest.mark.asyncio(scope="session")
+async def test_add_to_collection(created_collection, created_full_product, database):
+    await product.add_collection(
+        name=created_full_product.name,
+        collection=created_collection,
+    )
+
+    selected_product = await product.read(
+        name=created_full_product.name
+    )
+
+    assert created_collection.name in [c.name for c in selected_product.collections]
+
+    await product.remove_collection(
+        name=created_full_product.name,
+        collection=created_collection,
+    )
+
+    selected_product = await product.read(
+        name=created_full_product.name
+    )
+
+    assert created_collection.name not in [c.name for c in selected_product.collections]
+
+
+@pytest.mark.asyncio(scope="session")
+async def test_update(created_full_product, database):
+    new_user = await users.create(
+        name="new_user",
+        privileges=[users.Privilege.LIST]
+    )
+
+    updated_product = await product.update(
+        name=created_full_product.name,
+        description="New description",
+        owner=new_user,
+    )
+
+    assert updated_product.name == created_full_product.name
+    assert updated_product.description == "New description"
+    assert updated_product.owner.name == new_user.name
+
+    updated_product = await product.update(
+        name=created_full_product.name,
+        owner=created_full_product.owner,
+        description=created_full_product.description,
+    )
+
+    assert updated_product.name == created_full_product.name
+    assert updated_product.description == created_full_product.description
+    assert updated_product.owner.name == created_full_product.owner.name
+
+    await users.delete(new_user.name)
