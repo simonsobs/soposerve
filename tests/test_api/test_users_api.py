@@ -13,7 +13,9 @@ from soposerve.api.models.users import (
 from soposerve.service.users import Privilege
 
 
-@pytest_asyncio.fixture(scope="session")
+# This must be scoped small otherwise it will somehow pop event loops
+# and will fail at the teardown step.
+@pytest_asyncio.fixture(scope="function")
 def test_api_user(test_api_client: TestClient):
     TEST_USER_NAME = "test_user"
     TEST_USER_PRIVALEGES = [Privilege.DOWNLOAD.value, Privilege.LIST.value]
@@ -33,6 +35,15 @@ def test_api_user(test_api_client: TestClient):
     response = test_api_client.delete(f"/users/delete/{TEST_USER_NAME}")
     assert response.status_code == 200
 
+def test_create_user_that_exists(test_api_client: TestClient, test_api_user: str):
+    response = test_api_client.put(
+        f"/users/create/{test_api_user}",
+        json={
+            "privileges": [Privilege.DOWNLOAD.value, Privilege.LIST.value]
+        }
+    )
+
+    assert response.status_code == 409
 
 def test_read_user(test_api_client: TestClient, test_api_user: str):
     response = test_api_client.get(f"/users/read/{test_api_user}")
