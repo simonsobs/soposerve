@@ -10,25 +10,8 @@ import pytest_asyncio
 import requests
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
-from testcontainers.mongodb import MongoDbContainer
 
 from soposerve.database import BEANIE_MODELS
-
-### -- Container Fixtures -- ###
-
-@pytest_asyncio.fixture(scope="session")
-def database_container():
-    kwargs = {
-        "username": "root",
-        "password": "password",
-        "port": 27017,
-        "dbname": "sopo_test",
-    }
-
-    with MongoDbContainer(**kwargs) as container:
-        kwargs["url"] = container.get_connection_url()
-        yield kwargs
-
 
 ### -- Dependency Injection Fixtures -- ###
 
