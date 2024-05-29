@@ -2,7 +2,6 @@
 Tests the users API endpoints.
 """
 
-import pytest_asyncio
 from fastapi.testclient import TestClient
 
 from soposerve.api.models.users import (
@@ -12,28 +11,6 @@ from soposerve.api.models.users import (
 )
 from soposerve.service.users import Privilege
 
-
-# This must be scoped small otherwise it will somehow pop event loops
-# and will fail at the teardown step.
-@pytest_asyncio.fixture(scope="function")
-def test_api_user(test_api_client: TestClient):
-    TEST_USER_NAME = "test_user"
-    TEST_USER_PRIVALEGES = [Privilege.DOWNLOAD.value, Privilege.LIST.value]
-
-    response = test_api_client.put(
-        f"/users/create/{TEST_USER_NAME}",
-        json={
-            "privileges": TEST_USER_PRIVALEGES
-        }
-    )
-
-    assert response.status_code == 200
-    _ = CreateUserResponse.model_validate(response.json())
-
-    yield TEST_USER_NAME
-
-    response = test_api_client.delete(f"/users/delete/{TEST_USER_NAME}")
-    assert response.status_code == 200
 
 def test_create_user_that_exists(test_api_client: TestClient, test_api_user: str):
     response = test_api_client.put(

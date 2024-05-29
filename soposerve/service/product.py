@@ -18,6 +18,11 @@ class PreUploadFile(BaseModel):
     size: int
     checksum: str
 
+class PostUploadFile(BaseModel):
+    name: str
+    size: int
+    checksum: str
+    url: str
 
 async def create(
     name: str,
@@ -76,8 +81,29 @@ async def read(name: str) -> Product:
 
     if potential is None:
         raise ProductNotFound
-
+    
     return potential
+
+
+async def presign_read(product: Product, storage: Storage) -> list[PostUploadFile]:
+    """
+    Given a product, generates pre-signed URLs for all of its sources.
+    """
+    files = [
+        PostUploadFile(
+            name=source.name,
+            size=source.size,
+            checksum=source.checksum,
+            url=storage.get(
+                name=source.name,
+                uploader=source.uploader,
+                uuid=source.uuid,
+                bucket=source.bucket
+            )
+         ) for source in product.sources
+    ]
+
+    return files
 
 
 async def update(

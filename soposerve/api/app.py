@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from starlette.middleware.cors import CORSMiddleware
 
+from soposerve.api.product import product_router
 from soposerve.api.users import users_router
 from soposerve.database import BEANIE_MODELS
 from soposerve.settings import SETTINGS
@@ -40,6 +41,7 @@ app = FastAPI(
 
 # Routers
 app.include_router(users_router)
+app.include_router(product_router)
 
 if SETTINGS.add_cors:
     app.add_middleware(

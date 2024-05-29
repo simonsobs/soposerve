@@ -18,6 +18,13 @@ async def test_get_existing_file(created_full_product, database):
 
 
 @pytest.mark.asyncio(scope="session")
+async def test_presign_read(created_full_product, storage):
+    sources = await product.presign_read(created_full_product, storage)
+
+    for source in sources:
+        assert source.url is not None
+
+@pytest.mark.asyncio(scope="session")
 async def test_get_missing_file(database):
     with pytest.raises(product.ProductNotFound):
         await product.read(name="Missing Product")
