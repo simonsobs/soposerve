@@ -15,6 +15,7 @@ dependencies = [
     "beanie",
     "minio",
     "jinja2",
+    "xxhash",
 ]
 
 [project.optional-dependencies]
@@ -36,4 +37,7 @@ asyncio_mode = "auto"
 [tool.coverage.run]
 source = [
     "soposerve",
+]
+exclude = [
+    "soposerve/web"
 ]

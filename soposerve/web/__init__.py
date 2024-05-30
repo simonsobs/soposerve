@@ -1,5 +1,9 @@
 """
 Web frontend for SOPO. This consumes the service layer.
+
+NOTE: Code coverage is an explicit NON-goal for the web
+      frontend, and as such it is excluded from our
+      coverage metrics.
 """
 
 from fastapi import APIRouter, Request
