@@ -6,7 +6,7 @@ from enum import Enum
 
 from beanie import BackLink, Document, Indexed, Link
 from pydantic import BaseModel, Field
-
+from datetime import datetime
 
 class Privilege(Enum):
     LIST = 0
@@ -34,6 +34,7 @@ class File(Document):
 class Product(Document):
     name: Indexed(str, unique=True)
     description: str
+    updated: datetime
     owner: Link[User]
     sources: list[File]
     collections: list[Link["Collection"]]

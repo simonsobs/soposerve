@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from soposerve.database import Collection, Product, User
 from soposerve.service import storage as storage_service
 from soposerve.storage import Storage
+import datetime
 
 
 class ProductNotFound(Exception):
@@ -49,6 +50,7 @@ async def create(
     product = Product(
         name=name,
         description=description,
+        updated=datetime.datetime.now(datetime.timezone.utc),
         owner=user,
         sources=pre_upload_sources,
         # TODO: Consider allowing collections pre-upload,
@@ -71,7 +73,6 @@ async def confirm(
             return False
         
     return True
-    
 
 
 async def read(name: str) -> Product:
@@ -106,6 +107,12 @@ async def presign_read(product: Product, storage: Storage) -> list[PostUploadFil
     return files
 
 
+async def read_most_recent(fetch_links: bool = False, maximum: int = 16) -> list[Product]:
+    return await Product.find(
+        fetch_links=fetch_links
+    ).sort(-Product.updated).to_list(maximum)
+
+
 async def update(
     name: str,
     description: str | None,
@@ -114,10 +121,11 @@ async def update(
     product = await read(name=name)
 
     if description is not None:
-        await product.set({Product.description: description})
+        await product.set(
+            {Product.description: description, Product.updated: datetime.datetime.now(datetime.timezone.utc)})
 
     if owner is not None:
-        await product.set({Product.owner: owner})
+        await product.set({Product.owner: owner, Product.updated: datetime.datetime.now(datetime.timezone.utc)})
 
     return product
 

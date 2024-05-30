@@ -72,6 +72,8 @@ async def test_update(created_full_product, database):
     assert updated_product.description == "New description"
     assert updated_product.owner.name == new_user.name
 
+    before_update_time = updated_product.updated
+
     updated_product = await product.update(
         name=created_full_product.name,
         owner=created_full_product.owner,
@@ -81,5 +83,28 @@ async def test_update(created_full_product, database):
     assert updated_product.name == created_full_product.name
     assert updated_product.description == created_full_product.description
     assert updated_product.owner.name == created_full_product.owner.name
+    assert updated_product.updated > before_update_time
 
     await users.delete(new_user.name)
+
+@pytest.mark.asyncio(scope="session")
+async def test_read_most_recent_products(database, created_user, storage):
+    # Insert a bunch of products.
+    for i in range(20):
+        await product.create(
+            name=f"product_{i}",
+            description=f"description_{i}",
+            sources=[],
+            user=created_user,
+            storage=storage,
+        )
+
+    products = await product.read_most_recent(
+        fetch_links=False, maximum=8
+    )
+    
+    assert len(products) == 8
+
+    # Clean up.
+    for i in range(20):
+        await product.delete(name=f"product_{i}", data=True, storage=storage)
