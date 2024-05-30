@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simons Observatory Post Office</title>
+</head>
+<body>
+    <h1>Simons Observatory Post Office</h1>
+    <h2>Recently Uploaded Products</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Uploaded</th>
+            <th>Owner</th>
+        </tr>
+        {% for product in products %}
+        <tr>
+            <td>{{ product.name }}</td>
+            <td>{{ product.description }}</td>
+            <td>{{ product.uploaded }}</td>
+            <td>{{ product.owner }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

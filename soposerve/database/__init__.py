@@ -2,11 +2,12 @@
 The database access layer for SOPO. Uses MongoDB and Beanie.
 """
 
+from datetime import datetime
 from enum import Enum
 
 from beanie import BackLink, Document, Indexed, Link
 from pydantic import BaseModel, Field
-from datetime import datetime
+
 
 class Privilege(Enum):
     LIST = 0

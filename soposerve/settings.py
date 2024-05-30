@@ -17,5 +17,6 @@ class Settings(BaseSettings):
 
     add_cors: bool = True
     debug: bool = True
+    web: bool = False
 
 SETTINGS = Settings()

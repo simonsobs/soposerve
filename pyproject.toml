@@ -13,7 +13,8 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "beanie",
-    "minio"
+    "minio",
+    "jinja2",
 ]
 
 [project.optional-dependencies]

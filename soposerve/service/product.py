@@ -2,12 +2,13 @@
 Service for products.
 """
 
+import datetime
+
 from pydantic import BaseModel
 
 from soposerve.database import Collection, Product, User
 from soposerve.service import storage as storage_service
 from soposerve.storage import Storage
-import datetime
 
 
 class ProductNotFound(Exception):

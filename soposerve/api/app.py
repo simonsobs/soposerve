@@ -43,6 +43,10 @@ app = FastAPI(
 app.include_router(users_router)
 app.include_router(product_router)
 
+if SETTINGS.web:
+    from soposerve.web import web_router
+    app.include_router(web_router)
+
 if SETTINGS.add_cors:
     app.add_middleware(
         CORSMiddleware,
