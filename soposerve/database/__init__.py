@@ -35,6 +35,7 @@ class File(Document):
 class Product(Document):
     name: Indexed(str, unique=True)
     description: str
+    uploaded: datetime
     updated: datetime
     owner: Link[User]
     sources: list[File]

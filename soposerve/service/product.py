@@ -48,10 +48,13 @@ async def create(
         presigned[source.name] = presigned_url
         pre_upload_sources.append(pre_upload_source)
 
+    current_utc_time = datetime.datetime.now(datetime.timezone.utc)
+
     product = Product(
         name=name,
         description=description,
-        updated=datetime.datetime.now(datetime.timezone.utc),
+        uploaded=current_utc_time,
+        updated=current_utc_time,
         owner=user,
         sources=pre_upload_sources,
         # TODO: Consider allowing collections pre-upload,
