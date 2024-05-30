@@ -2,6 +2,7 @@
 Service drivers for interacting with the storage layer.
 """
 
+import os
 import uuid
 
 from asyncer import asyncify
@@ -26,7 +27,9 @@ async def create(
     storage: Storage,
 ) -> tuple[File, str]:
     file = File(
-        name=name,
+        # Strip any paths that were passed to us through
+        # the layers, just in case.
+        name=os.path.basename(name),
         uploader=uploader,
         uuid=UUID(),
         bucket=GLOBAL_BUCKET_NAME,

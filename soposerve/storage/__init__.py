@@ -4,6 +4,7 @@ and uses the MinIO tools.
 """
 
 import datetime
+import os
 
 from minio import Minio
 from minio.error import S3Error
@@ -33,7 +34,10 @@ class Storage(BaseModel):
     def object_name(
         self, filename: str, uploader: str, uuid: str
     ) -> str:
-        return f"{uploader}/{uuid}/{filename}"
+        # Filename may contain some kind of path, and this
+        # breaks the download side of things, but for some
+        # reason this is a valid object name for uploads?
+        return f"{uploader}/{uuid}/{os.path.basename(filename)}"
     
     def bucket(
         self, name: str

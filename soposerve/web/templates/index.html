@@ -16,7 +16,7 @@
         </tr>
         {% for product in products %}
         <tr>
-            <td>{{ product.name }}</td>
+            <td><a href='{{ product.name }}'>{{ product.name }}</a></td>
             <td>{{ product.description }}</td>
             <td>{{ product.uploaded }}</td>
             <td>{{ product.owner.name }}</td>

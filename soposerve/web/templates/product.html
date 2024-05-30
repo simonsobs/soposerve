@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simons Observatory Post Office</title>
+</head>
+<body>
+    <h1>Product Listing</h1>
+    <h2>{{ product.name }}</h2>
+    <p>{{ product.description }}</p>
+    <p>Uploaded: {{ product.uploaded }}</p>
+    <p>Modified: {{ product.updated }}</p>
+    <p>Owner: {{ product.owner.name }}</p>
+    <p>Sources:
+        <ul>
+            {% for source in sources %}
+            <li><a href='{{ source.url }}''>{{ source.name }}</a> ({{ source.size }} B)</li>
+            {% endfor %}
+        </ul>
+    </p>
+</body>
+</html>

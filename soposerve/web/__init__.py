@@ -26,3 +26,13 @@ async def index(request: Request):
     return templates.TemplateResponse(
         "index.html", {"request": request, "products": products}
     )
+
+
+@web_router.get("/{name}")
+async def product_view(request: Request, name: str):
+    product_instance = await product.read(name)
+    sources = await product.presign_read(product_instance, storage=request.app.storage)
+
+    return templates.TemplateResponse(
+        "product.html", {"request": request, "product": product_instance, "sources": sources}
+    )
