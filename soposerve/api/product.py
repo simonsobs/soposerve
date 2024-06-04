@@ -37,6 +37,7 @@ async def create_product(
         )
 
     try:
+        # TODO: This is an insane way to handle this.
         item = await product.read(name=name)
 
         raise HTTPException(
@@ -83,7 +84,10 @@ async def read_product(
         description=item.description,
         sources=sources,
         owner=item.owner.name,
-        collections=item.collections,
+        related_to=[x.name for x in item.related_to],
+        child_of=[x.name for x in item.child_of],
+        parent_of=[x.name for x in item.parent_of],
+        collections=[x.name for x in item.collections],
     )
 
 
