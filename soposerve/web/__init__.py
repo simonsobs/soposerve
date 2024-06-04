@@ -34,5 +34,6 @@ async def product_view(request: Request, name: str):
     sources = await product.presign_read(product_instance, storage=request.app.storage)
 
     return templates.TemplateResponse(
-        "product.html", {"request": request, "product": product_instance, "sources": sources}
+        "product.html",
+        {"request": request, "product": product_instance, "sources": sources},
     )

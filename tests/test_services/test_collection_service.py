@@ -25,4 +25,3 @@ async def test_update_missing():
             name="Missing Collection",
             description="New description",
         )
-

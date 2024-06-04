@@ -22,11 +22,13 @@ class PreUploadFile(BaseModel):
     size: int
     checksum: str
 
+
 class PostUploadFile(BaseModel):
     name: str
     size: int
     checksum: str
     url: str
+
 
 async def create(
     name: str,
@@ -70,16 +72,14 @@ async def create(
 
     return product, presigned
 
-async def confirm(
-    name: str,
-    storage: Storage
-) -> bool:
+
+async def confirm(name: str, storage: Storage) -> bool:
     product = await read(name)
 
     for file in product.sources:
         if not await storage_service.confirm(file=file, storage=storage):
             return False
-        
+
     return True
 
 
@@ -90,7 +90,7 @@ async def read(name: str) -> Product:
 
     if potential is None:
         raise ProductNotFound
-    
+
     return potential
 
 
@@ -107,18 +107,23 @@ async def presign_read(product: Product, storage: Storage) -> list[PostUploadFil
                 name=source.name,
                 uploader=source.uploader,
                 uuid=source.uuid,
-                bucket=source.bucket
-            )
-         ) for source in product.sources
+                bucket=source.bucket,
+            ),
+        )
+        for source in product.sources
     ]
 
     return files
 
 
-async def read_most_recent(fetch_links: bool = False, maximum: int = 16) -> list[Product]:
-    return await Product.find(
-        fetch_links=fetch_links
-    ).sort(-Product.updated).to_list(maximum)
+async def read_most_recent(
+    fetch_links: bool = False, maximum: int = 16
+) -> list[Product]:
+    return (
+        await Product.find(fetch_links=fetch_links)
+        .sort(-Product.updated)
+        .to_list(maximum)
+    )
 
 
 async def update(
@@ -131,13 +136,27 @@ async def update(
 
     if description is not None:
         await product.set(
-            {Product.description: description, Product.updated: datetime.datetime.now(datetime.timezone.utc)})
+            {
+                Product.description: description,
+                Product.updated: datetime.datetime.now(datetime.timezone.utc),
+            }
+        )
 
     if owner is not None:
-        await product.set({Product.owner: owner, Product.updated: datetime.datetime.now(datetime.timezone.utc)})
+        await product.set(
+            {
+                Product.owner: owner,
+                Product.updated: datetime.datetime.now(datetime.timezone.utc),
+            }
+        )
 
     if metadata is not None:
-        await product.set({Product.metadata: metadata, Product.updated: datetime.datetime.now(datetime.timezone.utc)})
+        await product.set(
+            {
+                Product.metadata: metadata,
+                Product.updated: datetime.datetime.now(datetime.timezone.utc),
+            }
+        )
 
     return product
 
@@ -170,9 +189,13 @@ async def remove_relationship(
     destination_product = await read(name=destination)
 
     if type == "child":
-        source_product.child_of = [c for c in source_product.child_of if c.name != destination_product.name]
+        source_product.child_of = [
+            c for c in source_product.child_of if c.name != destination_product.name
+        ]
     elif type == "related":
-        source_product.related_to = [c for c in source_product.related_to if c.name != destination_product.name]
+        source_product.related_to = [
+            c for c in source_product.related_to if c.name != destination_product.name
+        ]
 
     await source_product.save()
 

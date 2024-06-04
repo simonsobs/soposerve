@@ -13,6 +13,7 @@ from soposerve.service import collection, product
 
 relationship_router = APIRouter(prefix="/relationships")
 
+
 @relationship_router.put("/collection/create/{name}")
 async def create_collection(
     name: str,
@@ -20,6 +21,7 @@ async def create_collection(
 ) -> None:
     # TODO: What to do if collection exists?
     await collection.create(name=name, description=model.description)
+
 
 @relationship_router.get("/collection/read/{name}")
 async def read_collection(
@@ -34,8 +36,7 @@ async def read_collection(
         item = await collection.read(name=name)
     except collection.CollectionNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Collection not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
         )
 
     return ReadCollectionResponse(
@@ -48,8 +49,9 @@ async def read_collection(
                 owner=x.owner.name,
             )
             for x in item.products
-        ]
+        ],
     )
+
 
 @relationship_router.put("/collection/add/{collection_name}/{product_name}")
 async def add_product_to_collection(
@@ -60,18 +62,17 @@ async def add_product_to_collection(
         coll = await collection.read(name=collection_name)
     except collection.CollectionNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Collection not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
         )
-    
+
     try:
         await product.add_collection(name=product_name, collection=coll)
     except product.ProductNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
         )
-    
+
+
 @relationship_router.delete("/collection/remove/{collection_name}/{product_name}")
 async def remove_product_from_collection(
     collection_name: str,
@@ -81,18 +82,17 @@ async def remove_product_from_collection(
         coll = await collection.read(name=collection_name)
     except collection.CollectionNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Collection not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
         )
-    
+
     try:
         await product.remove_collection(name=product_name, collection=coll)
     except product.ProductNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
         )
-    
+
+
 @relationship_router.delete("/collection/delete/{name}")
 async def delete_collection(
     name: str,
@@ -101,8 +101,7 @@ async def delete_collection(
         await collection.delete(name=name)
     except collection.CollectionNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Collection not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
         )
 
 
@@ -119,10 +118,10 @@ async def add_child_product(
         )
     except product.ProductNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
         )
-    
+
+
 @relationship_router.delete("/product/remove/child/{name}/{child_name}")
 async def remove_child_product(
     name: str,
@@ -136,10 +135,10 @@ async def remove_child_product(
         )
     except product.ProductNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
         )
-    
+
+
 @relationship_router.put("/product/add/related/{name}/{related_name}")
 async def add_related_product(
     name: str,
@@ -153,9 +152,9 @@ async def add_related_product(
         )
     except product.ProductNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
         )
+
 
 @relationship_router.delete("/product/remove/related/{name}/{related_name}")
 async def remove_related_product(
@@ -170,6 +169,5 @@ async def remove_related_product(
         )
     except product.ProductNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
         )

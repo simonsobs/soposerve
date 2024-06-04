@@ -43,13 +43,12 @@ async def create(
 
     return file, put
 
-async def confirm(
-    file: File,
-    storage: Storage
-) -> bool:
+
+async def confirm(file: File, storage: Storage) -> bool:
     return await asyncify(storage.confirm)(
         name=file.name, uploader=file.uploader, uuid=file.uuid, bucket=file.bucket
     )
+
 
 async def read(
     file: File,

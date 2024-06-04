@@ -12,6 +12,7 @@ class CreateCollectionRequest(BaseModel):
 
     description: str
 
+
 class ReadCollectionProductResponse(BaseModel):
     """
     Response model for reading a product in a collection.
@@ -20,6 +21,7 @@ class ReadCollectionProductResponse(BaseModel):
     name: str
     description: str
     owner: str
+
 
 class ReadCollectionResponse(BaseModel):
     """

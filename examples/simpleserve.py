@@ -31,6 +31,7 @@ database_kwargs = {
 
 storage_kwargs = {}
 
+
 def containers_to_environment(
     database_container: MongoDbContainer, storage_container: MinioContainer
 ):
@@ -55,12 +56,14 @@ def containers_to_environment(
 
     os.environ.update(settings)
 
+
 def main():
     with MongoDbContainer(**database_kwargs) as database_container:
         with MinioContainer(**storage_kwargs) as storage_container:
             containers_to_environment(database_container, storage_container)
 
             from soposerve.api.app import app
+
             config = uvicorn.Config(app, port=8000)
             server = uvicorn.Server(config)
 

@@ -11,18 +11,21 @@ class CreateUserRequest(BaseModel):
     privileges: list[Privilege]
     # TODO: Compliance
 
+
 class CreateUserResponse(BaseModel):
     api_key: str | None
+
 
 class ReadUserResponse(BaseModel):
     name: str
     privileges: list[Privilege]
     # TODO: Compliance
 
+
 class UpdateUserRequest(BaseModel):
     privileges: list[Privilege] | None
     refresh_key: bool
 
+
 class UpdateUserResponse(BaseModel):
     api_key: str | None
-

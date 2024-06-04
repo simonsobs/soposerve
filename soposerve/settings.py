@@ -19,4 +19,5 @@ class Settings(BaseSettings):
     debug: bool = True
     web: bool = False
 
+
 SETTINGS = Settings()

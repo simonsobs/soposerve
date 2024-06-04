@@ -17,6 +17,7 @@ from soposerve.service import users
 
 users_router = APIRouter(prefix="/users")
 
+
 @users_router.put("/create/{name}")
 async def create_user(
     name: str,
@@ -31,8 +32,7 @@ async def create_user(
         user = await users.read(name=name)
 
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User already exists."
+            status_code=status.HTTP_409_CONFLICT, detail="User already exists."
         )
     except users.UserNotFound:
         user = await users.create(
@@ -40,14 +40,11 @@ async def create_user(
             privileges=request.privileges,
         )
 
-    return CreateUserResponse(
-        api_key=user.api_key
-    )
+    return CreateUserResponse(api_key=user.api_key)
+
 
 @users_router.get("/read/{name}")
-async def read_user(
-    name: str
-) -> ReadUserResponse:
+async def read_user(name: str) -> ReadUserResponse:
     """
     Read a user's details, but not their API key.
     """
@@ -61,10 +58,7 @@ async def read_user(
 
 
 @users_router.post("/update/{name}")
-async def update_user(
-    name: str,
-    request: UpdateUserRequest
-) -> UpdateUserResponse:
+async def update_user(name: str, request: UpdateUserRequest) -> UpdateUserResponse:
     """
     Update a user's details.
     """
@@ -75,15 +69,11 @@ async def update_user(
         refresh_key=request.refresh_key,
     )
 
-    return UpdateUserResponse(
-        api_key=user.api_key if request.refresh_key else None
-    )
+    return UpdateUserResponse(api_key=user.api_key if request.refresh_key else None)
 
-    
+
 @users_router.delete("/delete/{name}")
-async def delete_user(
-    name: str
-) -> None:
+async def delete_user(name: str) -> None:
     """
     Delete a user.
     """

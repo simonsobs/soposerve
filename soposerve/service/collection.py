@@ -11,6 +11,7 @@ from soposerve.database import Collection
 class CollectionNotFound(Exception):
     pass
 
+
 async def create(
     name: str,
     description: str,
@@ -24,15 +25,19 @@ async def create(
 
     return collection
 
+
 async def read(
     name: str,
 ):
-    collection = await Collection.find(Collection.name == name, fetch_links=True).first_or_none()
+    collection = await Collection.find(
+        Collection.name == name, fetch_links=True
+    ).first_or_none()
 
     if collection is None:
         raise CollectionNotFound
 
     return collection
+
 
 async def update(
     name: str,
@@ -44,6 +49,7 @@ async def update(
         await collection.set({Collection.description: description})
 
     return collection
+
 
 async def delete(
     name: str,

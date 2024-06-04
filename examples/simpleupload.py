@@ -10,29 +10,33 @@ import xxhash
 
 SERVER_LOCATION = "http://127.0.0.1:8000"
 
+
 def create_user(username: str):
     # We don't care about the return value here, as
     # we won't bother with the API key.
     requests.put(
-        SERVER_LOCATION + f"/users/create/{username}",
-        json={"privileges": [0, 1, 2]}
+        SERVER_LOCATION + f"/users/create/{username}", json={"privileges": [0, 1, 2]}
     )
 
     return
+
 
 def process_source(source: str):
     with open(source, "rb") as file:
         return {
             "name": source,
             "size": os.path.getsize(source),
-            "checksum": f"xxh64:{xxhash.xxh64(file.read()).hexdigest()}"
+            "checksum": f"xxh64:{xxhash.xxh64(file.read()).hexdigest()}",
         }
+
 
 def create_product(username: str, name: str, description: str, sources: list[str]):
     response = requests.put(
         SERVER_LOCATION + f"/product/create/{name}",
         json={
-            "description": description, "sources": [process_source(s) for s in sources]}
+            "description": description,
+            "sources": [process_source(s) for s in sources],
+        },
     )
 
     if response.status_code != 200:

@@ -8,6 +8,7 @@ from soposerve.database import Privilege
 
 ### -- Service Mock Fixtures -- ###
 
+
 @pytest_asyncio.fixture(scope="session")
 def test_api_server(database_container, storage_container):
     settings = {
@@ -26,6 +27,7 @@ def test_api_server(database_container, storage_container):
 
     yield app
 
+
 @pytest_asyncio.fixture(scope="session")
 def test_api_client(test_api_server):
     with TestClient(test_api_server) as client:
@@ -34,16 +36,14 @@ def test_api_client(test_api_server):
 
 ### -- User Fixtures -- ###
 
+
 @pytest_asyncio.fixture(scope="module")
 def test_api_user(test_api_client: TestClient):
     TEST_USER_NAME = "default_user"
     TEST_USER_PRIVALEGES = [Privilege.DOWNLOAD.value, Privilege.LIST.value]
 
     response = test_api_client.put(
-        f"/users/create/{TEST_USER_NAME}",
-        json={
-            "privileges": TEST_USER_PRIVALEGES
-        }
+        f"/users/create/{TEST_USER_NAME}", json={"privileges": TEST_USER_PRIVALEGES}
     )
 
     assert response.status_code == 200

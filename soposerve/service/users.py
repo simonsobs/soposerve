@@ -1,18 +1,23 @@
 """
 Facilities for creating and updating users.
 """
+
 import secrets
 
 from soposerve.database import Privilege, User
 
 # TODO: Settings
 API_KEY_BYTES = 256
-def API_KEY(): return secrets.token_urlsafe(API_KEY_BYTES)
+
+
+def API_KEY():
+    return secrets.token_urlsafe(API_KEY_BYTES)
 
 
 # TODO: Centralised exceptions?
 class UserNotFound(Exception):
     pass
+
 
 async def create(name: str, privileges: list[Privilege]) -> User:
     user = User(
@@ -20,7 +25,7 @@ async def create(name: str, privileges: list[Privilege]) -> User:
         api_key=API_KEY(),
         privileges=privileges,
         # TODO: Compliance
-        compliance=None
+        compliance=None,
     )
 
     await user.create()
@@ -37,7 +42,9 @@ async def read(name: str) -> User:
     return result
 
 
-async def update(name: str, privileges: list[Privilege] | None, refresh_key: bool = False) -> User:
+async def update(
+    name: str, privileges: list[Privilege] | None, refresh_key: bool = False
+) -> User:
     user = await read(name=name)
 
     if privileges is not None:
@@ -54,6 +61,3 @@ async def delete(name: str):
     await user.delete()
 
     return
-
-
-

@@ -30,18 +30,14 @@ class Storage(BaseModel):
             secure=False,
             cert_check=False,
         )
-    
-    def object_name(
-        self, filename: str, uploader: str, uuid: str
-    ) -> str:
+
+    def object_name(self, filename: str, uploader: str, uuid: str) -> str:
         # Filename may contain some kind of path, and this
         # breaks the download side of things, but for some
         # reason this is a valid object name for uploads?
         return f"{uploader}/{uuid}/{os.path.basename(filename)}"
-    
-    def bucket(
-        self, name: str
-    ):
+
+    def bucket(self, name: str):
         if not self.client.bucket_exists(name):
             self.client.make_bucket(name)
 
@@ -61,9 +57,9 @@ class Storage(BaseModel):
                 uploader=uploader,
                 uuid=uuid,
             ),
-            expires=self.expires
+            expires=self.expires,
         )
-    
+
     def confirm(self, name: str, uploader: str, uuid: str, bucket: str) -> bool:
         """
         Checks whether an object exists.
@@ -78,7 +74,7 @@ class Storage(BaseModel):
                     filename=name,
                     uploader=uploader,
                     uuid=uuid,
-                )
+                ),
             )
 
             return True
@@ -99,7 +95,7 @@ class Storage(BaseModel):
                 uploader=uploader,
                 uuid=uuid,
             ),
-            expires=self.expires
+            expires=self.expires,
         )
 
     def delete(self, name: str, uploader: str, uuid: str, bucket: str) -> str:
@@ -113,5 +109,5 @@ class Storage(BaseModel):
                 filename=name,
                 uploader=uploader,
                 uuid=uuid,
-            )
+            ),
         )

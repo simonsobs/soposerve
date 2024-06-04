@@ -12,6 +12,7 @@ class BaseMetadata(BaseModel):
 
     pass
 
+
 class SimpleMetadata(BaseMetadata):
     """
     Simple metadata type for example purposes.

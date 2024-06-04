@@ -13,8 +13,10 @@ class CreateProductRequest(BaseModel):
     metadata: ALL_METADATA_TYPE
     sources: list[PreUploadFile]
 
+
 class CreateProductResponse(BaseModel):
     upload_urls: dict[str, str]
+
 
 class ReadProductResponse(BaseModel):
     name: str
@@ -26,7 +28,7 @@ class ReadProductResponse(BaseModel):
     related_to: list[str]
     collections: list[str]
 
+
 class UpdateProductRequest(BaseModel):
     description: str | None = None
     owner: str | None = None
-

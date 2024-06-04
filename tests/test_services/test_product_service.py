@@ -9,9 +9,7 @@ from soposerve.service import product, users
 
 @pytest.mark.asyncio(scope="session")
 async def test_get_existing_file(created_full_product, database):
-    selected_product = await product.read(
-        name=created_full_product.name
-    )
+    selected_product = await product.read(name=created_full_product.name)
 
     assert selected_product.name == created_full_product.name
     assert selected_product.description == created_full_product.description
@@ -23,6 +21,7 @@ async def test_presign_read(created_full_product, storage):
 
     for source in sources:
         assert source.url is not None
+
 
 @pytest.mark.asyncio(scope="session")
 async def test_get_missing_file(database):
@@ -37,9 +36,7 @@ async def test_add_to_collection(created_collection, created_full_product, datab
         collection=created_collection,
     )
 
-    selected_product = await product.read(
-        name=created_full_product.name
-    )
+    selected_product = await product.read(name=created_full_product.name)
 
     assert created_collection.name in [c.name for c in selected_product.collections]
 
@@ -48,25 +45,20 @@ async def test_add_to_collection(created_collection, created_full_product, datab
         collection=created_collection,
     )
 
-    selected_product = await product.read(
-        name=created_full_product.name
-    )
+    selected_product = await product.read(name=created_full_product.name)
 
     assert created_collection.name not in [c.name for c in selected_product.collections]
 
 
 @pytest.mark.asyncio(scope="session")
 async def test_update(created_full_product, database):
-    new_user = await users.create(
-        name="new_user",
-        privileges=[users.Privilege.LIST]
-    )
+    new_user = await users.create(name="new_user", privileges=[users.Privilege.LIST])
 
     updated_product = await product.update(
         name=created_full_product.name,
         description="New description",
         owner=new_user,
-        metadata={"metadata_type": "simple"}
+        metadata={"metadata_type": "simple"},
     )
 
     assert updated_product.name == created_full_product.name
@@ -79,7 +71,7 @@ async def test_update(created_full_product, database):
         name=created_full_product.name,
         owner=created_full_product.owner,
         description=created_full_product.description,
-        metadata=created_full_product.metadata
+        metadata=created_full_product.metadata,
     )
 
     assert updated_product.name == created_full_product.name
@@ -88,6 +80,7 @@ async def test_update(created_full_product, database):
     assert updated_product.updated > before_update_time
 
     await users.delete(new_user.name)
+
 
 @pytest.mark.asyncio(scope="session")
 async def test_read_most_recent_products(database, created_user, storage):
@@ -102,10 +95,8 @@ async def test_read_most_recent_products(database, created_user, storage):
             storage=storage,
         )
 
-    products = await product.read_most_recent(
-        fetch_links=False, maximum=8
-    )
-    
+    products = await product.read_most_recent(fetch_links=False, maximum=8)
+
     assert len(products) == 8
 
     # Clean up.

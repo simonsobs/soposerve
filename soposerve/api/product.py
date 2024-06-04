@@ -16,6 +16,7 @@ product_router = APIRouter(prefix="/product")
 
 DEFAULT_USER_USER_NAME = "default_user"
 
+
 @product_router.put("/create/{name}")
 async def create_product(
     name: str,
@@ -30,10 +31,10 @@ async def create_product(
     try:
         user = await users.read(name=DEFAULT_USER_USER_NAME)
     # Uncoverable until we have variable users. TODO: Authentication
-    except users.UserNotFound: # pragma: no cover
+    except users.UserNotFound:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Default user not found."
+            detail="Default user not found.",
         )
 
     try:
@@ -41,8 +42,7 @@ async def create_product(
         item = await product.read(name=name)
 
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Product already exists."
+            status_code=status.HTTP_409_CONFLICT, detail="Product already exists."
         )
     except product.ProductNotFound:
         item, presigned = await product.create(
@@ -55,9 +55,7 @@ async def create_product(
             storage=request.app.storage,
         )
 
-    return CreateProductResponse(
-        upload_urls=presigned
-    )
+    return CreateProductResponse(upload_urls=presigned)
 
 
 @product_router.get("/read/{name}")
@@ -73,8 +71,7 @@ async def read_product(
         item = await product.read(name=name)
     except product.ProductNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
         )
 
     sources = await product.presign_read(product=item, storage=request.app.storage)
@@ -92,10 +89,7 @@ async def read_product(
 
 
 @product_router.post("/update/{name}")
-async def update_product(
-    name: str,
-    model: UpdateProductRequest
-) -> None:
+async def update_product(name: str, model: UpdateProductRequest) -> None:
     """
     Update a product's details.
     """
@@ -105,14 +99,13 @@ async def update_product(
         try:
             user = await users.read(name=model.owner)
         # Uncoverable until we have variable users. TODO: Authentication
-        except users.UserNotFound: # pragma: no cover
+        except users.UserNotFound:  # pragma: no cover
             raise HTTPException(
-                status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                detail="User not found."
+                status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="User not found."
             )
     else:
         user = None
-    
+
     await product.update(
         name=name,
         description=model.description,
@@ -121,10 +114,7 @@ async def update_product(
 
 
 @product_router.post("/confirm/{name}")
-async def confirm_product(
-    name: str,
-    request: Request
-) -> None:
+async def confirm_product(name: str, request: Request) -> None:
     """
     Confirm a product's sources.
     """
@@ -136,21 +126,20 @@ async def confirm_product(
         )
     except product.ProductNotFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
         )
 
     if not success:
         raise HTTPException(
             status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail="Not all sources were present."
+            detail="Not all sources were present.",
         )
-    
+
 
 @product_router.delete("/delete/{name}")
 async def delete_product(
     name: str,
-    request: Request ,
+    request: Request,
     data: bool = False,
 ) -> None:
     """

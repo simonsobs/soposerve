@@ -26,8 +26,8 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
         json={
             "description": TEST_PRODUCT_DESCRIPTION,
             "metadata": {"metadata_type": "simple"},
-            "sources": TEST_PRODUCT_SOURCES
-        }
+            "sources": TEST_PRODUCT_SOURCES,
+        },
     )
 
     assert response.status_code == 200
@@ -36,8 +36,7 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
     # Now we have to actually upload the files.
     for source in TEST_PRODUCT_SOURCES:
         response = requests.put(
-            validated.upload_urls[source["name"]],
-            data=b"test_data"
+            validated.upload_urls[source["name"]], data=b"test_data"
         )
 
         assert response.status_code == 200
@@ -49,7 +48,9 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
 
     yield TEST_PRODUCT_NAME
 
-    response = test_api_client.delete(f"/product/delete/{TEST_PRODUCT_NAME}", params={"data": True})
+    response = test_api_client.delete(
+        f"/product/delete/{TEST_PRODUCT_NAME}", params={"data": True}
+    )
     assert response.status_code == 200
 
 
@@ -60,9 +61,11 @@ def test_upload_product_again(test_api_client: TestClient, test_api_product: str
             "description": "test_description",
             "metadata": {"metadata_type": "simple"},
             "sources": [
-                PreUploadFile(name="test_file", size=100, checksum="test_checksum").model_dump()
-            ]
-        }
+                PreUploadFile(
+                    name="test_file", size=100, checksum="test_checksum"
+                ).model_dump()
+            ],
+        },
     )
 
     assert response.status_code == 409
@@ -83,12 +86,11 @@ def test_read_product(
     # Use the pre-signed url to check that the file data is b"test_data", as expected.
     # TODO: Right now we actually don't furnish a pre-signed URL! We need to add that, maybe to the API?
     for source in validated.sources:
-        response = requests.get(
-            source.url
-        )
+        response = requests.get(source.url)
 
         assert response.status_code == 200
         assert response.content == b"test_data"
+
 
 def test_read_product_not_found(
     test_api_client: TestClient,
@@ -104,8 +106,8 @@ def test_update_product(test_api_client: TestClient, test_api_product: str):
         json={
             "description": "new_description",
             "metadata": {"metadata_type": "simple"},
-            "owner": "default_user"
-        }
+            "owner": "default_user",
+        },
     )
 
     assert response.status_code == 200
@@ -116,23 +118,24 @@ def test_update_product(test_api_client: TestClient, test_api_product: str):
     assert validated.description == "new_description"
     assert validated.owner == "default_user"
 
-def test_update_product_invalid_owner(test_api_client: TestClient, test_api_product: str):
+
+def test_update_product_invalid_owner(
+    test_api_client: TestClient, test_api_product: str
+):
     response = test_api_client.post(
         f"/product/update/{test_api_product}",
-        json={
-            "description": "new_description",
-            "owner": "not_exist_user"
-        }
+        json={"description": "new_description", "owner": "not_exist_user"},
     )
 
     assert response.status_code == 406
 
-def test_update_product_no_owner_change(test_api_client: TestClient, test_api_product: str):
+
+def test_update_product_no_owner_change(
+    test_api_client: TestClient, test_api_product: str
+):
     response = test_api_client.post(
         f"/product/update/{test_api_product}",
-        json={
-            "description": "New description, again!"
-        }
+        json={"description": "New description, again!"},
     )
 
     assert response.status_code == 200
@@ -161,9 +164,11 @@ def test_confirm_product_product_not_existing(test_api_client):
             "description": "A test product that was never uploaded.",
             "metadata": None,
             "sources": [
-                PreUploadFile(name="test_file", size=100, checksum="test_checksum").model_dump()
-            ]
-        }
+                PreUploadFile(
+                    name="test_file", size=100, checksum="test_checksum"
+                ).model_dump()
+            ],
+        },
     )
 
     assert response.status_code == 200

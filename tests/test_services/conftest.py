@@ -15,6 +15,7 @@ from soposerve.database import BEANIE_MODELS
 
 ### -- Dependency Injection Fixtures -- ###
 
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def database(database_container):
     db = AsyncIOMotorClient(database_container["url"])
@@ -25,20 +26,20 @@ async def database(database_container):
 
     yield db
 
+
 ### -- Data Service Fixtures -- ###
+
 
 @pytest_asyncio.fixture(scope="session")
 async def created_user(database):
     from soposerve.service import users
 
-    user = await users.create(
-        name="test_user",
-        privileges=[users.Privilege.LIST]
-    )
+    user = await users.create(name="test_user", privileges=[users.Privilege.LIST])
 
     yield user
 
     await users.delete(user.name)
+
 
 @pytest_asyncio.fixture(scope="session")
 async def created_full_product(database, storage, created_user):
@@ -48,11 +49,8 @@ async def created_full_product(database, storage, created_user):
     PRODUCT_DESCRIPTION = "The best product ever."
     FILE_CONTENTS = b"0x0" * 1024
     SOURCES = [
-        product.PreUploadFile(
-            name=f"test_{x}.txt",
-            size=1024,
-            checksum="eh_whatever"
-        ) for x in range(4)
+        product.PreUploadFile(name=f"test_{x}.txt", size=1024, checksum="eh_whatever")
+        for x in range(4)
     ]
 
     data, file_puts = await product.create(
@@ -61,7 +59,7 @@ async def created_full_product(database, storage, created_user):
         metadata=None,
         sources=SOURCES,
         user=created_user,
-        storage=storage
+        storage=storage,
     )
 
     assert not await product.confirm(PRODUCT_NAME, storage)
@@ -76,11 +74,8 @@ async def created_full_product(database, storage, created_user):
 
     yield data
 
-    await product.delete(
-        name=data.name,
-        storage=storage,
-        data=True
-    )
+    await product.delete(name=data.name, storage=storage, data=True)
+
 
 @pytest_asyncio.fixture(scope="session")
 async def created_collection(database):

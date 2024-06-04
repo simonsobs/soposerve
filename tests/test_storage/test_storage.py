@@ -12,10 +12,10 @@ import requests
 def simple_uploaded_file(storage):
     # Ingest the file into the storage service.
     file_info = {
-        "name":"test_file.txt",
-        "uploader":"test_uploader",
-        "uuid":"1234-1234-1234",
-        "bucket":"testbucket"
+        "name": "test_file.txt",
+        "uploader": "test_uploader",
+        "uuid": "1234-1234-1234",
+        "bucket": "testbucket",
     }
 
     put = storage.put(**file_info)
@@ -31,6 +31,7 @@ def simple_uploaded_file(storage):
     # Remove it! Request a deletion.
     storage.delete(**file_info)
 
+
 def test_simple_uploaded_file(simple_uploaded_file, storage):
     get = storage.get(**simple_uploaded_file)
 
@@ -45,10 +46,11 @@ def test_simple_uploaded_file(simple_uploaded_file, storage):
 def test_existing_object(simple_uploaded_file, storage):
     assert storage.confirm(**simple_uploaded_file)
 
+
 def test_non_existing_object(storage):
     assert not storage.confirm(
         name="non_existing_file.txt",
         uploader="test_uploader",
         uuid="1234-1234-1234",
-        bucket="testbucket"
+        bucket="testbucket",
     )

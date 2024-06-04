@@ -16,8 +16,10 @@ class Privilege(Enum):
     DOWNLOAD = 1
     UPLOAD = 2
 
+
 class ComplianceInformation(BaseModel):
     nersc_username: str | None
+
 
 class User(Document):
     name: str = Indexed(str, unique=True)
@@ -26,6 +28,7 @@ class User(Document):
 
     compliance: ComplianceInformation | None
 
+
 class File(Document):
     name: str = Indexed(str, unique=True)
     uploader: str
@@ -33,6 +36,7 @@ class File(Document):
     bucket: str
     size: int
     checksum: str
+
 
 class Product(Document):
     name: str = Indexed(str, unique=True)
@@ -47,18 +51,19 @@ class Product(Document):
     sources: list[File]
 
     child_of: list[Link["Product"]] = []
-    parent_of: list[BackLink["Product"]] = Field(json_schema_extra={"original_field":"child_of"}, default=[])
+    parent_of: list[BackLink["Product"]] = Field(
+        json_schema_extra={"original_field": "child_of"}, default=[]
+    )
     related_to: list[Link["Product"]] = []
     collections: list[Link["Collection"]] = []
+
 
 class Collection(Document):
     name: str = Indexed(str, unique=True)
     description: str
-    products: list[BackLink[Product]] = Field(json_schema_extra={"original_field":"collections"})
+    products: list[BackLink[Product]] = Field(
+        json_schema_extra={"original_field": "collections"}
+    )
 
-BEANIE_MODELS = [
-    User,
-    File,
-    Product,
-    Collection
-]
+
+BEANIE_MODELS = [User, File, Product, Collection]
