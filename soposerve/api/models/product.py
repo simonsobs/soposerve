@@ -5,10 +5,12 @@ Pydantic models for the product API layer.
 from pydantic import BaseModel
 
 from soposerve.service.product import PostUploadFile, PreUploadFile
+from soposerve.database.metadata import ALL_METADATA_TYPE
 
 
 class CreateProductRequest(BaseModel):
     description: str
+    metadata: ALL_METADATA_TYPE
     sources: list[PreUploadFile]
 
 class CreateProductResponse(BaseModel):

@@ -66,6 +66,7 @@ async def test_update(created_full_product, database):
         name=created_full_product.name,
         description="New description",
         owner=new_user,
+        metadata={"metadata_type": "simple"}
     )
 
     assert updated_product.name == created_full_product.name
@@ -78,6 +79,7 @@ async def test_update(created_full_product, database):
         name=created_full_product.name,
         owner=created_full_product.owner,
         description=created_full_product.description,
+        metadata=created_full_product.metadata
     )
 
     assert updated_product.name == created_full_product.name
@@ -94,6 +96,7 @@ async def test_read_most_recent_products(database, created_user, storage):
         await product.create(
             name=f"product_{i}",
             description=f"description_{i}",
+            metadata=None,
             sources=[],
             user=created_user,
             storage=storage,
@@ -108,3 +111,61 @@ async def test_read_most_recent_products(database, created_user, storage):
     # Clean up.
     for i in range(20):
         await product.delete(name=f"product_{i}", data=True, storage=storage)
+
+
+@pytest.mark.asyncio(scope="session")
+async def test_add_relationships(database, created_user, created_full_product, storage):
+    # First, make a secondary metadata-only product.
+    secondary_product, _ = await product.create(
+        name="secondary_product",
+        description="A secondary product",
+        metadata=None,
+        sources=[],
+        user=created_user,
+        storage=storage,
+    )
+
+    await product.add_relationship(
+        source=secondary_product.name,
+        destination=created_full_product.name,
+        type="child",
+    )
+
+    # Grab the original product and check that the created_full_product is a _parent_
+    # of the child.
+    secondary_product = await product.read(name=secondary_product.name)
+    original_product = await product.read(name=created_full_product.name)
+
+    assert original_product.name in [c.name for c in secondary_product.child_of]
+    assert secondary_product.name in [c.name for c in original_product.parent_of]
+
+    # Remove this relationship.
+    await product.remove_relationship(
+        source=secondary_product.name,
+        destination=created_full_product.name,
+        type="child",
+    )
+
+    original_product = await product.read(name=created_full_product.name)
+
+    assert secondary_product.name not in [c.name for c in original_product.parent_of]
+
+    # Now, add a "related" relationship.
+    await product.add_relationship(
+        source=secondary_product.name,
+        destination=created_full_product.name,
+        type="related",
+    )
+
+    # Related to's are not bidirectional, so we can't check from the parent side.
+    secondary_product = await product.read(name=secondary_product.name)
+
+    assert created_full_product.name in [c.name for c in secondary_product.related_to]
+
+    await product.remove_relationship(
+        source=created_full_product.name,
+        destination=secondary_product.name,
+        type="related",
+    )
+
+    await product.delete(name=secondary_product.name, storage=storage, data=True)

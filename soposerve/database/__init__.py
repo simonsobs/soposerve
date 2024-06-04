@@ -8,6 +8,8 @@ from enum import Enum
 from beanie import BackLink, Document, Indexed, Link
 from pydantic import BaseModel, Field
 
+from soposerve.database.metadata import ALL_METADATA_TYPE
+
 
 class Privilege(Enum):
     LIST = 0
@@ -18,14 +20,14 @@ class ComplianceInformation(BaseModel):
     nersc_username: str | None
 
 class User(Document):
-    name: Indexed(str, unique=True)
+    name: str = Indexed(str, unique=True)
     api_key: str
     privileges: list[Privilege]
 
     compliance: ComplianceInformation | None
 
 class File(Document):
-    name: Indexed(str, unique=True)
+    name: str = Indexed(str, unique=True)
     uploader: str
     uuid: str
     bucket: str
@@ -33,16 +35,24 @@ class File(Document):
     checksum: str
 
 class Product(Document):
-    name: Indexed(str, unique=True)
+    name: str = Indexed(str, unique=True)
     description: str
     uploaded: datetime
     updated: datetime
+
+    metadata: ALL_METADATA_TYPE = Field(..., descriminator="metdata_type")
+
     owner: Link[User]
+
     sources: list[File]
-    collections: list[Link["Collection"]]
+
+    child_of: list[Link["Product"]] = []
+    parent_of: list[BackLink["Product"]] = Field(json_schema_extra={"original_field":"child_of"}, default=[])
+    related_to: list[Link["Product"]] = []
+    collections: list[Link["Collection"]] = []
 
 class Collection(Document):
-    name: Indexed(str, unique=True)
+    name: str = Indexed(str, unique=True)
     description: str
     products: list[BackLink[Product]] = Field(json_schema_extra={"original_field":"collections"})
 

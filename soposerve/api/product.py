@@ -47,6 +47,7 @@ async def create_product(
         item, presigned = await product.create(
             name=name,
             description=model.description,
+            metadata=model.metadata,
             sources=model.sources,
             # TODO: Authentication
             user=user,

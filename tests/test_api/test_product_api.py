@@ -25,6 +25,7 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
         f"/product/create/{TEST_PRODUCT_NAME}",
         json={
             "description": TEST_PRODUCT_DESCRIPTION,
+            "metadata": {"metadata_type": "simple"},
             "sources": TEST_PRODUCT_SOURCES
         }
     )
@@ -57,6 +58,7 @@ def test_upload_product_again(test_api_client: TestClient, test_api_product: str
         f"/product/create/{test_api_product}",
         json={
             "description": "test_description",
+            "metadata": {"metadata_type": "simple"},
             "sources": [
                 PreUploadFile(name="test_file", size=100, checksum="test_checksum").model_dump()
             ]
@@ -101,6 +103,7 @@ def test_update_product(test_api_client: TestClient, test_api_product: str):
         f"/product/update/{test_api_product}",
         json={
             "description": "new_description",
+            "metadata": {"metadata_type": "simple"},
             "owner": "default_user"
         }
     )
@@ -156,6 +159,7 @@ def test_confirm_product_product_not_existing(test_api_client):
         f"/product/create/{TEST_PRODUCT_NAME}",
         json={
             "description": "A test product that was never uploaded.",
+            "metadata": None,
             "sources": [
                 PreUploadFile(name="test_file", size=100, checksum="test_checksum").model_dump()
             ]

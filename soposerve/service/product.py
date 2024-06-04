@@ -3,10 +3,12 @@ Service for products.
 """
 
 import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
 from soposerve.database import Collection, Product, User
+from soposerve.database.metadata import ALL_METADATA_TYPE
 from soposerve.service import storage as storage_service
 from soposerve.storage import Storage
 
@@ -29,6 +31,7 @@ class PostUploadFile(BaseModel):
 async def create(
     name: str,
     description: str,
+    metadata: ALL_METADATA_TYPE,
     sources: list[PreUploadFile],
     user: User,
     storage: Storage,
@@ -55,6 +58,7 @@ async def create(
         description=description,
         uploaded=current_utc_time,
         updated=current_utc_time,
+        metadata=metadata,
         owner=user,
         sources=pre_upload_sources,
         # TODO: Consider allowing collections pre-upload,
@@ -119,8 +123,9 @@ async def read_most_recent(fetch_links: bool = False, maximum: int = 16) -> list
 
 async def update(
     name: str,
-    description: str | None,
-    owner: User | None,
+    description: str | None = None,
+    metadata: ALL_METADATA_TYPE | None = None,
+    owner: User | None = None,
 ) -> Product:
     product = await read(name=name)
 
@@ -131,7 +136,47 @@ async def update(
     if owner is not None:
         await product.set({Product.owner: owner, Product.updated: datetime.datetime.now(datetime.timezone.utc)})
 
+    if metadata is not None:
+        await product.set({Product.metadata: metadata, Product.updated: datetime.datetime.now(datetime.timezone.utc)})
+
     return product
+
+
+async def add_relationship(
+    source: str,
+    destination: str,
+    type: Literal["child", "related"],
+) -> Product:
+    source_product = await read(name=source)
+    destination_product = await read(name=destination)
+
+    if type == "child":
+        # Parent relationship is handled by the backlink.
+        source_product.child_of = source_product.child_of + [destination_product]
+    elif type == "related":
+        source_product.related_to = source_product.related_to + [destination_product]
+
+    await source_product.save()
+
+    return source_product
+
+
+async def remove_relationship(
+    source: str,
+    destination: str,
+    type: Literal["child", "related"],
+) -> Product:
+    source_product = await read(name=source)
+    destination_product = await read(name=destination)
+
+    if type == "child":
+        source_product.child_of = [c for c in source_product.child_of if c.name != destination_product.name]
+    elif type == "related":
+        source_product.related_to = [c for c in source_product.related_to if c.name != destination_product.name]
+
+    await source_product.save()
+
+    return source_product
 
 
 async def add_collection(name: str, collection: Collection) -> Product:

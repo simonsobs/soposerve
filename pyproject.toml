@@ -38,6 +38,6 @@ asyncio_mode = "auto"
 source = [
     "soposerve",
 ]
-exclude = [
-    "soposerve/web"
+omit = [
+    "soposerve/web/*"
 ]

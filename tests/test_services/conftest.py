@@ -58,6 +58,7 @@ async def created_full_product(database, storage, created_user):
     data, file_puts = await product.create(
         name=PRODUCT_NAME,
         description=PRODUCT_DESCRIPTION,
+        metadata=None,
         sources=SOURCES,
         user=created_user,
         storage=storage
