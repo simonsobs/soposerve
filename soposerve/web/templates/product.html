@@ -11,6 +11,26 @@
     <p>Uploaded: {{ product.uploaded }}</p>
     <p>Modified: {{ product.updated }}</p>
     <p>Owner: {{ product.owner.name }}</p>
+    {% if product.child_of != [] }
+    <p>
+        Parents:
+        <ul>
+            {% for parent in product.child_of %}
+            <li><a href='{{ parent.name }}'>{{ parent.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </p>
+    {% endif %}
+    {% if product.parent_of != [] }
+    <p>
+        Children:
+        <ul>
+            {% for child in product.parent_of %}
+            <li><a href='{{ child.name }}'>{{ child.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </p>
+    {% endif %}
     <p>Sources:
         <ul>
             {% for source in sources %}
