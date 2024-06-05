@@ -43,7 +43,7 @@ def test_api_user(test_api_client: TestClient):
     TEST_USER_PRIVALEGES = [Privilege.DOWNLOAD.value, Privilege.LIST.value]
 
     response = test_api_client.put(
-        f"/users/create/{TEST_USER_NAME}", json={"privileges": TEST_USER_PRIVALEGES}
+        f"/users/{TEST_USER_NAME}", json={"privileges": TEST_USER_PRIVALEGES}
     )
 
     assert response.status_code == 200
@@ -51,5 +51,5 @@ def test_api_user(test_api_client: TestClient):
 
     yield TEST_USER_NAME
 
-    response = test_api_client.delete(f"/users/delete/{TEST_USER_NAME}")
+    response = test_api_client.delete(f"/users/{TEST_USER_NAME}")
     assert response.status_code == 200

@@ -14,7 +14,7 @@ from soposerve.service import collection, product
 relationship_router = APIRouter(prefix="/relationships")
 
 
-@relationship_router.put("/collection/create/{name}")
+@relationship_router.put("/collection/{name}")
 async def create_collection(
     name: str,
     model: CreateCollectionRequest,
@@ -23,7 +23,7 @@ async def create_collection(
     await collection.create(name=name, description=model.description)
 
 
-@relationship_router.get("/collection/read/{name}")
+@relationship_router.get("/collection/{name}")
 async def read_collection(
     name: str,
     request: Request,
@@ -53,7 +53,7 @@ async def read_collection(
     )
 
 
-@relationship_router.put("/collection/add/{collection_name}/{product_name}")
+@relationship_router.put("/collection/{collection_name}/{product_name}")
 async def add_product_to_collection(
     collection_name: str,
     product_name: str,
@@ -73,7 +73,7 @@ async def add_product_to_collection(
         )
 
 
-@relationship_router.delete("/collection/remove/{collection_name}/{product_name}")
+@relationship_router.delete("/collection/{collection_name}/{product_name}")
 async def remove_product_from_collection(
     collection_name: str,
     product_name: str,
@@ -93,7 +93,7 @@ async def remove_product_from_collection(
         )
 
 
-@relationship_router.delete("/collection/delete/{name}")
+@relationship_router.delete("/collection/{name}")
 async def delete_collection(
     name: str,
 ) -> None:
@@ -105,7 +105,7 @@ async def delete_collection(
         )
 
 
-@relationship_router.put("/product/add/child/{name}/{child_name}")
+@relationship_router.put("/product/{name}/child_of/{child_name}")
 async def add_child_product(
     name: str,
     child_name: str,
@@ -122,7 +122,7 @@ async def add_child_product(
         )
 
 
-@relationship_router.delete("/product/remove/child/{name}/{child_name}")
+@relationship_router.delete("/product/{name}/child_of/{child_name}")
 async def remove_child_product(
     name: str,
     child_name: str,
@@ -139,7 +139,7 @@ async def remove_child_product(
         )
 
 
-@relationship_router.put("/product/add/related/{name}/{related_name}")
+@relationship_router.put("/product/{name}/related_to/{related_name}")
 async def add_related_product(
     name: str,
     related_name: str,
@@ -156,7 +156,7 @@ async def add_related_product(
         )
 
 
-@relationship_router.delete("/product/remove/related/{name}/{related_name}")
+@relationship_router.delete("/product/{name}/related_to/{related_name}")
 async def remove_related_product(
     name: str,
     related_name: str,

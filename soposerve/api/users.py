@@ -18,7 +18,7 @@ from soposerve.service import users
 users_router = APIRouter(prefix="/users")
 
 
-@users_router.put("/create/{name}")
+@users_router.put("/{name}")
 async def create_user(
     name: str,
     request: CreateUserRequest,
@@ -43,7 +43,7 @@ async def create_user(
     return CreateUserResponse(api_key=user.api_key)
 
 
-@users_router.get("/read/{name}")
+@users_router.get("/{name}")
 async def read_user(name: str) -> ReadUserResponse:
     """
     Read a user's details, but not their API key.
@@ -57,7 +57,7 @@ async def read_user(name: str) -> ReadUserResponse:
     )
 
 
-@users_router.post("/update/{name}")
+@users_router.post("/{name}/update")
 async def update_user(name: str, request: UpdateUserRequest) -> UpdateUserResponse:
     """
     Update a user's details.
@@ -72,7 +72,7 @@ async def update_user(name: str, request: UpdateUserRequest) -> UpdateUserRespon
     return UpdateUserResponse(api_key=user.api_key if request.refresh_key else None)
 
 
-@users_router.delete("/delete/{name}")
+@users_router.delete("/{name}")
 async def delete_user(name: str) -> None:
     """
     Delete a user.

@@ -14,7 +14,7 @@ from soposerve.service.users import Privilege
 
 def test_create_user_that_exists(test_api_client: TestClient, test_api_user: str):
     response = test_api_client.put(
-        f"/users/create/{test_api_user}",
+        f"/users/{test_api_user}",
         json={"privileges": [Privilege.DOWNLOAD.value, Privilege.LIST.value]},
     )
 
@@ -22,7 +22,7 @@ def test_create_user_that_exists(test_api_client: TestClient, test_api_user: str
 
 
 def test_read_user(test_api_client: TestClient, test_api_user: str):
-    response = test_api_client.get(f"/users/read/{test_api_user}")
+    response = test_api_client.get(f"/users/{test_api_user}")
 
     assert response.status_code == 200
     validated = ReadUserResponse.model_validate(response.json())
@@ -32,7 +32,7 @@ def test_read_user(test_api_client: TestClient, test_api_user: str):
 
 def test_update_user(test_api_client: TestClient, test_api_user: str):
     response = test_api_client.post(
-        f"/users/update/{test_api_user}",
+        f"/users/{test_api_user}/update",
         json={"privileges": [Privilege.UPLOAD.value], "refresh_key": True},
     )
 
@@ -41,7 +41,7 @@ def test_update_user(test_api_client: TestClient, test_api_user: str):
     assert validated.api_key is not None
 
     response = test_api_client.post(
-        f"/users/update/{test_api_user}",
+        f"/users/{test_api_user}/update",
         json={"privileges": [Privilege.LIST.value], "refresh_key": False},
     )
 

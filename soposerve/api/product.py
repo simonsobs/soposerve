@@ -17,7 +17,7 @@ product_router = APIRouter(prefix="/product")
 DEFAULT_USER_USER_NAME = "default_user"
 
 
-@product_router.put("/create/{name}")
+@product_router.put("/{name}")
 async def create_product(
     name: str,
     request: Request,
@@ -58,7 +58,7 @@ async def create_product(
     return CreateProductResponse(upload_urls=presigned)
 
 
-@product_router.get("/read/{name}")
+@product_router.get("/{name}")
 async def read_product(
     name: str,
     request: Request,
@@ -88,7 +88,7 @@ async def read_product(
     )
 
 
-@product_router.post("/update/{name}")
+@product_router.post("/{name}/update")
 async def update_product(name: str, model: UpdateProductRequest) -> None:
     """
     Update a product's details.
@@ -113,7 +113,7 @@ async def update_product(name: str, model: UpdateProductRequest) -> None:
     )
 
 
-@product_router.post("/confirm/{name}")
+@product_router.post("/{name}/confirm")
 async def confirm_product(name: str, request: Request) -> None:
     """
     Confirm a product's sources.
@@ -136,7 +136,7 @@ async def confirm_product(name: str, request: Request) -> None:
         )
 
 
-@product_router.delete("/delete/{name}")
+@product_router.delete("/{name}")
 async def delete_product(
     name: str,
     request: Request,

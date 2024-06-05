@@ -22,7 +22,7 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
     ]
 
     response = test_api_client.put(
-        f"/product/create/{TEST_PRODUCT_NAME}",
+        f"/product/{TEST_PRODUCT_NAME}",
         json={
             "description": TEST_PRODUCT_DESCRIPTION,
             "metadata": {"metadata_type": "simple"},
@@ -42,21 +42,21 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
         assert response.status_code == 200
 
     # And check...
-    response = test_api_client.post(f"/product/confirm/{TEST_PRODUCT_NAME}")
+    response = test_api_client.post(f"/product/{TEST_PRODUCT_NAME}/confirm")
 
     assert response.status_code == 200
 
     yield TEST_PRODUCT_NAME
 
     response = test_api_client.delete(
-        f"/product/delete/{TEST_PRODUCT_NAME}", params={"data": True}
+        f"/product/{TEST_PRODUCT_NAME}", params={"data": True}
     )
     assert response.status_code == 200
 
 
 def test_upload_product_again(test_api_client: TestClient, test_api_product: str):
     response = test_api_client.put(
-        f"/product/create/{test_api_product}",
+        f"/product/{test_api_product}",
         json={
             "description": "test_description",
             "metadata": {"metadata_type": "simple"},
@@ -76,7 +76,7 @@ def test_read_product(
     test_api_product: str,
     test_api_user: str,
 ):
-    response = test_api_client.get(f"/product/read/{test_api_product}")
+    response = test_api_client.get(f"/product/{test_api_product}")
 
     assert response.status_code == 200
     validated = ReadProductResponse.model_validate(response.json())
@@ -95,14 +95,14 @@ def test_read_product(
 def test_read_product_not_found(
     test_api_client: TestClient,
 ):
-    response = test_api_client.get("/product/read/not_a_real_product")
+    response = test_api_client.get("/product/not_a_real_product")
 
     assert response.status_code == 404
 
 
 def test_update_product(test_api_client: TestClient, test_api_product: str):
     response = test_api_client.post(
-        f"/product/update/{test_api_product}",
+        f"/product/{test_api_product}/update",
         json={
             "description": "new_description",
             "metadata": {"metadata_type": "simple"},
@@ -112,7 +112,7 @@ def test_update_product(test_api_client: TestClient, test_api_product: str):
 
     assert response.status_code == 200
 
-    response = test_api_client.get(f"/product/read/{test_api_product}")
+    response = test_api_client.get(f"/product/{test_api_product}")
     validated = ReadProductResponse.model_validate(response.json())
 
     assert validated.description == "new_description"
@@ -123,7 +123,7 @@ def test_update_product_invalid_owner(
     test_api_client: TestClient, test_api_product: str
 ):
     response = test_api_client.post(
-        f"/product/update/{test_api_product}",
+        f"/product/{test_api_product}/update",
         json={"description": "new_description", "owner": "not_exist_user"},
     )
 
@@ -134,32 +134,32 @@ def test_update_product_no_owner_change(
     test_api_client: TestClient, test_api_product: str
 ):
     response = test_api_client.post(
-        f"/product/update/{test_api_product}",
+        f"/product/{test_api_product}/update",
         json={"description": "New description, again!"},
     )
 
     assert response.status_code == 200
 
-    response = test_api_client.get(f"/product/read/{test_api_product}")
+    response = test_api_client.get(f"/product/{test_api_product}")
     validated = ReadProductResponse.model_validate(response.json())
 
     assert validated.description == "New description, again!"
 
 
 def test_confirm_product(test_api_client: TestClient, test_api_product: str):
-    response = test_api_client.post(f"/product/confirm/{test_api_product}")
+    response = test_api_client.post(f"/product/{test_api_product}/confirm")
 
     assert response.status_code == 200
     assert response.json() is None
 
-    response = test_api_client.post(f"/product/confirm/not_{test_api_product}")
+    response = test_api_client.post(f"/product/not_{test_api_product}/confirm")
     assert response.status_code == 404
 
 
 def test_confirm_product_product_not_existing(test_api_client):
     TEST_PRODUCT_NAME = "product_we_never_uploaded"
     response = test_api_client.put(
-        f"/product/create/{TEST_PRODUCT_NAME}",
+        f"/product/{TEST_PRODUCT_NAME}",
         json={
             "description": "A test product that was never uploaded.",
             "metadata": None,
@@ -174,8 +174,7 @@ def test_confirm_product_product_not_existing(test_api_client):
     assert response.status_code == 200
     _ = CreateProductResponse.model_validate(response.json())
 
-    # Now we have to actually upload the files.
     # And check...
-    response = test_api_client.post(f"/product/confirm/{TEST_PRODUCT_NAME}")
+    response = test_api_client.post(f"/product/{TEST_PRODUCT_NAME}/confirm")
 
     assert response.status_code == 424
