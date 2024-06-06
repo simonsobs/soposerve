@@ -4,7 +4,7 @@ Pydantic models for the product API layer.
 
 from pydantic import BaseModel
 
-from soposerve.database.metadata import ALL_METADATA_TYPE
+from sopometa import ALL_METADATA_TYPE
 from soposerve.service.product import PostUploadFile, PreUploadFile
 
 

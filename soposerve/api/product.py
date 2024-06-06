@@ -4,13 +4,14 @@ Routes for the product service.
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from soposerve.api.auth import Privilege, UserDependency, check_user_for_privilege
+from soposerve.api.auth import UserDependency, check_user_for_privilege
 from soposerve.api.models.product import (
     CreateProductRequest,
     CreateProductResponse,
     ReadProductResponse,
     UpdateProductRequest,
 )
+from soposerve.database import Privilege
 from soposerve.service import product, users
 
 product_router = APIRouter(prefix="/product")

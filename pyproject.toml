@@ -2,6 +2,9 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+exclude=["*tests*", "*examples*", "*htmlcov*"]
+
 [project]
 name = "soposerve"
 version = "0.0.1a1"

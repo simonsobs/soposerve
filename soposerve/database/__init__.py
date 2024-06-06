@@ -8,7 +8,7 @@ from enum import Enum
 from beanie import BackLink, Document, Indexed, Link
 from pydantic import BaseModel, Field
 
-from soposerve.database.metadata import ALL_METADATA_TYPE
+from sopometa import ALL_METADATA_TYPE
 
 
 class Privilege(Enum):
@@ -65,7 +65,7 @@ class Product(Document):
     uploaded: datetime
     updated: datetime
 
-    metadata: ALL_METADATA_TYPE = Field(..., descriminator="metdata_type")
+    metadata: ALL_METADATA_TYPE
 
     owner: Link[User]
 

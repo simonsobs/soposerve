@@ -4,12 +4,13 @@ API endpoints for relationships between products and collections.
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from soposerve.api.auth import Privilege, UserDependency, check_user_for_privilege
+from soposerve.api.auth import UserDependency, check_user_for_privilege
 from soposerve.api.models.relationships import (
     CreateCollectionRequest,
     ReadCollectionProductResponse,
     ReadCollectionResponse,
 )
+from soposerve.database import Privilege
 from soposerve.service import collection, product
 
 relationship_router = APIRouter(prefix="/relationships")

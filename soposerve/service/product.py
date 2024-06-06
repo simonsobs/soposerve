@@ -7,8 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from sopometa import ALL_METADATA_TYPE
 from soposerve.database import Collection, Product, User
-from soposerve.database.metadata import ALL_METADATA_TYPE
 from soposerve.service import storage as storage_service
 from soposerve.storage import Storage
 
