@@ -3,6 +3,8 @@ A simple SOPO server example. This runs with uvicorn,
 and serves the web frontend at http://localhost:8000/web.
 Containers for Mongo and Minio are provided through
 testcontainers; the same patterns are used in testing.
+Additionally, you will want to turn off "debug",
+"create_test_user", and any other non-production settings.
 
 Once you've started up your server, you can use
 the simpleupload.py script to upload any example
@@ -52,6 +54,7 @@ def containers_to_environment(
         "debug": "yes",
         "add_cors": "yes",
         "web": "yes",
+        "create_test_user": "yes",
     }
 
     os.environ.update(settings)
