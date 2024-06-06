@@ -67,7 +67,7 @@ def main():
 
             from soposerve.api.app import app
 
-            config = uvicorn.Config(app, port=8000)
+            config = uvicorn.Config(app, port=8000, reload=True)
             server = uvicorn.Server(config)
 
             server.run()

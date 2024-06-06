@@ -6,6 +6,22 @@
 </head>
 <body>
     <h1>Simons Observatory Post Office</h1>
+    <h2>Recently Created Collections</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Number of Products</th>
+        </tr>
+        {% for collection in collections %}
+        <tr>
+            <td><a href='collections/{{ collection.name | e }}'>{{ collection.name }}</a></td>
+            <td>{{ collection.description }}</td>
+            <td>{{ collection.created }}</td>
+            <td>{{ collection.products|length }}</td>
+        </tr>
+        {% endfor %}
+    </table>
     <h2>Recently Uploaded Products</h2>
     <table>
         <tr>
@@ -16,7 +32,7 @@
         </tr>
         {% for product in products %}
         <tr>
-            <td><a href='{{ product.name }}'>{{ product.name }}</a></td>
+            <td><a href='products/{{ product.name | e }}'>{{ product.name }}</a></td>
             <td>{{ product.description }}</td>
             <td>{{ product.uploaded }}</td>
             <td>{{ product.owner.name }}</td>

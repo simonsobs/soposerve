@@ -39,6 +39,13 @@ async def read(
     return collection
 
 
+async def read_most_recent(
+    fetch_links: bool = False, maximum: int = 16
+) -> list[Collection]:
+    # TODO: Implement updated time for collections.
+    return await Collection.find(fetch_links=fetch_links).to_list(maximum)
+
+
 async def update(
     name: str,
     description: str | None,

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simons Observatory Post Office</title>
+</head>
+<body>
+    <h1>Collection Listing</h1>
+    <h2>{{ collection.name }}</h2>
+    <p>{{ collection.description }}</p>
+    <p>Collection members:
+        <ul>
+            {% for product in collection.products %}
+            <li><a href='../products/{{ product.name | e}}'>{{ product.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </p>
+</body>
+</html>

@@ -11,26 +11,44 @@
     <p>Uploaded: {{ product.uploaded }}</p>
     <p>Modified: {{ product.updated }}</p>
     <p>Owner: {{ product.owner.name }}</p>
-    {% if product.child_of != [] }
+    {% if product.metadata %}
+    <p>Metadata:
+        <ul>
+            {% for key, value in product.metadata.model_dump().items() %}
+            <li>{{ key }}: {{ value }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% if product.child_of %}
     <p>
         Parents:
         <ul>
             {% for parent in product.child_of %}
-            <li><a href='{{ parent.name }}'>{{ parent.name }}</a></li>
+            <li><a href='{{ parent.name | e}}'>{{ parent.name }}</a></li>
             {% endfor %}
         </ul>
     </p>
     {% endif %}
-    {% if product.parent_of != [] }
+    {% if product.parent_of %}
     <p>
         Children:
         <ul>
             {% for child in product.parent_of %}
-            <li><a href='{{ child.name }}'>{{ child.name }}</a></li>
+            <li><a href='{{ child.name | e }}'>{{ child.name }}</a></li>
             {% endfor %}
         </ul>
     </p>
     {% endif %}
+    {% if product.collections %}
+    <p>
+        Member of collections:
+        <ul>
+            {% for collection in product.collections %}
+            <li><a href='../collections/{{ collection.name | e }}'>{{ collection.name }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    </p>
     <p>Sources:
         <ul>
             {% for source in sources %}

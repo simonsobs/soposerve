@@ -212,7 +212,7 @@ class Client:
         """
 
         response = self.http.put(
-            f"/collection/{name}", json={"description": description}
+            f"/relationships/collection/{name}", json={"description": description}
         )
 
         response.raise_for_status()
@@ -231,7 +231,7 @@ class Client:
             The name of the product.
         """
 
-        response = self.http.put(f"/collection/{name}/product/{product}")
+        response = self.http.put(f"/relationships/collection/{name}/{product}")
 
         response.raise_for_status()
 
@@ -252,7 +252,7 @@ class Client:
             The name of the product.
         """
 
-        response = self.http.delete(f"/collection/{name}/product/{product}")
+        response = self.http.delete(f"/relationships/collection/{name}/{product}")
 
         response.raise_for_status()
 
@@ -274,7 +274,7 @@ class Client:
             The name of the collection.
         """
 
-        response = self.http.delete(f"/collection/{name}")
+        response = self.http.delete(f"/relationships/collection/{name}")
 
         response.raise_for_status()
 

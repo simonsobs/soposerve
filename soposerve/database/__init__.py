@@ -80,6 +80,7 @@ class Product(Document):
 
 
 class Collection(Document):
+    # TODO: Implement updated time for collections.
     name: str = Indexed(str, unique=True)
     description: str
     products: list[BackLink[Product]] = Field(
