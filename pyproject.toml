@@ -12,6 +12,9 @@ requires-python = ">=3.11"
 dependencies = [
     "pydantic",
     "pydantic-settings",
+    # 4.1.0 and above introduce a deprecation warning
+    # that breaks the latest versions of asyncer.
+    "anyio<4.1.0",
     "asyncer",
     "fastapi",
     "uvicorn",
