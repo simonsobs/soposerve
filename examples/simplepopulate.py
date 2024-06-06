@@ -19,7 +19,7 @@ if __name__ == "__main__":
         description="A collection of ACT DR4 maps.",
     )
 
-    for fits_file in list(Path(".").glob("*.fits"))[0:3]:
+    for fits_file in Path(".").glob("*.fits"):
         client.create_product(
             name=fits_file.stem,
             description="An ACT map.",
