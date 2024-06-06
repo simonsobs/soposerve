@@ -27,6 +27,17 @@ async def lifespan(app: FastAPI):
         access_key=SETTINGS.minio_access,
         secret_key=SETTINGS.minio_secret,
     )
+
+    if SETTINGS.create_test_user:
+        from soposerve.service import users
+
+        user = await users.create(name="admin", privileges=list(users.Privilege))
+        await user.set({users.User.api_key: "TEST_API_KEY"})
+        print(
+            f"Created test user: {user.name} with API key: {user.api_key}. "
+            "You should NOT see this message in production."
+        )
+
     print("Startup complete")
     yield
     print("Shutdown complete")

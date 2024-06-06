@@ -15,7 +15,12 @@ from soposerve.service.users import Privilege
 def test_create_user_that_exists(test_api_client: TestClient, test_api_user: str):
     response = test_api_client.put(
         f"/users/{test_api_user}",
-        json={"privileges": [Privilege.DOWNLOAD.value, Privilege.LIST.value]},
+        json={
+            "privileges": [
+                Privilege.DOWNLOAD_PRODUCTS.value,
+                Privilege.LIST_PRODUCTS.value,
+            ]
+        },
     )
 
     assert response.status_code == 409
@@ -33,7 +38,7 @@ def test_read_user(test_api_client: TestClient, test_api_user: str):
 def test_update_user(test_api_client: TestClient, test_api_user: str):
     response = test_api_client.post(
         f"/users/{test_api_user}/update",
-        json={"privileges": [Privilege.UPLOAD.value], "refresh_key": True},
+        json={"privileges": [Privilege.UPLOAD_PRODUCTS.value], "refresh_key": True},
     )
 
     assert response.status_code == 200
@@ -42,7 +47,7 @@ def test_update_user(test_api_client: TestClient, test_api_user: str):
 
     response = test_api_client.post(
         f"/users/{test_api_user}/update",
-        json={"privileges": [Privilege.LIST.value], "refresh_key": False},
+        json={"privileges": [Privilege.LIST_PRODUCTS.value], "refresh_key": False},
     )
 
     assert response.status_code == 200

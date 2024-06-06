@@ -19,5 +19,8 @@ class Settings(BaseSettings):
     debug: bool = True
     web: bool = False
 
+    create_test_user: bool = False
+    "Create a test user with API key 'TEST_API_KEY' and all privaleges on startup."
+
 
 SETTINGS = Settings()

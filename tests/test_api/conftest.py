@@ -1,6 +1,6 @@
 import os
 
-import pytest_asyncio
+import pytest
 from fastapi.testclient import TestClient
 
 from soposerve.api.models.users import CreateUserResponse
@@ -9,7 +9,7 @@ from soposerve.database import Privilege
 ### -- Service Mock Fixtures -- ###
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest.fixture(scope="module")
 def test_api_server(database_container, storage_container):
     settings = {
         "mongo_uri": database_container["url"],
@@ -20,6 +20,7 @@ def test_api_server(database_container, storage_container):
         "description": "Test API Description",
         "debug": "yes",
         "add_cors": "yes",
+        "create_test_user": "yes",
     }
     os.environ.update(settings)
 
@@ -28,19 +29,19 @@ def test_api_server(database_container, storage_container):
     yield app
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest.fixture(scope="module")
 def test_api_client(test_api_server):
-    with TestClient(test_api_server) as client:
+    with TestClient(test_api_server, headers={"X-API-Key": "TEST_API_KEY"}) as client:
         yield client
 
 
 ### -- User Fixtures -- ###
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest.fixture(scope="module")
 def test_api_user(test_api_client: TestClient):
     TEST_USER_NAME = "default_user"
-    TEST_USER_PRIVALEGES = [Privilege.DOWNLOAD.value, Privilege.LIST.value]
+    TEST_USER_PRIVALEGES = [x.value for x in Privilege]
 
     response = test_api_client.put(
         f"/users/{TEST_USER_NAME}", json={"privileges": TEST_USER_PRIVALEGES}

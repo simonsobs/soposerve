@@ -12,9 +12,16 @@ from soposerve.database.metadata import ALL_METADATA_TYPE
 
 
 class Privilege(Enum):
-    LIST = 0
-    DOWNLOAD = 1
-    UPLOAD = 2
+    # Product management
+    LIST_PRODUCTS = "list"
+    DOWNLOAD_PRODUCTS = "download"
+    UPLOAD_PRODUCTS = "upload"
+
+    # User management
+    CREATE_USER = "create_user"
+    READ_USER = "read_user"
+    UPDATE_USER = "update_user"
+    DELETE_USER = "delete_user"
 
 
 class ComplianceInformation(BaseModel):

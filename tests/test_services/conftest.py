@@ -34,7 +34,7 @@ async def database(database_container):
 async def created_user(database):
     from soposerve.service import users
 
-    user = await users.create(name="test_user", privileges=[users.Privilege.LIST])
+    user = await users.create(name="test_user", privileges=list(users.Privilege))
 
     yield user
 
