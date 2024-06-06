@@ -4,6 +4,7 @@ API endpoints for relationships between products and collections.
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from soposerve.api.auth import Privilege, UserDependency, check_user_for_privilege
 from soposerve.api.models.relationships import (
     CreateCollectionRequest,
     ReadCollectionProductResponse,
@@ -18,8 +19,12 @@ relationship_router = APIRouter(prefix="/relationships")
 async def create_collection(
     name: str,
     model: CreateCollectionRequest,
+    calling_user: UserDependency,
 ) -> None:
+    await check_user_for_privilege(calling_user, Privilege.CREATE_COLLECTION)
+
     # TODO: What to do if collection exists?
+    # TODO: Collections should have a 'manager' who can change their properties.
     await collection.create(name=name, description=model.description)
 
 
@@ -27,10 +32,13 @@ async def create_collection(
 async def read_collection(
     name: str,
     request: Request,
+    calling_user: UserDependency,
 ) -> ReadCollectionResponse:
     """
     Read a collection's details.
     """
+
+    await check_user_for_privilege(calling_user, Privilege.READ_COLLECTION)
 
     try:
         item = await collection.read(name=name)
@@ -57,7 +65,10 @@ async def read_collection(
 async def add_product_to_collection(
     collection_name: str,
     product_name: str,
+    calling_user: UserDependency,
 ) -> None:
+    await check_user_for_privilege(calling_user, Privilege.UPDATE_COLLECTION)
+
     try:
         coll = await collection.read(name=collection_name)
     except collection.CollectionNotFound:
@@ -77,7 +88,10 @@ async def add_product_to_collection(
 async def remove_product_from_collection(
     collection_name: str,
     product_name: str,
+    calling_user: UserDependency,
 ) -> None:
+    await check_user_for_privilege(calling_user, Privilege.UPDATE_COLLECTION)
+
     try:
         coll = await collection.read(name=collection_name)
     except collection.CollectionNotFound:
@@ -96,7 +110,10 @@ async def remove_product_from_collection(
 @relationship_router.delete("/collection/{name}")
 async def delete_collection(
     name: str,
+    calling_user: UserDependency,
 ) -> None:
+    await check_user_for_privilege(calling_user, Privilege.DELETE_COLLECTION)
+
     try:
         await collection.delete(name=name)
     except collection.CollectionNotFound:
@@ -109,7 +126,10 @@ async def delete_collection(
 async def add_child_product(
     name: str,
     child_name: str,
+    calling_user: UserDependency,
 ) -> None:
+    await check_user_for_privilege(calling_user, Privilege.CREATE_RELATIONSHIP)
+
     try:
         await product.add_relationship(
             source=name,
@@ -126,7 +146,10 @@ async def add_child_product(
 async def remove_child_product(
     name: str,
     child_name: str,
+    calling_user: UserDependency,
 ) -> None:
+    await check_user_for_privilege(calling_user, Privilege.DELETE_RELATIONSHIP)
+
     try:
         await product.remove_relationship(
             source=name,
@@ -143,7 +166,10 @@ async def remove_child_product(
 async def add_related_product(
     name: str,
     related_name: str,
+    calling_user: UserDependency,
 ) -> None:
+    await check_user_for_privilege(calling_user, Privilege.CREATE_RELATIONSHIP)
+
     try:
         await product.add_relationship(
             source=name,
@@ -160,7 +186,10 @@ async def add_related_product(
 async def remove_related_product(
     name: str,
     related_name: str,
+    calling_user: UserDependency,
 ) -> None:
+    await check_user_for_privilege(calling_user, Privilege.DELETE_RELATIONSHIP)
+
     try:
         await product.remove_relationship(
             source=name,

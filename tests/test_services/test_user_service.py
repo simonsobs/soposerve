@@ -17,21 +17,21 @@ async def test_read_user(created_user):
 async def test_update_user(created_user):
     this_user = await users.update(
         name=created_user.name,
-        privileges=[users.Privilege.DOWNLOAD_PRODUCTS],
+        privileges=[users.Privilege.DOWNLOAD_PRODUCT],
         refresh_key=True,
     )
 
     assert this_user.name == created_user.name
-    assert this_user.privileges == [users.Privilege.DOWNLOAD_PRODUCTS]
+    assert this_user.privileges == [users.Privilege.DOWNLOAD_PRODUCT]
 
     this_user = await users.update(
         name=created_user.name,
-        privileges=[users.Privilege.LIST_PRODUCTS],
+        privileges=[users.Privilege.LIST_PRODUCT],
         refresh_key=False,
     )
 
     assert this_user.name == created_user.name
-    assert this_user.privileges == [users.Privilege.LIST_PRODUCTS]
+    assert this_user.privileges == [users.Privilege.LIST_PRODUCT]
 
 
 @pytest.mark.asyncio(scope="session")

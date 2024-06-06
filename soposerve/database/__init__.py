@@ -12,10 +12,24 @@ from soposerve.database.metadata import ALL_METADATA_TYPE
 
 
 class Privilege(Enum):
-    # Product management
-    LIST_PRODUCTS = "list"
-    DOWNLOAD_PRODUCTS = "download"
-    UPLOAD_PRODUCTS = "upload"
+    # Product management. Note that _for now_ users can update any other
+    # user's products.
+    CREATE_PRODUCT = "create_products"
+    LIST_PRODUCT = "list_products"
+    READ_PRODUCT = "read_products"
+    DOWNLOAD_PRODUCT = "download_products"
+    CONFIRM_PRODUCT = "confirm_product"
+    DELETE_PRODUCT = "delete_products"
+    UPDATE_PRODUCT = "update_products"
+
+    # Collection management. Note that _for now_ users can update any
+    # collection
+    CREATE_COLLECTION = "create_collection"
+    READ_COLLECTION = "read_collection"
+    UPDATE_COLLECTION = "update_collection"
+    DELETE_COLLECTION = "delete_collection"
+    CREATE_RELATIONSHIP = "create_relationship"
+    DELETE_RELATIONSHIP = "delete_relationship"
 
     # User management
     CREATE_USER = "create_user"

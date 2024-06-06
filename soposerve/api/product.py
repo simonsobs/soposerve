@@ -4,6 +4,7 @@ Routes for the product service.
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from soposerve.api.auth import Privilege, UserDependency, check_user_for_privilege
 from soposerve.api.models.product import (
     CreateProductRequest,
     CreateProductResponse,
@@ -22,20 +23,13 @@ async def create_product(
     name: str,
     request: Request,
     model: CreateProductRequest,
+    calling_user: UserDependency,
 ) -> CreateProductResponse:
     """
     Create a new product, returning the pre-signed URLs for the sources.
     """
 
-    # TODO: Authentication
-    try:
-        user = await users.read(name=DEFAULT_USER_USER_NAME)
-    # Uncoverable until we have variable users. TODO: Authentication
-    except users.UserNotFound:  # pragma: no cover
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Default user not found.",
-        )
+    await check_user_for_privilege(calling_user, Privilege.CREATE_PRODUCT)
 
     try:
         # TODO: This is an insane way to handle this.
@@ -51,7 +45,7 @@ async def create_product(
             metadata=model.metadata,
             sources=model.sources,
             # TODO: Authentication
-            user=user,
+            user=calling_user,
             storage=request.app.storage,
         )
 
@@ -62,10 +56,13 @@ async def create_product(
 async def read_product(
     name: str,
     request: Request,
+    calling_user: UserDependency,
 ) -> ReadProductResponse:
     """
     Read a product's details.
     """
+
+    await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
         item = await product.read(name=name)
@@ -89,10 +86,15 @@ async def read_product(
 
 
 @product_router.post("/{name}/update")
-async def update_product(name: str, model: UpdateProductRequest) -> None:
+async def update_product(
+    name: str, model: UpdateProductRequest, calling_user: UserDependency
+) -> None:
     """
     Update a product's details.
     """
+
+    # For now only privileged users can update products, and they can update everyone's.
+    await check_user_for_privilege(calling_user, Privilege.UPDATE_PRODUCT)
 
     # TODO: Authentication
     if model.owner is not None:
@@ -114,10 +116,14 @@ async def update_product(name: str, model: UpdateProductRequest) -> None:
 
 
 @product_router.post("/{name}/confirm")
-async def confirm_product(name: str, request: Request) -> None:
+async def confirm_product(
+    name: str, request: Request, calling_user: UserDependency
+) -> None:
     """
     Confirm a product's sources.
     """
+
+    await check_user_for_privilege(calling_user, Privilege.CONFIRM_PRODUCT)
 
     try:
         success = await product.confirm(
@@ -140,10 +146,13 @@ async def confirm_product(name: str, request: Request) -> None:
 async def delete_product(
     name: str,
     request: Request,
+    calling_user: UserDependency,
     data: bool = False,
 ) -> None:
     """
     Delete a product.
     """
+
+    await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
     await product.delete(name=name, storage=request.app.storage, data=data)

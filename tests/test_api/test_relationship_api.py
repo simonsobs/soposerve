@@ -61,7 +61,7 @@ def test_read_collection(
     for product in response.json()["products"]:
         assert product["name"] in product_names
         assert product["description"] == "test_description"
-        assert product["owner"] == "default_user"
+        assert product["owner"] == "admin"
 
 
 def test_create_child_relationship(test_api_client, test_api_products_for_use):

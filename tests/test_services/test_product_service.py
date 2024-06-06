@@ -53,7 +53,7 @@ async def test_add_to_collection(created_collection, created_full_product, datab
 @pytest.mark.asyncio(scope="session")
 async def test_update(created_full_product, database):
     new_user = await users.create(
-        name="new_user", privileges=[users.Privilege.LIST_PRODUCTS]
+        name="new_user", privileges=[users.Privilege.LIST_PRODUCT]
     )
 
     updated_product = await product.update(
