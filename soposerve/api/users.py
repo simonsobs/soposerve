@@ -6,6 +6,7 @@ TODO: Authentication.
 
 from fastapi import APIRouter, HTTPException, status
 
+from soposerve.api.auth import UserDependency, check_user_for_privilege
 from soposerve.api.models.users import (
     CreateUserRequest,
     CreateUserResponse,
@@ -22,11 +23,14 @@ users_router = APIRouter(prefix="/users")
 async def create_user(
     name: str,
     request: CreateUserRequest,
+    calling_user: UserDependency,
     # TODO: Compliance
 ) -> CreateUserResponse:
     """
     Create a new user.
     """
+
+    await check_user_for_privilege(calling_user, users.Privilege.CREATE_USER)
 
     try:
         user = await users.read(name=name)
@@ -44,10 +48,13 @@ async def create_user(
 
 
 @users_router.get("/{name}")
-async def read_user(name: str) -> ReadUserResponse:
+async def read_user(name: str, calling_user: UserDependency) -> ReadUserResponse:
     """
     Read a user's details, but not their API key.
     """
+
+    if name != calling_user.name:
+        await check_user_for_privilege(calling_user, users.Privilege.READ_USER)
 
     user = await users.read(name=name)
 
@@ -58,10 +65,14 @@ async def read_user(name: str) -> ReadUserResponse:
 
 
 @users_router.post("/{name}/update")
-async def update_user(name: str, request: UpdateUserRequest) -> UpdateUserResponse:
+async def update_user(
+    name: str, request: UpdateUserRequest, calling_user: UserDependency
+) -> UpdateUserResponse:
     """
-    Update a user's details.
+    Update a user's details. At present, only admins can update users.
     """
+
+    await check_user_for_privilege(calling_user, users.Privilege.UPDATE_USER)
 
     user = await users.update(
         name=name,
@@ -73,10 +84,12 @@ async def update_user(name: str, request: UpdateUserRequest) -> UpdateUserRespon
 
 
 @users_router.delete("/{name}")
-async def delete_user(name: str) -> None:
+async def delete_user(name: str, calling_user: UserDependency) -> None:
     """
     Delete a user.
     """
+
+    await check_user_for_privilege(calling_user, users.Privilege.DELETE_USER)
 
     await users.delete(name=name)
 
