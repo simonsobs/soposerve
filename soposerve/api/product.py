@@ -45,6 +45,7 @@ async def create_product(
             description=model.description,
             metadata=model.metadata,
             sources=model.sources,
+            version=model.version,
             # TODO: Authentication
             user=calling_user,
             storage=request.app.storage,
@@ -60,23 +61,27 @@ async def read_product(
     calling_user: UserDependency,
 ) -> ReadProductResponse:
     """
-    Read a product's details.
+    Read a product's details (only latest version)
     """
 
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
         item = await product.read(name=name)
+        item_version = item.versions[item.current_version]
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
         )
 
-    sources = await product.presign_read(product=item, storage=request.app.storage)
+    sources = await product.presign_read(
+        product=item, storage=request.app.storage, version=item.current_version
+    )
 
     return ReadProductResponse(
         name=item.name,
-        description=item.description,
+        version=item.current_version,
+        description=item_version.description,
         sources=sources,
         owner=item.owner.name,
         related_to=[x.name for x in item.related_to],
@@ -111,6 +116,7 @@ async def update_product(
 
     await product.update(
         name=name,
+        version=model.version,
         description=model.description,
         owner=user,
     )

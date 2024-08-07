@@ -38,6 +38,22 @@ class Privilege(Enum):
     DELETE_USER = "delete_user"
 
 
+class CollectionPolicy(Enum):
+    # What to do when versions are revved of products.
+    # Keep track of all versions of the product in the collection.
+    ALL = "all"
+    # Keep track of all new versions of the product in the collection.
+    # E.g. if v2 is added to a collection, v1 is _not_ but all future
+    # versions will be tracked as part of that collection.
+    NEW = "new"
+    # Keep track of only the 'current' version of the product.
+    CURRENT = "current"
+    # Keep track of only a 'fixed' version of the product. So if v2 is
+    # added to the collection, and v3 is created, only v2 is tracked in
+    # the collection.
+    FIXED = "fixed"
+
+
 class ComplianceInformation(BaseModel):
     nersc_username: str | None
 
@@ -51,32 +67,38 @@ class User(Document):
 
 
 class File(Document):
-    name: str = Indexed(str, unique=True)
+    name: str
     uploader: str
     uuid: str
     bucket: str
     size: int
     checksum: str
+    available: bool = True
 
 
 class Product(Document):
-    name: str = Indexed(str, unique=True)
+    name: str = Indexed(str)
     description: str
+    metadata: ALL_METADATA_TYPE
+
     uploaded: datetime
     updated: datetime
 
-    metadata: ALL_METADATA_TYPE
-
-    owner: Link[User]
+    current: bool
+    version: str
 
     sources: list[File]
+    owner: Link[User]
+
+    replaces: Link["Product"] | None = None
 
     child_of: list[Link["Product"]] = []
     parent_of: list[BackLink["Product"]] = Field(
         json_schema_extra={"original_field": "child_of"}, default=[]
     )
-    related_to: list[Link["Product"]] = []
+
     collections: list[Link["Collection"]] = []
+    collection_policies: list[CollectionPolicy] = []
 
 
 class Collection(Document):

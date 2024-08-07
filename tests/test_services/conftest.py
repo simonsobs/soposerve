@@ -49,7 +49,11 @@ async def created_full_product(database, storage, created_user):
     PRODUCT_DESCRIPTION = "The best product ever."
     FILE_CONTENTS = b"0x0" * 1024
     SOURCES = [
-        product.PreUploadFile(name=f"test_{x}.txt", size=1024, checksum="eh_whatever")
+        product.PreUploadFile(
+            name=f"test_{x}.txt",
+            size=1024,
+            checksum="eh_whatever",
+        )
         for x in range(4)
     ]
 
@@ -62,7 +66,7 @@ async def created_full_product(database, storage, created_user):
         storage=storage,
     )
 
-    assert not await product.confirm(PRODUCT_NAME, storage)
+    assert not await product.confirm(data, storage)
 
     with io.BytesIO(FILE_CONTENTS) as f:
         for put in file_puts.values():
@@ -70,11 +74,14 @@ async def created_full_product(database, storage, created_user):
             f.seek(0)
             requests.put(put, f)
 
-    assert await product.confirm(PRODUCT_NAME, storage)
+    assert await product.confirm(data, storage)
 
     yield data
 
-    await product.delete(name=data.name, storage=storage, data=True)
+    # Go get it again just in case someone mutated, revved, etc.
+    data = await product.read_by_name(name=data.name, version=None)
+
+    await product.delete_tree(data, storage=storage, data=True)
 
 
 @pytest_asyncio.fixture(scope="session")

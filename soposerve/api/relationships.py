@@ -54,7 +54,7 @@ async def read_collection(
         products=[
             ReadCollectionProductResponse(
                 name=x.name,
-                description=x.description,
+                description=x.versions[x.current_version].description,
                 owner=x.owner.name,
             )
             for x in item.products

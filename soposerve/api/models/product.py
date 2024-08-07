@@ -12,6 +12,7 @@ class CreateProductRequest(BaseModel):
     description: str
     metadata: ALL_METADATA_TYPE
     sources: list[PreUploadFile]
+    version: str = "1.0.0"
 
 
 class CreateProductResponse(BaseModel):
@@ -20,6 +21,7 @@ class CreateProductResponse(BaseModel):
 
 class ReadProductResponse(BaseModel):
     name: str
+    version: str
     description: str
     sources: list[PostUploadFile]
     owner: str
@@ -30,5 +32,6 @@ class ReadProductResponse(BaseModel):
 
 
 class UpdateProductRequest(BaseModel):
+    version: str
     description: str | None = None
     owner: str | None = None

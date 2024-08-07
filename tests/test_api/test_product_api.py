@@ -65,6 +65,7 @@ def test_upload_product_again(test_api_client: TestClient, test_api_product: str
                     name="test_file", size=100, checksum="test_checksum"
                 ).model_dump()
             ],
+            "version": "1.0.0",
         },
     )
 
@@ -107,6 +108,7 @@ def test_update_product(test_api_client: TestClient, test_api_product: str):
             "description": "new_description",
             "metadata": {"metadata_type": "simple"},
             "owner": "default_user",
+            "version": "1.1.0",
         },
     )
 
@@ -124,7 +126,11 @@ def test_update_product_invalid_owner(
 ):
     response = test_api_client.post(
         f"/product/{test_api_product}/update",
-        json={"description": "new_description", "owner": "not_exist_user"},
+        json={
+            "description": "new_description",
+            "owner": "not_exist_user",
+            "version": "1.1.0",
+        },
     )
 
     assert response.status_code == 406
@@ -135,7 +141,7 @@ def test_update_product_no_owner_change(
 ):
     response = test_api_client.post(
         f"/product/{test_api_product}/update",
-        json={"description": "New description, again!"},
+        json={"description": "New description, again!", "version": "2.0.0"},
     )
 
     assert response.status_code == 200
