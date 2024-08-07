@@ -128,6 +128,27 @@ async def read_by_id(id: PydanticObjectId) -> Product:
     return potential
 
 
+async def walk_to_current(product: Product) -> Product:
+    """
+    Walk the list of products until you get to the one
+    marked 'current'.
+    """
+
+    # Re-read the product from the database, in case it
+    # is stale!
+    product = await read_by_id(id=product.id)
+
+    while not product.current:
+        product = await Product.find_one(
+            Product.replaces.id == product.id, **LINK_POLICY
+        )
+
+        if product is None:
+            raise RuntimeError
+
+    return product
+
+
 async def confirm(product: Product, storage: Storage) -> bool:
     for file in product.sources:
         if not await storage_service.confirm(file=file, storage=storage):
@@ -265,7 +286,7 @@ async def update_sources(
 
     if len(existing_names & drop_names) != len(drop_names):
         raise FileNotFoundError
-    
+
     presigned_new, pre_upload_sources_new = await presign_uploads(
         sources=new,
         storage=storage,
@@ -286,7 +307,9 @@ async def update_sources(
     # Final check -
     expected_number_of_sources = len(product.sources) - len(drop) + len(new)
 
-    if not (len(keep_sources) + len(pre_upload_sources)) == expected_number_of_sources:
+    if (
+        not (len(keep_sources) + len(pre_upload_sources)) == expected_number_of_sources
+    ):  # pragma: no cover
         raise RuntimeError
 
     product.sources = pre_upload_sources + keep_sources
@@ -302,9 +325,9 @@ async def update(
     description: str | None,
     metadata: ALL_METADATA_TYPE | None,
     owner: User | None,
-    new_sources: list[PreUploadFile] | None,
-    replace_sources: list[PreUploadFile] | None,
-    drop_sources: list[str] | None,
+    new_sources: list[PreUploadFile],
+    replace_sources: list[PreUploadFile],
+    drop_sources: list[str],
     storage: Storage,
     level: versioning.VersionRevision,
 ) -> tuple[Product, dict[str, str]]:
@@ -325,16 +348,19 @@ async def update(
     # So we just re-fetch our object from the database.
     new_product = await read_by_id(new_product.id)
 
-    if any(
-        [new_sources is not None, replace_sources is not None, drop_sources is not None]
-    ):
-        new_product, presigned = await update_sources(
-            product=new_product,
-            new=new_sources,
-            replace=replace_sources,
-            drop=drop_sources,
-            storage=storage,
-        )
+    if any([len(new_sources) > 0, len(replace_sources) > 0, len(drop_sources) > 0]):
+        try:
+            new_product, presigned = await update_sources(
+                product=new_product,
+                new=new_sources,
+                replace=replace_sources,
+                drop=drop_sources,
+                storage=storage,
+            )
+        except Exception as e:
+            # Need to roll-back our new product. Full transactions when?
+            await delete_one(new_product, storage=storage, data=False)
+            raise e
     else:
         presigned = {}
 
@@ -357,7 +383,7 @@ async def delete_one(
         replaces = product.replaces
         replaces.current = True
     else:
-        replaced_by = await Product.find_one(Product.replaces == product)
+        replaced_by = await Product.find_one(Product.replaces.id == product.id)
         replaces = product.replaces
         replaced_by.replaces = replaces
 
@@ -379,7 +405,6 @@ async def delete_one(
 
     # Deletion of only uniquely created (in this specific version of the product)
     # data products.
-    # TODO: This will require a custom test to see if this logic really works!
 
     if data:
         for file in product.sources:

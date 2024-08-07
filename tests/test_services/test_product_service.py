@@ -83,13 +83,17 @@ async def test_update_metadata(created_full_product, database, storage):
 
     existing_version = created_full_product.version
 
-    await product.update_metadata(
+    await product.update(
         created_full_product,
         name=None,
         description="New description",
         owner=new_user,
         metadata={"metadata_type": "simple"},
         level=versioning.VersionRevision.MAJOR,
+        new_sources=[],
+        replace_sources=[],
+        drop_sources=[],
+        storage=storage,
     )
 
     new_product = await product.read_by_name(
@@ -127,9 +131,7 @@ async def test_update_metadata(created_full_product, database, storage):
 async def test_update_sources(created_full_product, database, storage):
     # Get the current version of the created_full_product in case it has been
     # mutated.
-    created_full_product = await product.read_by_name(
-        created_full_product.name, version=None
-    )
+    created_full_product = await product.walk_to_current(product=created_full_product)
 
     assert created_full_product.current
 
@@ -178,6 +180,71 @@ async def test_update_sources(created_full_product, database, storage):
 
     for source in new:
         assert source.name in [x.name for x in new_product.sources]
+
+
+@pytest.mark.asyncio(scope="session")
+async def test_update_sources_failure_modes(created_full_product, database, storage):
+    created_full_product = await product.walk_to_current(product=created_full_product)
+
+    # Check we do not rev the version when stuff fails!
+    starting_version = created_full_product.version
+
+    with pytest.raises(FileExistsError):
+        await product.update(
+            await product.walk_to_current(created_full_product),
+            None,
+            None,
+            None,
+            None,
+            new_sources=[
+                product.PreUploadFile(
+                    name=created_full_product.sources[0].name,
+                    size=created_full_product.sources[0].size,
+                    checksum=created_full_product.sources[0].checksum,
+                )
+            ],
+            replace_sources=[],
+            drop_sources=[],
+            storage=storage,
+            level=versioning.VersionRevision.MINOR,
+        )
+
+    with pytest.raises(FileNotFoundError):
+        await product.update(
+            await product.walk_to_current(created_full_product),
+            None,
+            None,
+            None,
+            None,
+            new_sources=[],
+            replace_sources=[
+                product.PreUploadFile(
+                    name=created_full_product.sources[0].name + "ABCD",
+                    size=created_full_product.sources[0].size,
+                    checksum=created_full_product.sources[0].checksum,
+                )
+            ],
+            drop_sources=[],
+            storage=storage,
+            level=versioning.VersionRevision.MINOR,
+        )
+
+    with pytest.raises(FileNotFoundError):
+        await product.update(
+            await product.walk_to_current(created_full_product),
+            None,
+            None,
+            None,
+            None,
+            new_sources=[],
+            replace_sources=[],
+            drop_sources=["non_existent_file.fake"],
+            storage=storage,
+            level=versioning.VersionRevision.MINOR,
+        )
+
+    current = await product.walk_to_current(created_full_product)
+    assert current.version == starting_version
 
 
 @pytest.mark.asyncio(scope="session")
@@ -271,3 +338,76 @@ async def test_add_relationships(database, created_user, created_full_product, s
         storage=storage,
         data=True,
     )
+
+
+@pytest.mark.asyncio(scope="session")
+async def test_product_middle_deletion(database, created_user, storage):
+    initial, _ = await product.create(
+        name="Middle-out Product",
+        description="Trying to remove version 1.0.1",
+        metadata={"metadata_type": "simple"},
+        sources=[],
+        user=created_user,
+        storage=storage,
+    )
+
+    middle, uploads = await product.update(
+        initial,
+        None,
+        None,
+        None,
+        None,
+        [
+            product.PreUploadFile(
+                name="to_be_deleted.txt", size=128, checksum="not_important"
+            )
+        ],
+        [],
+        [],
+        storage=storage,
+        level=versioning.VersionRevision.PATCH,
+    )
+
+    # Upload that file.
+
+    FILE_CONTENTS = b"0x0" * 128
+
+    with io.BytesIO(FILE_CONTENTS) as f:
+        for put in uploads.values():
+            # Must go back to the start or we write 0 bytes!
+            f.seek(0)
+            requests.put(put, f)
+
+    assert await product.confirm(middle, storage)
+
+    final, _ = await product.update(
+        middle,
+        None,
+        None,
+        None,
+        None,
+        new_sources=[],
+        replace_sources=[],
+        drop_sources=["to_be_deleted.txt"],
+        storage=storage,
+        level=versioning.VersionRevision.PATCH,
+    )
+
+    await product.delete_one(middle, storage, data=True)
+
+    # Refresh them from the database to give this the best chance
+    initial = await product.read_by_id(initial.id)
+    final = await product.read_by_id(final.id)
+
+    assert final.current
+    assert final.replaces == initial
+
+    # Make sure we deleted the object.
+    with pytest.raises(product.ProductNotFound):
+        await product.read_by_name(initial.name, version="1.0.1")
+
+    # See if we deleted that file we uploaded. As it was not part of v1.0.2 and
+    # not part of v1.0.0, it should be gone.
+    from soposerve.service import storage as storage_service
+
+    assert not await storage_service.confirm(file=middle.sources[0], storage=storage)
