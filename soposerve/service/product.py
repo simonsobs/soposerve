@@ -5,11 +5,12 @@ The product service layer.
 import datetime
 from typing import Literal
 
+from bson.errors import InvalidId
 from beanie import Link, PydanticObjectId, WriteRules
 from pydantic import BaseModel
 
 from sopometa import ALL_METADATA_TYPE
-from soposerve.database import Collection, CollectionPolicy, File, Product, User
+from soposerve.database import Collection, CollectionPolicy, File, Product, User, ProductMetadata
 from soposerve.service import storage as storage_service
 from soposerve.service import utils, versioning
 from soposerve.storage import Storage
@@ -19,6 +20,8 @@ LINK_POLICY = {
     "fetch_links": True,
 }
 
+class ProductExists(Exception):
+    pass
 
 class ProductNotFound(Exception):
     pass
@@ -58,6 +61,13 @@ async def presign_uploads(
 
     return presigned, pre_upload_sources
 
+async def exists(name: str) -> bool:
+    """
+    Check whether a product exists with this name.
+    Product names are unique but this cannot be enforced at the
+    database level due to versioning.
+    """
+    return (await Product.find(Product.name == name).count()) > 0
 
 async def create(
     name: str,
@@ -120,12 +130,32 @@ async def read_by_name(name: str, version: str | None) -> Product:
 
 
 async def read_by_id(id: PydanticObjectId) -> Product:
-    potential = await Product.get(document_id=id, **LINK_POLICY)
+    try:
+        potential = await Product.get(document_id=id, **LINK_POLICY)
+    except InvalidId:
+        raise ProductNotFound
 
     if potential is None:
         raise ProductNotFound
 
     return potential
+
+
+async def walk_history(product: Product) -> dict[str, ProductMetadata]:
+    """
+    Walk the history of the product from this point backwards.
+    It is recommended that you walk to the current version first,
+    to get the whole history.
+    """
+    versions = {}
+
+    while product.replaces is not None:
+        versions[product.version] = product.to_metadata()
+        product = product.replaces
+
+    versions[product.version] = product.to_metadata()
+
+    return versions
 
 
 async def walk_to_current(product: Product) -> Product:

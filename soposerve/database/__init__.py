@@ -5,7 +5,7 @@ The database access layer for SOPO. Uses MongoDB and Beanie.
 from datetime import datetime
 from enum import Enum
 
-from beanie import BackLink, Document, Indexed, Link
+from beanie import BackLink, Document, Indexed, Link, PydanticObjectId
 from pydantic import BaseModel, Field
 
 from sopometa import ALL_METADATA_TYPE
@@ -66,7 +66,11 @@ class User(Document):
     compliance: ComplianceInformation | None
 
 
-class File(Document):
+class FileMetadata(BaseModel):
+    """
+    Object containing the metadata from a single file.
+    """
+    id: PydanticObjectId
     name: str
     uploader: str
     uuid: str
@@ -76,8 +80,28 @@ class File(Document):
     available: bool = True
 
 
-class Product(Document):
-    name: str = Indexed(str)
+class File(Document, FileMetadata):
+    def to_metadata(self) -> FileMetadata:
+        return FileMetadata(
+            id=self.id,
+            name=self.name,
+            uploader=self.uploader,
+            uuid=self.uuid,
+            bucket=self.bucket,
+            size=self.size,
+            checksum=self.checksum,
+            available=self.available,
+        )
+
+
+
+class ProductMetadata(BaseModel):
+    """
+    Object containing the metadata from a single version of a product.
+    """
+    id: PydanticObjectId
+
+    name: str
     description: str
     metadata: ALL_METADATA_TYPE
 
@@ -86,6 +110,20 @@ class Product(Document):
 
     current: bool
     version: str
+
+    sources: list[FileMetadata]
+    owner: str
+
+    replaces: str | None
+
+    child_of: list[PydanticObjectId]
+    parent_of: list[PydanticObjectId]
+
+    collections: list[PydanticObjectId]
+    
+
+class Product(Document, ProductMetadata):
+    name: str = Indexed(str)
 
     sources: list[File]
     owner: Link[User]
@@ -99,6 +137,24 @@ class Product(Document):
 
     collections: list[Link["Collection"]] = []
     collection_policies: list[CollectionPolicy] = []
+
+    def to_metadata(self) -> ProductMetadata:
+        return ProductMetadata(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            metadata=self.metadata,
+            uploaded=self.uploaded,
+            updated=self.updated,
+            current=self.current,
+            version=self.version,
+            sources=[x.to_metadata() for x in self.sources],
+            owner=self.owner.name,
+            replaces=self.replaces.version if self.replaces is not None else None,
+            child_of=[x.id for x in self.child_of],
+            parent_of=[x.id for x in self.parent_of],
+            collections=[x.id for x in self.collections],
+        )
 
 
 class Collection(Document):
