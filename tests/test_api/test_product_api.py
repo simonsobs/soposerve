@@ -9,8 +9,11 @@ from fastapi.testclient import TestClient
 from soposerve.api.models.product import (
     CreateProductResponse,
     PreUploadFile,
+    ReadFilesResponse,
     ReadProductResponse,
+    UpdateProductResponse,
 )
+from soposerve.service import versioning
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -22,8 +25,9 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
     ]
 
     response = test_api_client.put(
-        f"/product/{TEST_PRODUCT_NAME}",
+        "/product/new",
         json={
+            "name": TEST_PRODUCT_NAME,
             "description": TEST_PRODUCT_DESCRIPTION,
             "metadata": {"metadata_type": "simple"},
             "sources": TEST_PRODUCT_SOURCES,
@@ -32,6 +36,7 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
 
     assert response.status_code == 200
     validated = CreateProductResponse.model_validate(response.json())
+    product_id = validated.id
 
     # Now we have to actually upload the files.
     for source in TEST_PRODUCT_SOURCES:
@@ -42,22 +47,23 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
         assert response.status_code == 200
 
     # And check...
-    response = test_api_client.post(f"/product/{TEST_PRODUCT_NAME}/confirm")
+    response = test_api_client.post(f"/product/{product_id}/confirm")
 
     assert response.status_code == 200
 
-    yield TEST_PRODUCT_NAME
+    yield TEST_PRODUCT_NAME, product_id
 
     response = test_api_client.delete(
-        f"/product/{TEST_PRODUCT_NAME}", params={"data": True}
+        f"/product/{product_id}", params={"data": True}
     )
     assert response.status_code == 200
 
 
-def test_upload_product_again(test_api_client: TestClient, test_api_product: str):
+def test_upload_product_again(test_api_client: TestClient, test_api_product: tuple[str, str]):
     response = test_api_client.put(
-        f"/product/{test_api_product}",
+        "/product/new",
         json={
+            "name": test_api_product[0],
             "description": "test_description",
             "metadata": {"metadata_type": "simple"},
             "sources": [
@@ -65,7 +71,6 @@ def test_upload_product_again(test_api_client: TestClient, test_api_product: str
                     name="test_file", size=100, checksum="test_checksum"
                 ).model_dump()
             ],
-            "version": "1.0.0",
         },
     )
 
@@ -74,19 +79,19 @@ def test_upload_product_again(test_api_client: TestClient, test_api_product: str
 
 def test_read_product(
     test_api_client: TestClient,
-    test_api_product: str,
+    test_api_product: tuple[str, str],
     test_api_user: str,
 ):
-    response = test_api_client.get(f"/product/{test_api_product}")
+    response = test_api_client.get(f"/product/{test_api_product[1]}/files")
 
     assert response.status_code == 200
-    validated = ReadProductResponse.model_validate(response.json())
+    validated = ReadFilesResponse.model_validate(response.json())
 
-    assert validated.name == test_api_product
+    assert validated.product.name == test_api_product[0]
+    assert validated.product.id == test_api_product[1]
 
     # Use the pre-signed url to check that the file data is b"test_data", as expected.
-    # TODO: Right now we actually don't furnish a pre-signed URL! We need to add that, maybe to the API?
-    for source in validated.sources:
+    for source in validated.files:
         response = requests.get(source.url)
 
         assert response.status_code == 200
@@ -96,40 +101,47 @@ def test_read_product(
 def test_read_product_not_found(
     test_api_client: TestClient,
 ):
-    response = test_api_client.get("/product/not_a_real_product")
+    response = test_api_client.get("/product/" + "7" * 24)
 
     assert response.status_code == 404
 
+    # Not a valid ID
+    response = test_api_client.get("/product/" + "7" * 23)
 
-def test_update_product(test_api_client: TestClient, test_api_product: str):
+    assert response.status_code == 422
+
+
+def test_update_product(test_api_client: TestClient, test_api_product: tuple[str, str]):
     response = test_api_client.post(
-        f"/product/{test_api_product}/update",
+        f"/product/{test_api_product[1]}/update",
         json={
             "description": "new_description",
             "metadata": {"metadata_type": "simple"},
-            "owner": "default_user",
-            "version": "1.1.0",
+            "level": versioning.VersionRevision.MAJOR.value
         },
     )
 
     assert response.status_code == 200
+    validated = UpdateProductResponse.model_validate(response.json())
+    new_product_id = validated.id
 
-    response = test_api_client.get(f"/product/{test_api_product}")
-    validated = ReadProductResponse.model_validate(response.json())
+    # Delete that new version
+    response = test_api_client.delete(
+        f"/product/{new_product_id}",
+    )
 
-    assert validated.description == "new_description"
-    assert validated.owner == "default_user"
+    assert response.status_code == 200
 
 
 def test_update_product_invalid_owner(
-    test_api_client: TestClient, test_api_product: str
+    test_api_client: TestClient, test_api_product: tuple[str, str]
 ):
     response = test_api_client.post(
-        f"/product/{test_api_product}/update",
+        f"/product/{test_api_product[1]}/update",
         json={
             "description": "new_description",
             "owner": "not_exist_user",
-            "version": "1.1.0",
+            "level": versioning.VersionRevision.MAJOR.value
         },
     )
 
@@ -137,50 +149,36 @@ def test_update_product_invalid_owner(
 
 
 def test_update_product_no_owner_change(
-    test_api_client: TestClient, test_api_product: str
+    test_api_client: TestClient, test_api_product: tuple[str, str]
 ):
     response = test_api_client.post(
-        f"/product/{test_api_product}/update",
-        json={"description": "New description, again!", "version": "2.0.0"},
+        f"/product/{test_api_product[1]}/update",
+        json={"description": "New description, again!"},
     )
 
     assert response.status_code == 200
+    new_id = response.json()["id"]
 
-    response = test_api_client.get(f"/product/{test_api_product}")
+    response = test_api_client.get(f"/product/{new_id}")
     validated = ReadProductResponse.model_validate(response.json())
 
-    assert validated.description == "New description, again!"
+    assert validated.versions[validated.requested].description == "New description, again!"
+
+    test_api_client.delete(f"/product/{new_id}")
 
 
-def test_confirm_product(test_api_client: TestClient, test_api_product: str):
-    response = test_api_client.post(f"/product/{test_api_product}/confirm")
+def test_confirm_product(test_api_client: TestClient, test_api_product: tuple[str, str]):
+    response = test_api_client.post(f"/product/{test_api_product[1]}/confirm")
 
     assert response.status_code == 200
     assert response.json() is None
 
-    response = test_api_client.post(f"/product/not_{test_api_product}/confirm")
+    response = test_api_client.post(f"/product/{str(test_api_product[1])[1:] + '0'}/confirm")
     assert response.status_code == 404
 
 
 def test_confirm_product_product_not_existing(test_api_client):
-    TEST_PRODUCT_NAME = "product_we_never_uploaded"
-    response = test_api_client.put(
-        f"/product/{TEST_PRODUCT_NAME}",
-        json={
-            "description": "A test product that was never uploaded.",
-            "metadata": None,
-            "sources": [
-                PreUploadFile(
-                    name="test_file", size=100, checksum="test_checksum"
-                ).model_dump()
-            ],
-        },
-    )
-
-    assert response.status_code == 200
-    _ = CreateProductResponse.model_validate(response.json())
-
-    # And check...
+    TEST_PRODUCT_NAME = "7" * 24
     response = test_api_client.post(f"/product/{TEST_PRODUCT_NAME}/confirm")
 
-    assert response.status_code == 424
+    assert response.status_code == 404

@@ -2,6 +2,7 @@
 Routes for the product service.
 """
 
+from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, Request, status
 
 from soposerve.api.auth import UserDependency, check_user_for_privilege
@@ -10,7 +11,8 @@ from soposerve.api.models.product import (
     CreateProductResponse,
     ReadProductResponse,
     UpdateProductRequest,
-    UpdateProductResponse
+    UpdateProductResponse,
+    ReadFilesResponse
 )
 from soposerve.database import Privilege
 from soposerve.service import product, users
@@ -32,7 +34,7 @@ async def create_product(
 
     await check_user_for_privilege(calling_user, Privilege.CREATE_PRODUCT)
 
-    if await product.exists(name=request.name):
+    if await product.exists(name=model.name):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Product already exists"
         )
@@ -42,7 +44,6 @@ async def create_product(
         description=model.description,
         metadata=model.metadata,
         sources=model.sources,
-        version=model.version,
         user=calling_user,
         storage=request.app.storage,
     )
@@ -52,7 +53,7 @@ async def create_product(
 
 @product_router.get("/{id}")
 async def read_product(
-    id: str,
+    id: PydanticObjectId,
     request: Request,
     calling_user: UserDependency,
 ) -> ReadProductResponse:
@@ -63,7 +64,7 @@ async def read_product(
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
-        item = await product.read_by_id(id).to_metadata()
+        item = (await product.read_by_id(id)).to_metadata()
         
         response = ReadProductResponse(
             current_present=item.current,
@@ -80,9 +81,9 @@ async def read_product(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
 
-@product_router.get("/{id}/history")
-async def read_history(
-    id: str,
+@product_router.get("/{id}/tree")
+async def read_tree(
+    id: PydanticObjectId,
     request: Request,
     calling_user: UserDependency
 ) -> ReadProductResponse:
@@ -116,10 +117,31 @@ async def read_history(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
     
+@product_router.get("/{id}/files")
+async def read_files(
+    id: PydanticObjectId,
+    request: Request,
+    calling_user: UserDependency
+) -> ReadFilesResponse:
+    await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
-@product_router.post("/{name}/update")
+    try:
+        item = await product.read_by_id(id=id)
+    except product.ProductNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
+        )
+
+    files = await product.read_files(product=item, storage=request.app.storage)
+
+    return ReadFilesResponse(
+        product=item.to_metadata(),
+        files=files,
+    )
+
+@product_router.post("/{id}/update")
 async def update_product(
-    id: str, model: UpdateProductRequest, request: Request, calling_user: UserDependency
+    id: PydanticObjectId, model: UpdateProductRequest, request: Request, calling_user: UserDependency
 ) -> UpdateProductResponse:
     """
     Update a product's details.
@@ -128,7 +150,13 @@ async def update_product(
     # For now only privileged users can update products, and they can update everyone's.
     await check_user_for_privilege(calling_user, Privilege.UPDATE_PRODUCT)
 
-    item = await product.read_by_id(id=id)
+    try:
+        item = await product.read_by_id(id=id)
+    except product.ProductNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
+        )
+
 
     if model.owner is not None:
         try:
@@ -139,7 +167,6 @@ async def update_product(
             )
     else:
         user = None
-
 
     new_product, upload_urls = await product.update(
         item,
@@ -160,9 +187,9 @@ async def update_product(
         upload_urls=upload_urls,
     )
 
-@product_router.post("/{name}/confirm")
+@product_router.post("/{id}/confirm")
 async def confirm_product(
-    id: str, request: Request, calling_user: UserDependency
+    id: PydanticObjectId, request: Request, calling_user: UserDependency
 ) -> None:
     """
     Confirm a product's sources.
@@ -188,9 +215,9 @@ async def confirm_product(
         )
 
 
-@product_router.delete("/{name}")
+@product_router.delete("/{id}")
 async def delete_product(
-    name: str,
+    id: PydanticObjectId,
     request: Request,
     calling_user: UserDependency,
     data: bool = False,
@@ -201,4 +228,37 @@ async def delete_product(
 
     await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
-    await product.delete(name=name, storage=request.app.storage, data=data)
+    try:
+        item = await product.read_by_id(id=id)
+    except product.ProductNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
+        )
+
+    await product.delete_one(
+        item, storage=request.app.storage, data=data,
+    )
+
+@product_router.delete("/{id}/tree")
+async def delete_tree(
+    id: PydanticObjectId,
+    request: Request,
+    calling_user: UserDependency,
+    data: bool = False,
+) -> None:
+    """
+    Delete a product.
+    """
+
+    await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
+
+    try:
+        item = await product.read_by_id(id=id)
+    except product.ProductNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
+        )
+
+    await product.delete_tree(
+        item, storage=request.app.storage, data=data,
+    )

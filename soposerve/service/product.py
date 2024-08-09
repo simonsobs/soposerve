@@ -411,7 +411,8 @@ async def delete_one(
     if product.current:
         replaced_by = None
         replaces = product.replaces
-        replaces.current = True
+        if replaces is not None:
+            replaces.current = True
     else:
         replaced_by = await Product.find_one(Product.replaces.id == product.id)
         replaces = product.replaces
