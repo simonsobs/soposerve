@@ -53,6 +53,10 @@ async def test_get_missing_file(database):
     with pytest.raises(product.ProductNotFound):
         await product.read_by_id(id=PydanticObjectId("7" * 24))
 
+    with pytest.raises(product.ProductNotFound):
+        await product.read_by_id("abcdefghijk")
+
+
 
 @pytest.mark.asyncio(scope="session")
 async def test_add_to_collection(created_collection, created_full_product, database):
@@ -297,6 +301,16 @@ async def test_read_most_recent_products(database, created_user, storage):
 
 
 @pytest.mark.asyncio(scope="session")
+async def test_walk_history(database, created_full_product):
+    latest = await product.walk_to_current(created_full_product)
+
+    versions = await product.walk_history(latest)
+
+    assert created_full_product.version in versions.keys()
+    assert latest.version in versions.keys()
+
+
+@pytest.mark.asyncio(scope="session")
 async def test_add_relationships(database, created_user, created_full_product, storage):
     # First, make a secondary metadata-only product.
     secondary_product, _ = await product.create(
@@ -392,6 +406,9 @@ async def test_product_middle_deletion(database, created_user, storage):
         storage=storage,
         level=versioning.VersionRevision.PATCH,
     )
+
+    with pytest.raises(versioning.VersioningError):
+        await product.delete_tree(product=middle, storage=storage, data=False)
 
     await product.delete_one(middle, storage, data=True)
 

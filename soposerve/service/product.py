@@ -8,6 +8,7 @@ from typing import Literal
 from bson.errors import InvalidId
 from beanie import Link, PydanticObjectId, WriteRules
 from pydantic import BaseModel
+from pydantic_core import ValidationError
 
 from sopometa import ALL_METADATA_TYPE
 from soposerve.database import Collection, CollectionPolicy, File, Product, User, ProductMetadata
@@ -132,7 +133,7 @@ async def read_by_name(name: str, version: str | None) -> Product:
 async def read_by_id(id: PydanticObjectId) -> Product:
     try:
         potential = await Product.get(document_id=id, **LINK_POLICY)
-    except InvalidId:
+    except (InvalidId, ValidationError):
         raise ProductNotFound
 
     if potential is None:
@@ -173,7 +174,7 @@ async def walk_to_current(product: Product) -> Product:
             Product.replaces.id == product.id, **LINK_POLICY
         )
 
-        if product is None:
+        if product is None: # pragma: no cover
             raise RuntimeError
 
     return product
@@ -481,7 +482,7 @@ async def delete_tree(
                 files_to_delete.append(source)
 
         if isinstance(product.replaces, Link):
-            product = product.replaces.fetch()
+            product = await product.replaces.fetch()
         else:
             product = product.replaces
 

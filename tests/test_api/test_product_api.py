@@ -54,7 +54,7 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
     yield TEST_PRODUCT_NAME, product_id
 
     response = test_api_client.delete(
-        f"/product/{product_id}", params={"data": True}
+        f"/product/{product_id}/tree", params={"data": True}
     )
     assert response.status_code == 200
 
@@ -96,6 +96,19 @@ def test_read_product(
 
         assert response.status_code == 200
         assert response.content == b"test_data"
+
+
+def test_read_product_tree(
+    test_api_client: TestClient,
+    test_api_product: tuple[str, str],
+    test_api_user: str,
+):
+    response = test_api_client.get(f"/product/{test_api_product[1]}/tree")
+
+    assert response.status_code == 200
+    validated = ReadProductResponse.model_validate(response.json())
+
+    assert test_api_product[0] in [x.name for x in validated.versions.values()]
 
 
 def test_read_product_not_found(
