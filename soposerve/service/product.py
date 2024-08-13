@@ -5,13 +5,20 @@ The product service layer.
 import datetime
 from typing import Literal
 
-from bson.errors import InvalidId
 from beanie import Link, PydanticObjectId, WriteRules
+from bson.errors import InvalidId
 from pydantic import BaseModel
 from pydantic_core import ValidationError
 
 from sopometa import ALL_METADATA_TYPE
-from soposerve.database import Collection, CollectionPolicy, File, Product, User, ProductMetadata
+from soposerve.database import (
+    Collection,
+    CollectionPolicy,
+    File,
+    Product,
+    ProductMetadata,
+    User,
+)
 from soposerve.service import storage as storage_service
 from soposerve.service import utils, versioning
 from soposerve.storage import Storage
@@ -21,8 +28,10 @@ LINK_POLICY = {
     "fetch_links": True,
 }
 
+
 class ProductExists(Exception):
     pass
+
 
 class ProductNotFound(Exception):
     pass
@@ -62,6 +71,7 @@ async def presign_uploads(
 
     return presigned, pre_upload_sources
 
+
 async def exists(name: str) -> bool:
     """
     Check whether a product exists with this name.
@@ -69,6 +79,7 @@ async def exists(name: str) -> bool:
     database level due to versioning.
     """
     return (await Product.find(Product.name == name).count()) > 0
+
 
 async def create(
     name: str,
@@ -174,7 +185,7 @@ async def walk_to_current(product: Product) -> Product:
             Product.replaces.id == product.id, **LINK_POLICY
         )
 
-        if product is None: # pragma: no cover
+        if product is None:  # pragma: no cover
             raise RuntimeError
 
     return product

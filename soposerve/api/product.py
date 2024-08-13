@@ -9,10 +9,10 @@ from soposerve.api.auth import UserDependency, check_user_for_privilege
 from soposerve.api.models.product import (
     CreateProductRequest,
     CreateProductResponse,
+    ReadFilesResponse,
     ReadProductResponse,
     UpdateProductRequest,
     UpdateProductResponse,
-    ReadFilesResponse
 )
 from soposerve.database import Privilege
 from soposerve.service import product, users
@@ -65,14 +65,12 @@ async def read_product(
 
     try:
         item = (await product.read_by_id(id)).to_metadata()
-        
+
         response = ReadProductResponse(
             current_present=item.current,
             current=item.version if item.current else None,
             requested=item.version,
-            versions={
-                item.version: item
-            }
+            versions={item.version: item},
         )
 
         return response
@@ -81,11 +79,10 @@ async def read_product(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
 
+
 @product_router.get("/{id}/tree")
 async def read_tree(
-    id: PydanticObjectId,
-    request: Request,
-    calling_user: UserDependency
+    id: PydanticObjectId, request: Request, calling_user: UserDependency
 ) -> ReadProductResponse:
     """
     Read a single product's entire history.
@@ -101,9 +98,9 @@ async def read_tree(
         if not current_item.current:
             raise HTTPException(
                 status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Unable to find the current version of the requested item"
+                detail="Unable to find the current version of the requested item",
             )
-        
+
         response = ReadProductResponse(
             current_present=True,
             current=current_item.version,
@@ -116,12 +113,11 @@ async def read_tree(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
-    
+
+
 @product_router.get("/{id}/files")
 async def read_files(
-    id: PydanticObjectId,
-    request: Request,
-    calling_user: UserDependency
+    id: PydanticObjectId, request: Request, calling_user: UserDependency
 ) -> ReadFilesResponse:
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
@@ -139,9 +135,13 @@ async def read_files(
         files=files,
     )
 
+
 @product_router.post("/{id}/update")
 async def update_product(
-    id: PydanticObjectId, model: UpdateProductRequest, request: Request, calling_user: UserDependency
+    id: PydanticObjectId,
+    model: UpdateProductRequest,
+    request: Request,
+    calling_user: UserDependency,
 ) -> UpdateProductResponse:
     """
     Update a product's details.
@@ -157,11 +157,10 @@ async def update_product(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
 
-
     if model.owner is not None:
         try:
             user = await users.read(name=model.owner)
-        except users.UserNotFound: 
+        except users.UserNotFound:
             raise HTTPException(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="User not found."
             )
@@ -178,7 +177,7 @@ async def update_product(
         replace_sources=model.replace_sources,
         drop_sources=model.drop_sources,
         storage=request.app.storage,
-        level=model.level
+        level=model.level,
     )
 
     return UpdateProductResponse(
@@ -186,6 +185,7 @@ async def update_product(
         id=new_product.id,
         upload_urls=upload_urls,
     )
+
 
 @product_router.post("/{id}/confirm")
 async def confirm_product(
@@ -236,8 +236,11 @@ async def delete_product(
         )
 
     await product.delete_one(
-        item, storage=request.app.storage, data=data,
+        item,
+        storage=request.app.storage,
+        data=data,
     )
+
 
 @product_router.delete("/{id}/tree")
 async def delete_tree(
@@ -260,5 +263,7 @@ async def delete_tree(
         )
 
     await product.delete_tree(
-        item, storage=request.app.storage, data=data,
+        item,
+        storage=request.app.storage,
+        data=data,
     )

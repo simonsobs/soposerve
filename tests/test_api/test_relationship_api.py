@@ -77,11 +77,17 @@ def test_create_child_relationship(test_api_client, test_api_products_for_use):
 
     response = test_api_client.get(f"/product/{product_ids[0]}")
     assert response.status_code == 200
-    assert product_ids[1] in response.json()["versions"][response.json()["requested"]]["child_of"]
+    assert (
+        product_ids[1]
+        in response.json()["versions"][response.json()["requested"]]["child_of"]
+    )
 
     response = test_api_client.get(f"/product/{product_ids[1]}")
     assert response.status_code == 200
-    assert product_ids[0] in response.json()["versions"][response.json()["requested"]]["parent_of"]
+    assert (
+        product_ids[0]
+        in response.json()["versions"][response.json()["requested"]]["parent_of"]
+    )
 
 
 def test_read_non_existent_collection(test_api_client):

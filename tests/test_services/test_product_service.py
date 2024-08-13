@@ -57,7 +57,6 @@ async def test_get_missing_file(database):
         await product.read_by_id("abcdefghijk")
 
 
-
 @pytest.mark.asyncio(scope="session")
 async def test_add_to_collection(created_collection, created_full_product, database):
     await product.add_collection(

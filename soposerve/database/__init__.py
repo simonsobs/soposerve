@@ -70,6 +70,7 @@ class FileMetadata(BaseModel):
     """
     Object containing the metadata from a single file.
     """
+
     id: PydanticObjectId
     name: str
     uploader: str
@@ -94,11 +95,11 @@ class File(Document, FileMetadata):
         )
 
 
-
 class ProductMetadata(BaseModel):
     """
     Object containing the metadata from a single version of a product.
     """
+
     id: PydanticObjectId
 
     name: str
@@ -120,7 +121,7 @@ class ProductMetadata(BaseModel):
     parent_of: list[PydanticObjectId]
 
     collections: list[PydanticObjectId]
-    
+
 
 class Product(Document, ProductMetadata):
     name: str = Indexed(str)

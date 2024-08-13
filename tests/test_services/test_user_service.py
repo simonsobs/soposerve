@@ -45,5 +45,5 @@ async def test_read_user_not_found():
     with pytest.raises(users.UserNotFound):
         await users.read_by_id(id="7" * 24)
 
-    with pytest.raises(users.UserNotFound) :
+    with pytest.raises(users.UserNotFound):
         await users.user_from_api_key(api_key="hahahahaha")

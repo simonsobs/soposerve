@@ -59,7 +59,9 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
     assert response.status_code == 200
 
 
-def test_upload_product_again(test_api_client: TestClient, test_api_product: tuple[str, str]):
+def test_upload_product_again(
+    test_api_client: TestClient, test_api_product: tuple[str, str]
+):
     response = test_api_client.put(
         "/product/new",
         json={
@@ -130,7 +132,7 @@ def test_update_product(test_api_client: TestClient, test_api_product: tuple[str
         json={
             "description": "new_description",
             "metadata": {"metadata_type": "simple"},
-            "level": versioning.VersionRevision.MAJOR.value
+            "level": versioning.VersionRevision.MAJOR.value,
         },
     )
 
@@ -154,7 +156,7 @@ def test_update_product_invalid_owner(
         json={
             "description": "new_description",
             "owner": "not_exist_user",
-            "level": versioning.VersionRevision.MAJOR.value
+            "level": versioning.VersionRevision.MAJOR.value,
         },
     )
 
@@ -175,18 +177,24 @@ def test_update_product_no_owner_change(
     response = test_api_client.get(f"/product/{new_id}")
     validated = ReadProductResponse.model_validate(response.json())
 
-    assert validated.versions[validated.requested].description == "New description, again!"
+    assert (
+        validated.versions[validated.requested].description == "New description, again!"
+    )
 
     test_api_client.delete(f"/product/{new_id}")
 
 
-def test_confirm_product(test_api_client: TestClient, test_api_product: tuple[str, str]):
+def test_confirm_product(
+    test_api_client: TestClient, test_api_product: tuple[str, str]
+):
     response = test_api_client.post(f"/product/{test_api_product[1]}/confirm")
 
     assert response.status_code == 200
     assert response.json() is None
 
-    response = test_api_client.post(f"/product/{str(test_api_product[1])[1:] + '0'}/confirm")
+    response = test_api_client.post(
+        f"/product/{str(test_api_product[1])[1:] + '0'}/confirm"
+    )
     assert response.status_code == 404
 
 
