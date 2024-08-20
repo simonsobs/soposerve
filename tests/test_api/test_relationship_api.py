@@ -19,27 +19,30 @@ def test_api_products_for_use(test_api_client: TestClient, test_api_user: str):
     )
 
     product_names = [f"Product {x}" for x in range(4)]
+    product_ids = []
 
     for name in product_names:
         response = test_api_client.put(
-            f"/product/{name}",
+            "/product/new",
             json={
+                "name": name,
                 "description": "test_description",
                 "metadata": {"metadata_type": "simple"},
                 "sources": [],
             },
         )
         assert response.status_code == 200
+        product_ids.append(response.json()["id"])
 
         response = test_api_client.put(
             f"/relationships/collection/{collection_name}/{name}",
         )
         assert response.status_code == 200
 
-    yield collection_name, product_names
+    yield collection_name, product_names, product_ids
 
-    for name in product_names:
-        response = test_api_client.delete(f"/product/{name}", params={"data": True})
+    for id in product_ids:
+        response = test_api_client.delete(f"/product/{id}", params={"data": True})
         assert response.status_code == 200
 
     response = test_api_client.delete(f"/relationships/collection/{collection_name}")
@@ -49,7 +52,7 @@ def test_api_products_for_use(test_api_client: TestClient, test_api_user: str):
 def test_read_collection(
     test_api_client: TestClient, test_api_products_for_use: tuple[str, list[str]]
 ):
-    collection_name, product_names = test_api_products_for_use
+    collection_name, product_names, product_ids = test_api_products_for_use
 
     response = test_api_client.get(f"/relationships/collection/{collection_name}")
     assert response.status_code == 200
@@ -65,37 +68,25 @@ def test_read_collection(
 
 
 def test_create_child_relationship(test_api_client, test_api_products_for_use):
-    collection_name, product_names = test_api_products_for_use
+    collection_name, product_names, product_ids = test_api_products_for_use
 
     response = test_api_client.put(
         f"/relationships/product/{product_names[0]}/child_of/{product_names[1]}"
     )
     assert response.status_code == 200
 
-    response = test_api_client.get(f"/product/{product_names[0]}")
+    response = test_api_client.get(f"/product/{product_ids[0]}")
     assert response.status_code == 200
-    assert product_names[1] in response.json()["child_of"]
-
-    response = test_api_client.get(f"/product/{product_names[1]}")
-    assert response.status_code == 200
-    assert product_names[0] in response.json()["parent_of"]
-
-
-def test_sideways_relationship(test_api_client, test_api_products_for_use):
-    collection_name, product_names = test_api_products_for_use
-
-    response = test_api_client.put(
-        f"/relationships/product/{product_names[0]}/related_to/{product_names[2]}"
+    assert (
+        product_ids[1]
+        in response.json()["versions"][response.json()["requested"]]["child_of"]
     )
-    assert response.status_code == 200
 
-    response = test_api_client.get(f"/product/{product_names[0]}")
+    response = test_api_client.get(f"/product/{product_ids[1]}")
     assert response.status_code == 200
-    assert product_names[2] in response.json()["related_to"]
-
-    # Remove it again
-    response = test_api_client.delete(
-        f"/relationships/product/{product_names[0]}/related_to/{product_names[2]}"
+    assert (
+        product_ids[0]
+        in response.json()["versions"][response.json()["requested"]]["parent_of"]
     )
 
 
@@ -149,19 +140,5 @@ def test_add_child_product_to_non_existent_parent(test_api_client):
 def test_remove_child_product_from_non_existent_parent(test_api_client):
     response = test_api_client.delete(
         "/relationships/product/Nonexistent/child_of/doesnt_matter"
-    )
-    assert response.status_code == 404
-
-
-def test_add_related_product_to_non_existent_product(test_api_client):
-    response = test_api_client.put(
-        "/relationships/product/Nonexistent/related_to/doesnt_matter"
-    )
-    assert response.status_code == 404
-
-
-def test_remove_related_product_from_non_existent_product(test_api_client):
-    response = test_api_client.delete(
-        "/relationships/product/Nonexistent/related_to/doesnt_matter"
     )
     assert response.status_code == 404

@@ -5,7 +5,7 @@ The database access layer for SOPO. Uses MongoDB and Beanie.
 from datetime import datetime
 from enum import Enum
 
-from beanie import BackLink, Document, Indexed, Link
+from beanie import BackLink, Document, Indexed, Link, PydanticObjectId
 from pydantic import BaseModel, Field
 
 from sopometa import ALL_METADATA_TYPE
@@ -38,6 +38,22 @@ class Privilege(Enum):
     DELETE_USER = "delete_user"
 
 
+class CollectionPolicy(Enum):
+    # What to do when versions are revved of products.
+    # Keep track of all versions of the product in the collection.
+    ALL = "all"
+    # Keep track of all new versions of the product in the collection.
+    # E.g. if v2 is added to a collection, v1 is _not_ but all future
+    # versions will be tracked as part of that collection.
+    NEW = "new"
+    # Keep track of only the 'current' version of the product.
+    CURRENT = "current"
+    # Keep track of only a 'fixed' version of the product. So if v2 is
+    # added to the collection, and v3 is created, only v2 is tracked in
+    # the collection.
+    FIXED = "fixed"
+
+
 class ComplianceInformation(BaseModel):
     nersc_username: str | None
 
@@ -50,33 +66,96 @@ class User(Document):
     compliance: ComplianceInformation | None
 
 
-class File(Document):
-    name: str = Indexed(str, unique=True)
+class FileMetadata(BaseModel):
+    """
+    Object containing the metadata from a single file.
+    """
+
+    id: PydanticObjectId
+    name: str
     uploader: str
     uuid: str
     bucket: str
     size: int
     checksum: str
+    available: bool = True
 
 
-class Product(Document):
-    name: str = Indexed(str, unique=True)
+class File(Document, FileMetadata):
+    def to_metadata(self) -> FileMetadata:
+        return FileMetadata(
+            id=self.id,
+            name=self.name,
+            uploader=self.uploader,
+            uuid=self.uuid,
+            bucket=self.bucket,
+            size=self.size,
+            checksum=self.checksum,
+            available=self.available,
+        )
+
+
+class ProductMetadata(BaseModel):
+    """
+    Object containing the metadata from a single version of a product.
+    """
+
+    id: PydanticObjectId
+
+    name: str
     description: str
+    metadata: ALL_METADATA_TYPE
+
     uploaded: datetime
     updated: datetime
 
-    metadata: ALL_METADATA_TYPE
+    current: bool
+    version: str
 
-    owner: Link[User]
+    sources: list[FileMetadata]
+    owner: str
+
+    replaces: str | None
+
+    child_of: list[PydanticObjectId]
+    parent_of: list[PydanticObjectId]
+
+    collections: list[PydanticObjectId]
+
+
+class Product(Document, ProductMetadata):
+    name: str = Indexed(str)
 
     sources: list[File]
+    owner: Link[User]
+
+    replaces: Link["Product"] | None = None
 
     child_of: list[Link["Product"]] = []
     parent_of: list[BackLink["Product"]] = Field(
         json_schema_extra={"original_field": "child_of"}, default=[]
     )
-    related_to: list[Link["Product"]] = []
+
     collections: list[Link["Collection"]] = []
+    collection_policies: list[CollectionPolicy] = []
+
+    def to_metadata(self) -> ProductMetadata:
+        return ProductMetadata(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            metadata=self.metadata,
+            uploaded=self.uploaded,
+            updated=self.updated,
+            current=self.current,
+            version=self.version,
+            sources=[x.to_metadata() for x in self.sources],
+            owner=self.owner.name,
+            replaces=self.replaces.version if self.replaces is not None else None,
+            child_of=[x.id for x in self.child_of],
+            parent_of=[x.id for x in self.parent_of],
+            collections=[x.id for x in self.collections],
+        )
 
 
 class Collection(Document):

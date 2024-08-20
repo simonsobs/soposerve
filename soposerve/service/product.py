@@ -1,16 +1,36 @@
 """
-Service for products.
+The product service layer.
 """
 
 import datetime
 from typing import Literal
 
+from beanie import Link, PydanticObjectId, WriteRules
+from bson.errors import InvalidId
 from pydantic import BaseModel
+from pydantic_core import ValidationError
 
 from sopometa import ALL_METADATA_TYPE
-from soposerve.database import Collection, Product, User
+from soposerve.database import (
+    Collection,
+    CollectionPolicy,
+    File,
+    Product,
+    ProductMetadata,
+    User,
+)
 from soposerve.service import storage as storage_service
+from soposerve.service import utils, versioning
 from soposerve.storage import Storage
+
+INITIAL_VERSION = "1.0.0"
+LINK_POLICY = {
+    "fetch_links": True,
+}
+
+
+class ProductExists(Exception):
+    pass
 
 
 class ProductNotFound(Exception):
@@ -27,17 +47,13 @@ class PostUploadFile(BaseModel):
     name: str
     size: int
     checksum: str
-    url: str
+    url: str | None
+    available: bool
 
 
-async def create(
-    name: str,
-    description: str,
-    metadata: ALL_METADATA_TYPE,
-    sources: list[PreUploadFile],
-    user: User,
-    storage: Storage,
-) -> tuple[Product, list[dict[str, str]]]:
+async def presign_uploads(
+    sources: list[PreUploadFile], storage: Storage, user: User
+) -> tuple[dict[str, str], list[File]]:
     presigned = {}
     pre_upload_sources = []
 
@@ -53,19 +69,47 @@ async def create(
         presigned[source.name] = presigned_url
         pre_upload_sources.append(pre_upload_source)
 
+    return presigned, pre_upload_sources
+
+
+async def exists(name: str) -> bool:
+    """
+    Check whether a product exists with this name.
+    Product names are unique but this cannot be enforced at the
+    database level due to versioning.
+    """
+    return (await Product.find(Product.name == name).count()) > 0
+
+
+async def create(
+    name: str,
+    description: str,
+    metadata: ALL_METADATA_TYPE,
+    sources: list[PreUploadFile],
+    user: User,
+    storage: Storage,
+) -> tuple[Product, dict[str, str]]:
+    presigned, pre_upload_sources = await presign_uploads(
+        sources=sources, storage=storage, user=user
+    )
+
     current_utc_time = datetime.datetime.now(datetime.timezone.utc)
 
     product = Product(
         name=name,
         description=description,
+        metadata=metadata,
         uploaded=current_utc_time,
         updated=current_utc_time,
-        metadata=metadata,
-        owner=user,
+        current=True,
+        version=INITIAL_VERSION,
         sources=pre_upload_sources,
-        # TODO: Consider allowing collections pre-upload,
-        # but for now they must be added _after_.
+        owner=user,
+        replaces=None,
+        child_of=[],
+        parent_of=[],
         collections=[],
+        collection_policies=[],
     )
 
     await product.create()
@@ -73,20 +117,23 @@ async def create(
     return product, presigned
 
 
-async def confirm(name: str, storage: Storage) -> bool:
-    product = await read(name)
+async def read_by_name(name: str, version: str | None) -> Product:
+    """
+    If version is None, we grab the latest version of a product.
+    """
 
-    for file in product.sources:
-        if not await storage_service.confirm(file=file, storage=storage):
-            return False
-
-    return True
-
-
-async def read(name: str) -> Product:
-    potential = await Product.find(
-        Product.name == name, fetch_links=True, nesting_depth=2
-    ).first_or_none()
+    if version is None:
+        potential = await Product.find_one(
+            Product.name == name,
+            Product.current == True,  # noqa: E712
+            **LINK_POLICY,
+        )
+    else:
+        potential = await Product.find_one(
+            Product.name == name,
+            Product.version == version,
+            **LINK_POLICY,
+        )
 
     if potential is None:
         raise ProductNotFound
@@ -94,141 +141,409 @@ async def read(name: str) -> Product:
     return potential
 
 
-async def presign_read(product: Product, storage: Storage) -> list[PostUploadFile]:
-    """
-    Given a product, generates pre-signed URLs for all of its sources.
-    """
-    files = [
-        PostUploadFile(
-            name=source.name,
-            size=source.size,
-            checksum=source.checksum,
-            url=storage.get(
-                name=source.name,
-                uploader=source.uploader,
-                uuid=source.uuid,
-                bucket=source.bucket,
-            ),
-        )
-        for source in product.sources
-    ]
+async def read_by_id(id: PydanticObjectId) -> Product:
+    try:
+        potential = await Product.get(document_id=id, **LINK_POLICY)
+    except (InvalidId, ValidationError):
+        raise ProductNotFound
 
-    return files
+    if potential is None:
+        raise ProductNotFound
+
+    return potential
+
+
+async def walk_history(product: Product) -> dict[str, ProductMetadata]:
+    """
+    Walk the history of the product from this point backwards.
+    It is recommended that you walk to the current version first,
+    to get the whole history.
+    """
+    versions = {}
+
+    while product.replaces is not None:
+        versions[product.version] = product.to_metadata()
+        product = product.replaces
+
+    versions[product.version] = product.to_metadata()
+
+    return versions
+
+
+async def walk_to_current(product: Product) -> Product:
+    """
+    Walk the list of products until you get to the one
+    marked 'current'.
+    """
+
+    # Re-read the product from the database, in case it
+    # is stale!
+    product = await read_by_id(id=product.id)
+
+    while not product.current:
+        product = await Product.find_one(
+            Product.replaces.id == product.id, **LINK_POLICY
+        )
+
+        if product is None:  # pragma: no cover
+            raise RuntimeError
+
+    return product
+
+
+async def confirm(product: Product, storage: Storage) -> bool:
+    for file in product.sources:
+        if not await storage_service.confirm(file=file, storage=storage):
+            return False
+
+    return True
+
+
+async def read_files(product: Product, storage: Storage) -> list[PostUploadFile]:
+    return [
+        PostUploadFile(
+            name=x.name,
+            size=x.size,
+            checksum=x.checksum,
+            url=storage.get(
+                name=x.name, uploader=x.uploader, uuid=x.uuid, bucket=x.bucket
+            )
+            if x.available
+            else None,
+            available=x.available,
+        )
+        for x in product.sources
+    ]
 
 
 async def read_most_recent(
-    fetch_links: bool = False, maximum: int = 16
+    fetch_links: bool = False, maximum: int = 16, current_only: bool = False
 ) -> list[Product]:
-    return (
-        await Product.find(fetch_links=fetch_links)
-        .sort(-Product.updated)
-        .to_list(maximum)
+    if current_only:
+        found = Product.find(
+            Product.current == True,  # noqa: E712
+            fetch_links=fetch_links,
+        )
+    else:
+        found = Product.find(
+            fetch_links=fetch_links,
+        )
+
+    return await found.sort(-Product.updated).to_list(maximum)
+
+
+async def update_metadata(
+    product: Product,
+    name: str | None,
+    description: str | None,
+    metadata: ALL_METADATA_TYPE | None,
+    owner: User | None,
+    level: versioning.VersionRevision,
+) -> Product:
+    """
+    Update only the metadata of a product. Note that you can call this with all
+    the variables as `None` and this will simply rev the version. That should
+    be used when only updating sources.
+    """
+
+    if not product.current:
+        raise versioning.VersioningError(
+            "Attempting to update a non-current product. You must always "
+            "make changes to the head of the list"
+        )
+
+    # We don't actually 'update' the database; we actually create a new
+    # product and link it in.
+
+    new = Product(
+        name=product.name if name is None else name,
+        description=product.description if description is None else description,
+        metadata=product.metadata if metadata is None else metadata,
+        uploaded=product.uploaded,
+        updated=utils.current_utc_time(),
+        current=True,
+        version=versioning.revise_version(product.version, level=level),
+        sources=product.sources,
+        owner=product.owner if owner is None else owner,
+        replaces=product,
+        # This product is a child of nothing util it is told it is. Child
+        # relationships only stick around for a single version.
+        child_of=[],
+        collections=[
+            c
+            for c, p in zip(product.collections, product.collection_policies)
+            if p
+            in [CollectionPolicy.ALL, CollectionPolicy.NEW, CollectionPolicy.CURRENT]
+        ],
+        collection_policies=[
+            p
+            for p in product.collection_policies
+            if p
+            in [CollectionPolicy.ALL, CollectionPolicy.NEW, CollectionPolicy.CURRENT]
+        ],
     )
+
+    # Need to perform a small number of modifications on the original
+    # product.
+    product.current = False
+    product.collections = [
+        c
+        for c, p in zip(product.collections, product.collection_policies)
+        if p in [CollectionPolicy.ALL, CollectionPolicy.NEW, CollectionPolicy.FIXED]
+    ]
+    product.collection_policies = [
+        p
+        for p in product.collection_policies
+        if p in [CollectionPolicy.ALL, CollectionPolicy.NEW, CollectionPolicy.FIXED]
+    ]
+
+    await new.save(link_rule=WriteRules.WRITE)
+
+    return new
+
+
+async def update_sources(
+    product: Product,
+    new: list[PreUploadFile],
+    replace: list[PreUploadFile],
+    drop: list[str],
+    storage: Storage,
+) -> tuple[Product, dict[str, str]]:
+    """
+    Change the sources associated with a product. New and replace provide
+    pre-signed URLs for file uploads (and you should call confirm after),
+    and drop is a list of names of files to remove.
+    """
+
+    existing_names = {x.name for x in product.sources}
+    new_names = {x.name for x in new}
+    replace_names = {x.name for x in replace}
+    drop_names = set(drop)
+
+    if len(existing_names & new_names) != 0:
+        raise FileExistsError
+
+    if len(existing_names & replace_names) != len(replace_names):
+        raise FileNotFoundError
+
+    if len(existing_names & drop_names) != len(drop_names):
+        raise FileNotFoundError
+
+    presigned_new, pre_upload_sources_new = await presign_uploads(
+        sources=new,
+        storage=storage,
+        user=product.owner,
+    )
+
+    presigned_replace, pre_upload_sources_replace = await presign_uploads(
+        sources=replace, storage=storage, user=product.owner
+    )
+
+    presigned = {**presigned_new, **presigned_replace}
+    pre_upload_sources = pre_upload_sources_new + pre_upload_sources_replace
+
+    # Filter out the sources we're keeping
+    keep_names = existing_names ^ replace_names ^ drop_names
+    keep_sources = [x for x in product.sources if x.name in keep_names]
+
+    # Final check -
+    expected_number_of_sources = len(product.sources) - len(drop) + len(new)
+
+    if (
+        not (len(keep_sources) + len(pre_upload_sources)) == expected_number_of_sources
+    ):  # pragma: no cover
+        raise RuntimeError
+
+    product.sources = pre_upload_sources + keep_sources
+
+    await product.save(link_rule=WriteRules.WRITE)
+
+    return product, presigned
 
 
 async def update(
-    name: str,
-    description: str | None = None,
-    metadata: ALL_METADATA_TYPE | None = None,
-    owner: User | None = None,
-) -> Product:
-    product = await read(name=name)
+    product: Product,
+    name: str | None,
+    description: str | None,
+    metadata: ALL_METADATA_TYPE | None,
+    owner: User | None,
+    new_sources: list[PreUploadFile],
+    replace_sources: list[PreUploadFile],
+    drop_sources: list[str],
+    storage: Storage,
+    level: versioning.VersionRevision,
+) -> tuple[Product, dict[str, str]]:
+    new_product = await update_metadata(
+        product=product,
+        name=name,
+        description=description,
+        metadata=metadata,
+        owner=owner,
+        level=level,
+    )
 
-    if description is not None:
-        await product.set(
-            {
-                Product.description: description,
-                Product.updated: datetime.datetime.now(datetime.timezone.utc),
-            }
-        )
+    # For some reason:
+    # a) Beanie won't allow fetch_all_links to be called on `new_product` because
+    #    it has back-links, and it crashes.
+    # b) Beanie won't allow fetching specific links on that object. fetch_link()
+    #    or .fetch() fails silently.
+    # So we just re-fetch our object from the database.
+    new_product = await read_by_id(new_product.id)
 
-    if owner is not None:
-        await product.set(
-            {
-                Product.owner: owner,
-                Product.updated: datetime.datetime.now(datetime.timezone.utc),
-            }
-        )
+    if any([len(new_sources) > 0, len(replace_sources) > 0, len(drop_sources) > 0]):
+        try:
+            new_product, presigned = await update_sources(
+                product=new_product,
+                new=new_sources,
+                replace=replace_sources,
+                drop=drop_sources,
+                storage=storage,
+            )
+        except Exception as e:
+            # Need to roll-back our new product. Full transactions when?
+            await delete_one(new_product, storage=storage, data=False)
+            raise e
+    else:
+        presigned = {}
 
-    if metadata is not None:
-        await product.set(
-            {
-                Product.metadata: metadata,
-                Product.updated: datetime.datetime.now(datetime.timezone.utc),
-            }
-        )
-
-    return product
-
-
-async def add_relationship(
-    source: str,
-    destination: str,
-    type: Literal["child", "related"],
-) -> Product:
-    source_product = await read(name=source)
-    destination_product = await read(name=destination)
-
-    if type == "child":
-        # Parent relationship is handled by the backlink.
-        source_product.child_of = source_product.child_of + [destination_product]
-    elif type == "related":
-        source_product.related_to = source_product.related_to + [destination_product]
-
-    await source_product.save()
-
-    return source_product
+    return new_product, presigned
 
 
-async def remove_relationship(
-    source: str,
-    destination: str,
-    type: Literal["child", "related"],
-) -> Product:
-    source_product = await read(name=source)
-    destination_product = await read(name=destination)
+async def delete_one(
+    product: Product,
+    storage: Storage,
+    data: bool = False,
+):
+    """
+    Delete a single product (i.e. leaving the history intact on either side.)
+    """
 
-    if type == "child":
-        source_product.child_of = [
-            c for c in source_product.child_of if c.name != destination_product.name
-        ]
-    elif type == "related":
-        source_product.related_to = [
-            c for c in source_product.related_to if c.name != destination_product.name
-        ]
+    # Deal with parent/child replacement relationship
 
-    await source_product.save()
+    if product.current:
+        replaced_by = None
+        replaces = product.replaces
+        if replaces is not None:
+            replaces.current = True
+    else:
+        replaced_by = await Product.find_one(Product.replaces.id == product.id)
+        replaces = product.replaces
+        replaced_by.replaces = replaces
 
-    return source_product
+    # Deal with potentially newly ingested files
 
+    if replaces is None:
+        past_source_uuids = set()
+    else:
+        past_source_uuids = {x.uuid for x in replaces.sources}
 
-async def add_collection(name: str, collection: Collection) -> Product:
-    product = await read(name=name)
+    current_source_uuids = {x.uuid for x in product.sources}
 
-    product.collections = product.collections + [collection]
+    if replaced_by is None:
+        future_source_uuids = set()
+    else:
+        future_source_uuids = {x.uuid for x in replaced_by.sources}
 
-    await product.save()
+    net_source_uuids = current_source_uuids ^ past_source_uuids ^ future_source_uuids
 
-    return product
-
-
-async def remove_collection(name: str, collection: Collection) -> Product:
-    product = await read(name=name)
-
-    product.collections = [c for c in product.collections if c.name != collection.name]
-
-    await product.save()
-
-    return product
-
-
-async def delete(name: str, storage: Storage, data: bool = False):
-    product = await read(name=name)
+    # Deletion of only uniquely created (in this specific version of the product)
+    # data products.
 
     if data:
         for file in product.sources:
-            await storage_service.delete(file=file, storage=storage)
+            if file.uuid in net_source_uuids:
+                await storage_service.delete(file=file, storage=storage)
+
+    if replaced_by is not None:
+        await replaced_by.save()
+
+    if replaces is not None:
+        await replaces.save()
 
     await product.delete()
 
     return
+
+
+async def delete_tree(
+    product: Product,
+    storage: Storage,
+    data: bool = False,
+):
+    """
+    Delete an entire tree of products, from this one down. You must provide
+    a current product.
+    """
+
+    if not product.current:
+        raise versioning.VersioningError(
+            "Attempting to delete the tree starting from a non-current product"
+        )
+
+    uuids_to_delete = set()
+    files_to_delete = []
+    products_to_delete = []
+
+    while product is not None:
+        products_to_delete.append(product)
+
+        for source in product.sources:
+            if source.uuid not in uuids_to_delete:
+                uuids_to_delete.update(source.uuid)
+                files_to_delete.append(source)
+
+        if isinstance(product.replaces, Link):
+            product = await product.replaces.fetch()
+        else:
+            product = product.replaces
+
+    if data:
+        for source in files_to_delete:
+            await storage_service.delete(file=source, storage=storage)
+
+    for product in products_to_delete:
+        await product.delete()
+
+    return
+
+
+async def add_relationship(
+    source: Product,
+    destination: Product,
+    type: Literal["child"],
+):
+    if type == "child":
+        source.child_of = source.child_of + [destination]
+
+    await source.save()
+
+    return
+
+
+async def remove_relationship(
+    source: Product,
+    destination: Product,
+    type: Literal["child"],
+):
+    if type == "child":
+        source.child_of = [c for c in source.child_of if c.id != destination.id]
+
+    await source.save()
+
+    return
+
+
+async def add_collection(product: Product, collection: Collection):
+    product.collections = product.collections + [collection]
+
+    await product.save()
+
+    return
+
+
+async def remove_collection(product: Product, collection: Collection):
+    product.collections = [c for c in product.collections if c.id != collection.id]
+
+    await product.save()
+
+    return product

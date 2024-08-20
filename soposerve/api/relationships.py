@@ -78,7 +78,8 @@ async def add_product_to_collection(
         )
 
     try:
-        await product.add_collection(name=product_name, collection=coll)
+        item = await product.read_by_name(name=product_name, version=None)
+        await product.add_collection(product=item, collection=coll)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -101,7 +102,8 @@ async def remove_product_from_collection(
         )
 
     try:
-        await product.remove_collection(name=product_name, collection=coll)
+        item = await product.read_by_name(name=product_name, version=None)
+        await product.remove_collection(product=item, collection=coll)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -132,9 +134,11 @@ async def add_child_product(
     await check_user_for_privilege(calling_user, Privilege.CREATE_RELATIONSHIP)
 
     try:
+        source = await product.read_by_name(name=name, version=None)
+        destination = await product.read_by_name(name=child_name, version=None)
         await product.add_relationship(
-            source=name,
-            destination=child_name,
+            source=source,
+            destination=destination,
             type="child",
         )
     except product.ProductNotFound:
@@ -152,50 +156,12 @@ async def remove_child_product(
     await check_user_for_privilege(calling_user, Privilege.DELETE_RELATIONSHIP)
 
     try:
+        source = await product.read_by_name(name=name, version=None)
+        destination = await product.read_by_name(name=child_name, version=None)
         await product.remove_relationship(
-            source=name,
-            destination=child_name,
+            source=source,
+            destination=destination,
             type="child",
-        )
-    except product.ProductNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
-        )
-
-
-@relationship_router.put("/product/{name}/related_to/{related_name}")
-async def add_related_product(
-    name: str,
-    related_name: str,
-    calling_user: UserDependency,
-) -> None:
-    await check_user_for_privilege(calling_user, Privilege.CREATE_RELATIONSHIP)
-
-    try:
-        await product.add_relationship(
-            source=name,
-            destination=related_name,
-            type="related",
-        )
-    except product.ProductNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
-        )
-
-
-@relationship_router.delete("/product/{name}/related_to/{related_name}")
-async def remove_related_product(
-    name: str,
-    related_name: str,
-    calling_user: UserDependency,
-) -> None:
-    await check_user_for_privilege(calling_user, Privilege.DELETE_RELATIONSHIP)
-
-    try:
-        await product.remove_relationship(
-            source=name,
-            destination=related_name,
-            type="related",
         )
     except product.ProductNotFound:
         raise HTTPException(

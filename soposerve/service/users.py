@@ -4,6 +4,8 @@ Facilities for creating and updating users.
 
 import secrets
 
+from beanie import PydanticObjectId
+
 from soposerve.database import Privilege, User
 
 # TODO: Settings
@@ -35,6 +37,15 @@ async def create(name: str, privileges: list[Privilege]) -> User:
 
 async def read(name: str) -> User:
     result = await User.find(User.name == name).first_or_none()
+
+    if result is None:
+        raise UserNotFound
+
+    return result
+
+
+async def read_by_id(id: PydanticObjectId) -> User:
+    result = await User.get(id)
 
     if result is None:
         raise UserNotFound
