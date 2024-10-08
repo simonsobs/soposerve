@@ -89,8 +89,9 @@ class Client:
             metadata = SimpleMetadata()
 
         response = self.http.put(
-            f"/product/{name}",
+            "/product/new",
             json={
+                "name": name,
                 "description": description,
                 "metadata": metadata.model_dump(),
                 "sources": source_metadata,
@@ -98,6 +99,8 @@ class Client:
         )
 
         response.raise_for_status()
+
+        this_product_id = response.json()["id"]
 
         if verbose:
             console.print("Successfully created product in remote database.")
@@ -117,7 +120,7 @@ class Client:
                     console.print("Successfully uploaded file:", source.name)
 
         # Confirm the upload to SOPO.
-        response = self.http.post(f"/product/{name}/confirm")
+        response = self.http.post(f"/product/{this_product_id}/confirm")
 
         response.raise_for_status()
 
