@@ -3,6 +3,7 @@ Models for relationships and collections.
 """
 
 from pydantic import BaseModel
+import datetime
 
 
 class CreateCollectionRequest(BaseModel):
@@ -21,6 +22,8 @@ class ReadCollectionProductResponse(BaseModel):
     name: str
     description: str
     owner: str
+    size: int
+    uploaded: datetime.datetime
 
 
 class ReadCollectionResponse(BaseModel):
