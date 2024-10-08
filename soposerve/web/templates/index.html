@@ -11,7 +11,7 @@
     {% for collection in collections %}
     <tr>
         <td><a href='collections/{{ collection.name | e }}'>{{ collection.name }}</a></td>
-        <td colspan="2">{{ collection.description }}</td>
+        <td colspan="2">{{ collection.description | truncate }}</td>
         <td>{{ collection.products|length }}</td>
     </tr>
     {% endfor %}

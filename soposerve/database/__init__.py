@@ -73,6 +73,7 @@ class FileMetadata(BaseModel):
 
     id: PydanticObjectId
     name: str
+    description: str | None = None
     uploader: str
     uuid: str
     bucket: str
@@ -86,6 +87,7 @@ class File(Document, FileMetadata):
         return FileMetadata(
             id=self.id,
             name=self.name,
+            description=self.description,
             uploader=self.uploader,
             uuid=self.uuid,
             bucket=self.bucket,

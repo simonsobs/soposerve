@@ -56,7 +56,6 @@ async def read_collection(
                 name=x.name,
                 description=x.description,
                 owner=x.owner.name,
-                size=x.size,
                 uploaded=x.uploaded,
             )
             for x in item.products

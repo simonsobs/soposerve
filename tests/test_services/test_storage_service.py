@@ -10,6 +10,7 @@ from soposerve.service import storage as storage_service
 async def test_create_storage_item(storage, created_user, database):
     file, put = await storage_service.create(
         name="test_file.txt",
+        description=None,
         uploader=created_user.name,
         size=1234,
         checksum="FakeChecksum",

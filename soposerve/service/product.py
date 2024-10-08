@@ -41,6 +41,7 @@ class PreUploadFile(BaseModel):
     name: str
     size: int
     checksum: str
+    description: str | None = None
 
 
 class PostUploadFile(BaseModel):
@@ -48,6 +49,7 @@ class PostUploadFile(BaseModel):
     size: int
     checksum: str
     url: str | None
+    description: str | None
     available: bool
 
 
@@ -60,6 +62,7 @@ async def presign_uploads(
     for source in sources:
         pre_upload_source, presigned_url = await storage_service.create(
             name=source.name,
+            description=source.description,
             uploader=user.name,
             size=source.size,
             checksum=source.checksum,
@@ -205,6 +208,7 @@ async def read_files(product: Product, storage: Storage) -> list[PostUploadFile]
             name=x.name,
             size=x.size,
             checksum=x.checksum,
+            description=x.description,
             url=storage.get(
                 name=x.name, uploader=x.uploader, uuid=x.uuid, bucket=x.bucket
             )

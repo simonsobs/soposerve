@@ -44,6 +44,7 @@ class Client:
         description: str,
         metadata: ALL_METADATA_TYPE,
         sources: list[Path],
+        source_descriptions: list[str | None],
         verbose: bool = False,
     ):
         """
@@ -71,14 +72,17 @@ class Client:
         """
 
         # Check and validate the sources.
+        assert len(sources) == len(source_descriptions)
+
         source_metadata = []
 
-        for source in sources:
+        for source, source_description in zip(sources, source_descriptions):
             with source.open("rb") as file:
                 file_info = {
                     "name": source.name,
                     "size": source.stat().st_size,
                     "checksum": f"xxh64:{xxhash.xxh64(file.read()).hexdigest()}",
+                    "description": source_description,
                 }
                 source_metadata.append(file_info)
                 if verbose:
@@ -110,11 +114,12 @@ class Client:
             with source.open("rb") as file:
                 if verbose:
                     console.print("Uploading file:", source.name)
-                response = self.http.put(
+
+                individual_response = self.http.put(
                     response.json()["upload_urls"][source.name], data=file
                 )
 
-                response.raise_for_status()
+                individual_response.raise_for_status()
 
                 if verbose:
                     console.print("Successfully uploaded file:", source.name)

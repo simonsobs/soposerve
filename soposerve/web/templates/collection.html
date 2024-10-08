@@ -1,9 +1,10 @@
 {% extends "core.html" %}
 {% block content %}
 <div class="container">
-<h1>Collection Listing</h1>
 <h2>{{ collection.name }}</h2>
-<p>{{ collection.description }}</p>
+{% markdown %}
+{{ collection.description }}
+{% endmarkdown %}
 <table class="table">
     <tr>
         <th>Product</th>

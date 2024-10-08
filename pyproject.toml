@@ -22,6 +22,7 @@ dependencies = [
     "minio",
     "jinja2",
     "xxhash",
+    "jinja-markdown",
 ]
 
 [project.optional-dependencies]

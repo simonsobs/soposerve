@@ -16,7 +16,7 @@ from soposerve.service import collection, product
 # TODO: Static file moutning.
 
 web_router = APIRouter(prefix="/web")
-templates = Jinja2Templates(directory="soposerve/web/templates")
+templates = Jinja2Templates(directory="soposerve/web/templates", extensions=["jinja_markdown.MarkdownExtension"])
 
 
 @web_router.get("/")

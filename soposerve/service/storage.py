@@ -21,6 +21,7 @@ GLOBAL_BUCKET_NAME = "global"
 
 async def create(
     name: str,
+    description: str | None,
     uploader: str,
     size: int,
     checksum: str,
@@ -30,6 +31,7 @@ async def create(
         # Strip any paths that were passed to us through
         # the layers, just in case.
         name=os.path.basename(name),
+        description=description,
         uploader=uploader,
         uuid=UUID(),
         bucket=GLOBAL_BUCKET_NAME,

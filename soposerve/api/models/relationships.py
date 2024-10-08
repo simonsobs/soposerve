@@ -22,7 +22,6 @@ class ReadCollectionProductResponse(BaseModel):
     name: str
     description: str
     owner: str
-    size: int
     uploaded: datetime.datetime
 
 

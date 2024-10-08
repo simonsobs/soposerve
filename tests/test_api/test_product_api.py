@@ -21,7 +21,8 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
     TEST_PRODUCT_NAME = "test_product"
     TEST_PRODUCT_DESCRIPTION = "test_description"
     TEST_PRODUCT_SOURCES = [
-        PreUploadFile(name="test_file", size=100, checksum="test_checksum").model_dump()
+        PreUploadFile(name="test_file", size=100, checksum="test_checksum").model_dump(),
+        PreUploadFile(name="test_file2", size=100, checksum="test_checksum").model_dump(),
     ]
 
     response = test_api_client.put(
@@ -57,7 +58,6 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
         f"/product/{product_id}/tree", params={"data": True}
     )
     assert response.status_code == 200
-
 
 def test_upload_product_again(
     test_api_client: TestClient, test_api_product: tuple[str, str]

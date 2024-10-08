@@ -38,6 +38,36 @@ async def test_get_existing_file(created_full_product, database):
 
 
 @pytest.mark.asyncio(scope="session")
+async def test_create_file_with_multiple_sources(database, created_user, storage):
+    sources = [
+        product.PreUploadFile(name="file1.txt", size=128, checksum="not_real"),
+        product.PreUploadFile(name="file2.txt", size=128, checksum="not_real"),
+    ]
+
+    created_product, uploads = await product.create(
+        name="Multiple Source Product",
+        description="A product with multiple sources",
+        metadata={"metadata_type": "simple"},
+        sources=sources,
+        user=created_user,
+        storage=storage,
+    )
+
+    assert len(created_product.sources) == 2
+
+    FILE_CONTENTS = b"0x0" * 128
+
+    with io.BytesIO(FILE_CONTENTS) as f:
+        for put in uploads.values():
+            # Must go back to the start or we write 0 bytes!
+            f.seek(0)
+            requests.put(put, f)
+
+    assert await product.confirm(created_product, storage=storage)
+
+    await product.delete_one(created_product, storage=storage, data=True)
+
+@pytest.mark.asyncio(scope="session")
 async def test_presign_read(created_full_product, storage):
     sources = await product.read_files(created_full_product, storage)
 

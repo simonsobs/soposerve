@@ -8,7 +8,9 @@
 <span class="badge text-bg-secondary">Owner: {{ product.owner.name }}</span>
 
 <h2>Product Description</h2>
-<p>{{ product.description }}</p>
+{% markdown %}
+{{ product.description }}
+{% endmarkdown %}
 
 <h3>Sources</h3>
 <table class="table">
