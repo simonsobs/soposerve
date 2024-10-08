@@ -30,14 +30,18 @@ async def index(request: Request):
     )
 
 
-@web_router.get("/products/{name}")
-async def product_view(request: Request, name: str):
-    product_instance = await product.read(name)
-    sources = await product.presign_read(product_instance, storage=request.app.storage)
+@web_router.get("/products/{id}")
+async def product_view(request: Request, id: str):
+    product_instance = await product.read_by_id(id)
+    sources = await product.read_files(product_instance, storage=request.app.storage)
+
+    # Grab the history!
+    latest_version = await product.walk_to_current(product_instance)
+    version_history = await product.walk_history(latest_version)
 
     return templates.TemplateResponse(
         "product.html",
-        {"request": request, "product": product_instance, "sources": sources},
+        {"request": request, "product": product_instance, "sources": sources, "versions": version_history},
     )
 
 

@@ -1,60 +1,97 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Simons Observatory Post Office</title>
-</head>
-<body>
-    <h1>Product Listing</h1>
-    <h2>{{ product.name }}</h2>
-    <p>{{ product.description }}</p>
-    <p>Uploaded: {{ product.uploaded }}</p>
-    <p>Modified: {{ product.updated }}</p>
-    <p>Owner: {{ product.owner.name }}</p>
-    {% if product.metadata %}
-    <p>Metadata:
-        <ul>
-            {% for key, value in product.metadata.model_dump().items() %}
-            <li>{{ key }}: {{ value }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-    {% if product.child_of %}
-    <p>
-        Parents:
-        <ul>
-            {% for parent in product.child_of %}
-            <li><a href='{{ parent.name | e}}'>{{ parent.name }}</a></li>
-            {% endfor %}
-        </ul>
-    </p>
-    {% endif %}
-    {% if product.parent_of %}
-    <p>
-        Children:
-        <ul>
-            {% for child in product.parent_of %}
-            <li><a href='{{ child.name | e }}'>{{ child.name }}</a></li>
-            {% endfor %}
-        </ul>
-    </p>
-    {% endif %}
-    {% if product.collections %}
-    <p>
-        Member of collections:
-        <ul>
-            {% for collection in product.collections %}
-            <li><a href='../collections/{{ collection.name | e }}'>{{ collection.name }}</a></li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-    </p>
-    <p>Sources:
-        <ul>
-            {% for source in sources %}
-            <li><a href='{{ source.url }}''>{{ source.name }}</a> ({{ source.size }} B)</li>
-            {% endfor %}
-        </ul>
-    </p>
-</body>
-</html>
+{% extends "core.html" %}
+{% block content %}
+<div class="container">
+
+<h1>{{ product.name }}</h1>
+<span class="badge text-bg-secondary">Uploaded: {{ product.uploaded.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+<span class="badge text-bg-secondary">Modified: {{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+<span class="badge text-bg-secondary">Owner: {{ product.owner.name }}</span>
+
+<h2>Product Description</h2>
+<p>{{ product.description }}</p>
+
+<h3>Sources</h3>
+<table class="table">
+    <tr>
+        <th>Link</th>
+        <th>Size</th>
+    </tr>
+    {% for source in sources %}
+    <tr>
+        <td><a href='{{ source.url }}'>{{ source.name }}</a></td>
+        <td>{{ source.size }} B</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<div class="row">
+<div class="col">
+{% if product.metadata %}
+<h3>Metadata</h3>
+{% for key, value in product.metadata.model_dump().items() %}
+{% if key != 'metadata_type' %}
+<ul class="list-group d-inline-flex p-2 font-monospace small ps-0">
+    <li class="list-group-item list-group-item-primary">{{ key }}</li>
+    <li class="list-group-item">{{ value }}</li>
+</ul>
+{% endif %}
+{% endfor %}
+{% endif %}
+</div>
+<div class="col">
+{% if product.child_of %}
+<div class="row">
+<p>
+    Parents:
+    <ul>
+        {% for parent in product.child_of %}
+        <li><a href='{{ parent.id | e}}'>{{ parent.name }}</a></li>
+        {% endfor %}
+    </ul>
+</p>
+</div>
+{% endif %}
+{% if product.parent_of %}
+<div class="row">
+<p>
+    Children:
+    <ul>
+        {% for child in product.parent_of %}
+        <li><a href='{{ child.id | e }}'>{{ child.name }}</a></li>
+        {% endfor %}
+    </ul>
+</p>
+</div>
+{% endif %}
+{% if product.collections %}
+<div class="row">
+<h3>Collections</h3>
+<div class="container">
+{% for collection in product.collections %}
+<a href="../collections/{{ collection.name | e }}">
+<button type="button" class="btn btn-outline-primary">
+   {{ collection.name }}
+</button>
+</a>
+{% endfor %}
+</div>
+</div>
+{% endif %}
+<div class="row">
+<h3>Version History</h3>
+<table class="table">
+    <tr>
+        <th>Version</th>
+        <th>Updated</th>
+    </tr>
+    {% for version, metadata in versions.items() %}
+    <tr>
+        <td><a href='{{ metadata.id | e }}'>{{ version }}</a></td>
+        <td>{{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+    </tr>
+    {% endfor %}
+</table>
+</div>
+</div>
+</div>
+{% endblock %}
