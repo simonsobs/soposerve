@@ -2,8 +2,9 @@
 Models for relationships and collections.
 """
 
-from pydantic import BaseModel
 import datetime
+
+from pydantic import BaseModel
 
 
 class CreateCollectionRequest(BaseModel):

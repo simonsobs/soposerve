@@ -50,6 +50,7 @@ class PostUploadFile(BaseModel):
     checksum: str
     url: str | None
     description: str | None
+    object_name: str | None
     available: bool
 
 
@@ -211,6 +212,11 @@ async def read_files(product: Product, storage: Storage) -> list[PostUploadFile]
             description=x.description,
             url=storage.get(
                 name=x.name, uploader=x.uploader, uuid=x.uuid, bucket=x.bucket
+            )
+            if x.available
+            else None,
+            object_name=storage.object_name(
+                filename=x.name, uploader=x.uploader, uuid=x.uuid
             )
             if x.available
             else None,

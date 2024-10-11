@@ -9,7 +9,9 @@ from sopometa import MapMetadata
 
 API_KEY = "TEST_API_KEY"
 SERVER_LOCATION = "http://127.0.0.1:8000"
-COLLECTION_NAME = "ACT DR4 Frequency Maps at 98 and 150 GHz presented in Aiola et al. 2020"
+COLLECTION_NAME = (
+    "ACT DR4 Frequency Maps at 98 and 150 GHz presented in Aiola et al. 2020"
+)
 
 COLLECTION_DESCRIPTION = """
 These FITS files are the maps made with the nighttime 2013(s13) to 2016(s16) data from the ACTPol camera on the ACT telescope at 98(f090) and 150(f150) GHz.
@@ -53,27 +55,31 @@ The "map_srcfree", "srcs", and "ivar" maps are calibrated with a single coeffici
 - Baseline software to handle these maps is Pixell (https://github.com/simonsobs/pixell).
 """
 
+
 def get_patch(path: Path) -> str:
     patches = ["D1", "D5", "D6", "D56", "D8", "BN", "AA"]
 
     for patch in patches:
         if patch in path.name:
             return patch
-        
+
+
 def get_set(path: Path) -> str:
     sets = ["set0", "set1", "set2", "set3", "coadd"]
 
     for set_ in sets:
         if set_ in path.name:
             return set_
-        
+
+
 def get_map_type(path: Path) -> str:
     map_types = ["map_srcfree", "srcs", "ivar", "xlink"]
 
     for map_type in map_types:
         if map_type in path.name:
             return map_type
-        
+
+
 def get_description(path: Path) -> str:
     sub_set_main_descriptions = {
         "set0": "ACT DR4 4-way Split 0. Includes all the maps from the 4-way split 0, see the collection for more details",
@@ -89,22 +95,23 @@ def get_description(path: Path) -> str:
 
     return f"{sub_set_main_descriptions[set_]} (Patch {patch})."
 
+
 def find_primary_map(list: list[Path]) -> Path:
     for path in list:
         if "map_srcfree" in path.name:
             return path
 
-        
+
 def get_name(path: Path) -> str:
     patch = get_patch(path)
     set_ = get_set(path)
 
     return f"ACT DR4 (Patch {patch}) 4-way ({set_})"
 
+
 if __name__ == "__main__":
     sub_sets = {}
 
-   
     for fits_file in Path(".").glob("*.fits"):
         name = get_name(fits_file)
 
@@ -112,7 +119,6 @@ if __name__ == "__main__":
             sub_sets[name] = [fits_file]
         else:
             sub_sets[name].append(fits_file)
-
 
     sub_sets_descriptions_linker = {
         "map_srcfree": "I, Q, U source-free map",
@@ -127,8 +133,7 @@ if __name__ == "__main__":
                 return description
 
     sub_sets_descriptions = {
-        x: [link_to_path(y) for y in sub_sets[x]]
-        for x in sub_sets.keys()
+        x: [link_to_path(y) for y in sub_sets[x]] for x in sub_sets.keys()
     }
 
     client = Client(api_key=API_KEY, host=SERVER_LOCATION)

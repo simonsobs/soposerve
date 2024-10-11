@@ -67,6 +67,7 @@ async def test_create_file_with_multiple_sources(database, created_user, storage
 
     await product.delete_one(created_product, storage=storage, data=True)
 
+
 @pytest.mark.asyncio(scope="session")
 async def test_presign_read(created_full_product, storage):
     sources = await product.read_files(created_full_product, storage)
