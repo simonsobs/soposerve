@@ -23,7 +23,7 @@ dependencies = [
     "jinja2",
     "xxhash",
     "jinja-markdown",
-    "fire",
+    "typer",
 ]
 
 [project.optional-dependencies]
