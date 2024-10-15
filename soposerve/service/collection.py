@@ -5,6 +5,7 @@ Note that adding to and removing from collections is provided as part of
 the product service.
 """
 
+from beanie import PydanticObjectId
 from beanie.operators import Text
 
 from soposerve.database import Collection
@@ -29,10 +30,10 @@ async def create(
 
 
 async def read(
-    name: str,
+    id: PydanticObjectId,
 ):
     collection = await Collection.find(
-        Collection.name == name, fetch_links=True
+        Collection.id == id, fetch_links=True
     ).first_or_none()
 
     if collection is None:
@@ -63,10 +64,10 @@ async def search_by_name(name: str, fetch_links: bool = True) -> list[Collection
 
 
 async def update(
-    name: str,
+    id: PydanticObjectId,
     description: str | None,
 ):
-    collection = await read(name=name)
+    collection = await read(id=id)
 
     if description is not None:
         await collection.set({Collection.description: description})
@@ -75,9 +76,9 @@ async def update(
 
 
 async def delete(
-    name: str,
+    id: PydanticObjectId,
 ):
-    collection = await read(name=name)
+    collection = await read(id=id)
 
     await collection.delete()
 

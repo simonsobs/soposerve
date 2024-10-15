@@ -70,7 +70,7 @@
 <h3>Collections</h3>
 <div class="container">
 {% for collection in product.collections %}
-<a href="../collections/{{ collection.name | e }}">
+<a href="../collections/{{ collection.id | e }}">
 <button type="button" class="btn btn-outline-primary">
    {{ collection.name }}
 </button>

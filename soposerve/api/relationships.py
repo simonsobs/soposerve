@@ -2,6 +2,7 @@
 API endpoints for relationships between products and collections.
 """
 
+from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, Request, status
 
 from soposerve.api.auth import UserDependency, check_user_for_privilege
@@ -31,9 +32,9 @@ async def create_collection(
     return str(coll.id)
 
 
-@relationship_router.get("/collection/{name}")
+@relationship_router.get("/collection/{id}")
 async def read_collection(
-    name: str,
+    id: PydanticObjectId,
     request: Request,
     calling_user: UserDependency,
 ) -> ReadCollectionResponse:
@@ -44,7 +45,7 @@ async def read_collection(
     await check_user_for_privilege(calling_user, Privilege.READ_COLLECTION)
 
     try:
-        item = await collection.read(name=name)
+        item = await collection.read(id=id)
     except collection.CollectionNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
@@ -94,23 +95,23 @@ async def search_collection(
     ]
 
 
-@relationship_router.put("/collection/{collection_name}/{product_name}")
+@relationship_router.put("/collection/{collection_id}/{product_id}")
 async def add_product_to_collection(
-    collection_name: str,
-    product_name: str,
+    collection_id: PydanticObjectId,
+    product_id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
     await check_user_for_privilege(calling_user, Privilege.UPDATE_COLLECTION)
 
     try:
-        coll = await collection.read(name=collection_name)
+        coll = await collection.read(id=collection_id)
     except collection.CollectionNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
         )
 
     try:
-        item = await product.read_by_name(name=product_name, version=None)
+        item = await product.read_by_id(id=product_id)
         await product.add_collection(product=item, collection=coll)
     except product.ProductNotFound:
         raise HTTPException(
@@ -118,23 +119,23 @@ async def add_product_to_collection(
         )
 
 
-@relationship_router.delete("/collection/{collection_name}/{product_name}")
+@relationship_router.delete("/collection/{collection_id}/{product_id}")
 async def remove_product_from_collection(
-    collection_name: str,
-    product_name: str,
+    collection_id: PydanticObjectId,
+    product_id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
     await check_user_for_privilege(calling_user, Privilege.UPDATE_COLLECTION)
 
     try:
-        coll = await collection.read(name=collection_name)
+        coll = await collection.read(id=collection_id)
     except collection.CollectionNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
         )
 
     try:
-        item = await product.read_by_name(name=product_name, version=None)
+        item = await product.read_by_id(id=product_id)
         await product.remove_collection(product=item, collection=coll)
     except product.ProductNotFound:
         raise HTTPException(
@@ -142,32 +143,32 @@ async def remove_product_from_collection(
         )
 
 
-@relationship_router.delete("/collection/{name}")
+@relationship_router.delete("/collection/{id}")
 async def delete_collection(
-    name: str,
+    id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
     await check_user_for_privilege(calling_user, Privilege.DELETE_COLLECTION)
 
     try:
-        await collection.delete(name=name)
+        await collection.delete(id=id)
     except collection.CollectionNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
         )
 
 
-@relationship_router.put("/product/{name}/child_of/{child_name}")
+@relationship_router.put("/product/{parent_id}/child_of/{child_id}")
 async def add_child_product(
-    name: str,
-    child_name: str,
+    parent_id: PydanticObjectId,
+    child_id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
     await check_user_for_privilege(calling_user, Privilege.CREATE_RELATIONSHIP)
 
     try:
-        source = await product.read_by_name(name=name, version=None)
-        destination = await product.read_by_name(name=child_name, version=None)
+        source = await product.read_by_id(id=parent_id)
+        destination = await product.read_by_id(id=child_id)
         await product.add_relationship(
             source=source,
             destination=destination,
@@ -179,17 +180,17 @@ async def add_child_product(
         )
 
 
-@relationship_router.delete("/product/{name}/child_of/{child_name}")
+@relationship_router.delete("/product/{parent_id}/child_of/{child_id}")
 async def remove_child_product(
-    name: str,
-    child_name: str,
+    parent_id: PydanticObjectId,
+    child_id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
     await check_user_for_privilege(calling_user, Privilege.DELETE_RELATIONSHIP)
 
     try:
-        source = await product.read_by_name(name=name, version=None)
-        destination = await product.read_by_name(name=child_name, version=None)
+        source = await product.read_by_id(id=parent_id)
+        destination = await product.read_by_id(id=child_id)
         await product.remove_relationship(
             source=source,
             destination=destination,

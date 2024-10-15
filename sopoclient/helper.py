@@ -41,8 +41,12 @@ def render_collection_metadata_list(
     table = rich.table.Table("ID", "Name", "Description")
 
     for collection in input:
-        table.add_row(
-            str(collection.id), collection.name, collection.description.strip("\n")
-        )
+        description = collection.description.strip("\n")
+
+        # Truncate it if it's too long
+        if len(description) > 512:
+            description = description[:512] + "..."
+
+        table.add_row(str(collection.id), collection.name, description)
 
     return table

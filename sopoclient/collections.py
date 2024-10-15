@@ -49,7 +49,7 @@ def create(
 
 def read(
     client: Client,
-    name: str,
+    id: str,
 ) -> ReadCollectionResponse:
     """
     Read a collection from SOPO.
@@ -58,8 +58,8 @@ def read(
     ---------
     client: Client
         The client to use for interacting with the SOPO API.
-    name : str
-        The name of the collection to read.
+    id : str
+        The id of the collection to read.
 
     Returns
     -------
@@ -72,14 +72,14 @@ def read(
         If a request to the API fails
     """
 
-    response = client.get(f"/relationships/collection/{name}")
+    response = client.get(f"/relationships/collection/{id}")
 
     response.raise_for_status()
 
     model = ReadCollectionResponse.model_validate_json(response.content)
 
     if client.verbose:
-        console.print(f"Successfully read collection {name}.")
+        console.print(f"Successfully read collection {model.name} ({id}).")
 
     return model
 
@@ -118,7 +118,7 @@ def search(client: Client, name: str) -> list[ReadCollectionResponse]:
     return models
 
 
-def add(client: Client, name: str, product: str) -> bool:
+def add(client: Client, id: str, product: str) -> bool:
     """
     Add a product to a collection in SOPO.
 
@@ -126,10 +126,10 @@ def add(client: Client, name: str, product: str) -> bool:
     ---------
     client: Client
         The client to use for interacting with the SOPO API.
-    name : str
-        The name of the collection to add the product to.
+    id : str
+        The id of the collection to add the product to.
     product : str
-        The name of the product to add to the collection (not the ID).
+        The id of the product to add to the collection.
 
     Raises
     ------
@@ -137,20 +137,20 @@ def add(client: Client, name: str, product: str) -> bool:
         If a request to the API fails
     """
 
-    response = client.put(f"/relationships/collection/{name}/{product}")
+    response = client.put(f"/relationships/collection/{id}/{product}")
 
     response.raise_for_status()
 
     if client.verbose:
         console.print(
-            f"Successfully added product {product} to collection {name}.",
+            f"Successfully added product {product} to collection {id}.",
             style="bold green",
         )
 
     return True
 
 
-def remove(client: Client, name: str, product: str) -> bool:
+def remove(client: Client, id: str, product: str) -> bool:
     """
     Remove a product from a collection in SOPO.
 
@@ -159,9 +159,9 @@ def remove(client: Client, name: str, product: str) -> bool:
     client: Client
         The client to use for interacting with the SOPO API.
     name : str
-        The name of the collection to remove the product from.
+        The id of the collection to remove the product from.
     product : str
-        The name of the product to remove from the collection (not the ID).
+        The id of the product to remove from the collection.
 
     Raises
     ------
@@ -169,20 +169,20 @@ def remove(client: Client, name: str, product: str) -> bool:
         If a request to the API fails
     """
 
-    response = client.delete(f"/relationships/collection/{name}/{product}")
+    response = client.delete(f"/relationships/collection/{id}/{product}")
 
     response.raise_for_status()
 
     if client.verbose:
         console.print(
-            f"Successfully removed product {product} from collection {name}.",
+            f"Successfully removed product {product} from collection {id}.",
             style="bold green",
         )
 
     return True
 
 
-def delete(client: Client, name: str) -> bool:
+def delete(client: Client, id: str) -> bool:
     """
     Delete a collection from SOPO.
 
@@ -190,7 +190,7 @@ def delete(client: Client, name: str) -> bool:
     ----------
     client: Client
         The client to use for interacting with the SOPO API.
-    name : str
+    id : str
         The name of the collection to delete.
 
     Raises
@@ -199,11 +199,11 @@ def delete(client: Client, name: str) -> bool:
         If a request to the API fails
     """
 
-    response = client.delete(f"/relationships/collection/{name}")
+    response = client.delete(f"/relationships/collection/{id}")
 
     response.raise_for_status()
 
     if client.verbose:
-        console.print(f"Successfully deleted collection {name}.", style="bold green")
+        console.print(f"Successfully deleted collection {id}.", style="bold green")
 
     return True

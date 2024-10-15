@@ -99,5 +99,5 @@ async def created_collection(database):
     yield data
 
     await collection.delete(
-        name=data.name,
+        id=data.id,
     )

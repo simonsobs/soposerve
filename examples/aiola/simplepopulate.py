@@ -161,6 +161,6 @@ if __name__ == "__main__":
 
         add_to_collection(
             client=client,
-            name=COLLECTION_NAME,
-            product=sub_set,
+            id=collection_id,
+            product=product_id,
         )

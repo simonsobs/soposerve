@@ -3,6 +3,7 @@ Tests for the collection service.
 """
 
 import pytest
+from beanie import PydanticObjectId
 
 from soposerve.service import collection
 
@@ -10,7 +11,7 @@ from soposerve.service import collection
 @pytest.mark.asyncio(scope="session")
 async def test_update(created_collection):
     updated = await collection.update(
-        name=created_collection.name,
+        id=created_collection.id,
         description="New description",
     )
 
@@ -29,6 +30,6 @@ async def test_search(created_collection):
 async def test_update_missing():
     with pytest.raises(collection.CollectionNotFound):
         await collection.update(
-            name="Missing Collection",
+            id=PydanticObjectId("7" * 24),
             description="New description",
         )

@@ -59,19 +59,19 @@ def product_search(text: str):
 
 
 @collection_app.command("read")
-def collection_read(name: str):
+def collection_read(id: str):
     """
     Read the information of a collection by its name.
     """
     global CLIENT, CONSOLE
 
-    collection = sc.collections.read(client=CLIENT, name=name)
+    collection = sc.collections.read(client=CLIENT, id=id)
 
     table = helper.render_product_metadata_list(collection.products)
 
     CONSOLE.print(collection.name + "\n", style="bold underline color(3)")
-    CONSOLE.print(collection.description.strip("\n") + "\n")
-    CONSOLE.print("Products" + "\n", style="bold color(2)")
+    CONSOLE.print(rich.markdown.Markdown(collection.description.strip("\n")))
+    CONSOLE.print("\n" + "Products" + "\n", style="bold color(2)")
     CONSOLE.print(table)
 
 
