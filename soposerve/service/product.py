@@ -164,7 +164,7 @@ async def search_by_name(name: str, fetch_links: bool = True) -> list[Product]:
     """
 
     results = (
-        await Product.find(Text(name), fetch_links=fetch_links)
+        await Product.find(Text(name), Product.current == True, fetch_links=fetch_links)  # noqa: E712
         .sort([("score", {"$meta": "textScore"})])
         .to_list()
     )

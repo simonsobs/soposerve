@@ -13,6 +13,7 @@ from soposerve.api.product import product_router
 from soposerve.api.relationships import relationship_router
 from soposerve.api.users import users_router
 from soposerve.database import BEANIE_MODELS
+from soposerve.service.users import UserNotFound
 from soposerve.settings import SETTINGS
 from soposerve.storage import Storage
 
@@ -31,7 +32,11 @@ async def lifespan(app: FastAPI):
     if SETTINGS.create_test_user:
         from soposerve.service import users
 
-        user = await users.create(name="admin", privileges=list(users.Privilege))
+        try:
+            user = await users.read(name="admin")
+        except UserNotFound:
+            user = await users.create(name="admin", privileges=list(users.Privilege))
+
         await user.set({users.User.api_key: "TEST_API_KEY"})
         print(
             f"Created test user: {user.name} with API key: {user.api_key}. "

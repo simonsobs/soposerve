@@ -51,11 +51,14 @@ async def read_collection(
         )
 
     return ReadCollectionResponse(
+        id=item.id,
         name=item.name,
         description=item.description,
         products=[
             ReadCollectionProductResponse(
+                id=x.id,
                 name=x.name,
+                version=x.version,
                 description=x.description,
                 owner=x.owner.name,
                 uploaded=x.uploaded,
@@ -63,6 +66,32 @@ async def read_collection(
             for x in item.products
         ],
     )
+
+
+@relationship_router.get("/collection/search/{name}")
+async def search_collection(
+    name: str,
+    request: Request,
+    calling_user: UserDependency,
+) -> list[ReadCollectionResponse]:
+    """
+    Search for collections by name. Products are not returned; these should be
+    fetched separately through the read_collection endpoint.
+    """
+
+    await check_user_for_privilege(calling_user, Privilege.READ_COLLECTION)
+
+    results = await collection.search_by_name(name=name)
+
+    return [
+        ReadCollectionResponse(
+            id=item.id,
+            name=item.name,
+            description=item.description,
+            products=None,
+        )
+        for item in results
+    ]
 
 
 @relationship_router.put("/collection/{collection_name}/{product_name}")

@@ -5,6 +5,8 @@ Note that adding to and removing from collections is provided as part of
 the product service.
 """
 
+from beanie.operators import Text
+
 from soposerve.database import Collection
 
 
@@ -44,6 +46,20 @@ async def read_most_recent(
 ) -> list[Collection]:
     # TODO: Implement updated time for collections.
     return await Collection.find(fetch_links=fetch_links).to_list(maximum)
+
+
+async def search_by_name(name: str, fetch_links: bool = True) -> list[Collection]:
+    """
+    Search for Collections by name using the text index.
+    """
+
+    results = (
+        await Collection.find(Text(name), fetch_links=fetch_links)  # noqa: E712
+        .sort([("score", {"$meta": "textScore"})])
+        .to_list()
+    )
+
+    return results
 
 
 async def update(

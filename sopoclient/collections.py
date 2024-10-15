@@ -84,6 +84,40 @@ def read(
     return model
 
 
+def search(client: Client, name: str) -> list[ReadCollectionResponse]:
+    """
+    Search for collections in SOPO.
+
+    Arguments
+    ---------
+    client: Client
+        The client to use for interacting with the SOPO API.
+    name : str
+        The name of the collection to search for.
+
+    Returns
+    -------
+    list[ReadCollectionResponse]
+        The response from the API.
+
+    Raises
+    ------
+    httpx.HTTPStatusError
+        If a request to the API fails
+    """
+
+    response = client.get(f"/relationships/collection/search/{name}")
+
+    response.raise_for_status()
+
+    models = [ReadCollectionResponse.model_validate(x) for x in response.json()]
+
+    if client.verbose:
+        console.print(f"Successfully searched for collection {name}.")
+
+    return models
+
+
 def add(client: Client, name: str, product: str) -> bool:
     """
     Add a product to a collection in SOPO.
