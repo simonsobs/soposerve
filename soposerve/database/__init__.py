@@ -7,6 +7,7 @@ from enum import Enum
 
 from beanie import BackLink, Document, Indexed, Link, PydanticObjectId
 from pydantic import BaseModel, Field
+import pymongo
 
 from sopometa import ALL_METADATA_TYPE
 
@@ -126,7 +127,7 @@ class ProductMetadata(BaseModel):
 
 
 class Product(Document, ProductMetadata):
-    name: str = Indexed(str)
+    name: Indexed(str, pymongo.TEXT)
 
     sources: list[File]
     owner: Link[User]
