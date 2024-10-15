@@ -21,12 +21,14 @@ async def create_collection(
     name: str,
     model: CreateCollectionRequest,
     calling_user: UserDependency,
-) -> None:
+) -> str:
     await check_user_for_privilege(calling_user, Privilege.CREATE_COLLECTION)
 
     # TODO: What to do if collection exists?
     # TODO: Collections should have a 'manager' who can change their properties.
-    await collection.create(name=name, description=model.description)
+    coll = await collection.create(name=name, description=model.description)
+
+    return str(coll.id)
 
 
 @relationship_router.get("/collection/{name}")

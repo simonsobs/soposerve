@@ -5,6 +5,8 @@ Populates the simple example server with a bunch of ACT maps.
 from pathlib import Path
 
 from sopoclient import Client
+from sopoclient.product import create as create_product
+from sopoclient.collections import create as create_collection, add as add_to_collection
 from sopometa import MapMetadata
 
 API_KEY = "TEST_API_KEY"
@@ -136,9 +138,10 @@ if __name__ == "__main__":
         x: [link_to_path(y) for y in sub_sets[x]] for x in sub_sets.keys()
     }
 
-    client = Client(api_key=API_KEY, host=SERVER_LOCATION)
+    client = Client(api_key=API_KEY, host=SERVER_LOCATION, verbose=True)
 
-    client.create_collection(
+    collection_id = create_collection(
+        client=client,
         name=COLLECTION_NAME,
         description=COLLECTION_DESCRIPTION,
     )
@@ -146,16 +149,17 @@ if __name__ == "__main__":
     for sub_set in sub_sets.keys():
         primary_map = find_primary_map(sub_sets[sub_set])
 
-        client.create_product(
+        product_id = create_product(
+            client=client,
             name=sub_set,
             description=get_description(primary_map),
             metadata=MapMetadata.from_fits(primary_map),
             sources=sub_sets[sub_set],
             source_descriptions=sub_sets_descriptions[sub_set],
-            verbose=True,
         )
 
-        client.add_to_collection(
+        add_to_collection(
+            client=client,
             name=COLLECTION_NAME,
             product=sub_set,
         )

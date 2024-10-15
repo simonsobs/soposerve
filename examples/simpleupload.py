@@ -6,6 +6,7 @@ to the example SOPO server running at 127.0.0.1:8000.
 from pathlib import Path
 
 from sopoclient import Client
+from sopoclient.product import create
 
 API_KEY = "TEST_API_KEY"
 SERVER_LOCATION = "http://127.0.0.1:8000"
@@ -27,10 +28,11 @@ if __name__ == "__main__":
 
     client = Client(api_key=API_KEY, host=SERVER_LOCATION)
 
-    client.create_product(
+    create(
+        client=client,
         name=args.name,
         description=args.description,
         metadata=None,
         sources=args.sources,
-        verbose=True,
+        source_descriptions=[None] * len(args.sources),
     )
