@@ -2,10 +2,10 @@
 Methods for interacting with the collections layer of the SOPO API
 """
 
-
 from soposerve.api.models.relationships import ReadCollectionResponse
 
 from .core import Client, console
+
 
 def create(
     client: Client,
@@ -83,11 +83,8 @@ def read(
 
     return model
 
-def add(
-    client: Client,
-    name: str,
-    product: str
-) -> bool:
+
+def add(client: Client, name: str, product: str) -> bool:
     """
     Add a product to a collection in SOPO.
 
@@ -119,11 +116,7 @@ def add(
     return True
 
 
-def remove(
-    client: Client,
-    name: str,
-    product: str
-) -> bool:
+def remove(client: Client, name: str, product: str) -> bool:
     """
     Remove a product from a collection in SOPO.
 
@@ -135,13 +128,13 @@ def remove(
         The name of the collection to remove the product from.
     product : str
         The name of the product to remove from the collection (not the ID).
-    
+
     Raises
     ------
     httpx.HTTPStatusError
         If a request to the API fails
     """
-    
+
     response = client.delete(f"/relationships/collection/{name}/{product}")
 
     response.raise_for_status()
@@ -155,10 +148,7 @@ def remove(
     return True
 
 
-def delete(
-    client: Client,
-    name: str
-) -> bool:
+def delete(client: Client, name: str) -> bool:
     """
     Delete a collection from SOPO.
 
@@ -174,7 +164,7 @@ def delete(
     httpx.HTTPStatusError
         If a request to the API fails
     """
-    
+
     response = client.delete(f"/relationships/collection/{name}")
 
     response.raise_for_status()

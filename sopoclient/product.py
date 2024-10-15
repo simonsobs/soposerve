@@ -5,10 +5,12 @@ Methods for interacting with the product layer of the SOPO API.
 from pathlib import Path
 
 import xxhash
+
 from sopometa import ALL_METADATA_TYPE
 from sopometa.simple import SimpleMetadata
 from soposerve.api.models.product import ReadProductResponse
 from soposerve.database import ProductMetadata
+
 from .core import Client, console
 
 
@@ -90,7 +92,9 @@ def create(
     this_product_id = response.json()["id"]
 
     if client.verbose:
-        console.print(f"Successfully created product {this_product_id} in remote database.")
+        console.print(
+            f"Successfully created product {this_product_id} in remote database."
+        )
 
     # Upload the sources to the presigned URLs.
     for source in sources:
@@ -113,17 +117,12 @@ def create(
     response.raise_for_status()
 
     if client.verbose:
-        console.print(
-            f"Successfully completed upload of {name}.", style="bold green"
-        )
+        console.print(f"Successfully completed upload of {name}.", style="bold green")
 
     return this_product_id
 
 
-def read(
-    client: Client,
-    id: str
-) -> ReadProductResponse:
+def read(client: Client, id: str) -> ReadProductResponse:
     """
     Read a product from SOPO.
 
@@ -152,15 +151,14 @@ def read(
     model = ReadProductResponse.model_validate_json(response.content)
 
     if client.verbose:
-        console.print(f"Successfully read product {id} ({model.versions[model.requested].name})")
+        console.print(
+            f"Successfully read product {id} ({model.versions[model.requested].name})"
+        )
 
     return model
 
 
-def delete(
-    client: Client,
-    id: str
-) -> bool:
+def delete(client: Client, id: str) -> bool:
     """
     Delete a product from SOPO.
 
@@ -176,7 +174,7 @@ def delete(
     httpx.HTTPStatusError
         If a request to the API fails
     """
-    
+
     response = client.delete(f"/product/{id}")
 
     response.raise_for_status()
@@ -187,10 +185,7 @@ def delete(
     return True
 
 
-def search(
-    client: Client,
-    text: str
-) -> list[ProductMetadata]:
+def search(client: Client, text: str) -> list[ProductMetadata]:
     """
     Search for text information in products (primarily names).
 
@@ -222,4 +217,3 @@ def search(
         console.print(f"Successfully searched for products matching {text}.")
 
     return models
-

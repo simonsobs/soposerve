@@ -5,9 +5,9 @@ The database access layer for SOPO. Uses MongoDB and Beanie.
 from datetime import datetime
 from enum import Enum
 
+import pymongo
 from beanie import BackLink, Document, Indexed, Link, PydanticObjectId
 from pydantic import BaseModel, Field
-import pymongo
 
 from sopometa import ALL_METADATA_TYPE
 

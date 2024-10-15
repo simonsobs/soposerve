@@ -7,6 +7,7 @@ from rich.console import Console
 
 console = Console()
 
+
 class Client(httpx.Client):
     """
     The core client for the SOPO API. A wrapper around httpx.Client,
@@ -28,7 +29,7 @@ class Client(httpx.Client):
 
         api_key: str
             The API key for the SOPO API to use.
-        
+
         host: str
             The host for the SOPO API to use.
 
@@ -38,5 +39,3 @@ class Client(httpx.Client):
 
         self.verbose = verbose
         super().__init__(base_url=host, headers={"X-API-Key": api_key})
-
-

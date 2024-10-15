@@ -5,8 +5,9 @@ Populates the simple example server with a bunch of ACT maps.
 from pathlib import Path
 
 from sopoclient import Client
+from sopoclient.collections import add as add_to_collection
+from sopoclient.collections import create as create_collection
 from sopoclient.product import create as create_product
-from sopoclient.collections import create as create_collection, add as add_to_collection
 from sopometa import MapMetadata
 
 API_KEY = "TEST_API_KEY"

@@ -163,10 +163,11 @@ async def search_by_name(name: str, fetch_links: bool = True) -> list[Product]:
     Search for products by name using the text index.
     """
 
-    results = await Product.find(
-        Text(name),
-        fetch_links=fetch_links
-    ).sort([('score', {'$meta': 'textScore'})]).to_list()
+    results = (
+        await Product.find(Text(name), fetch_links=fetch_links)
+        .sort([("score", {"$meta": "textScore"})])
+        .to_list()
+    )
 
     return results
 

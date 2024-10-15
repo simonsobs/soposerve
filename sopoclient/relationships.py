@@ -4,11 +4,8 @@ Methods for adding and removing child relationships between products.
 
 from .core import Client, console
 
-def add_child(
-        client: Client,
-        parent: str,
-        child: str
-) -> bool:
+
+def add_child(client: Client, parent: str, child: str) -> bool:
     """
     Add a child relationship between two products.
 
@@ -32,9 +29,7 @@ def add_child(
         If a request to the API fails
     """
 
-    response = client.put(
-        f"/relationships/product/{parent}/child_of/{child}"
-    )
+    response = client.put(f"/relationships/product/{parent}/child_of/{child}")
 
     response.raise_for_status()
 
@@ -47,11 +42,7 @@ def add_child(
     return True
 
 
-def remove_child(
-        client: Client,
-        parent: str,
-        child: str
-) -> bool:
+def remove_child(client: Client, parent: str, child: str) -> bool:
     """
     Remove a child relationship between two products.
 
@@ -75,9 +66,7 @@ def remove_child(
         If a request to the API fails
     """
 
-    response = client.delete(
-        f"/relationships/product/{parent}/child_of/{child}"
-    )
+    response = client.delete(f"/relationships/product/{parent}/child_of/{child}")
 
     response.raise_for_status()
 

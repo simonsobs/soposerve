@@ -210,7 +210,7 @@ def test_confirm_product_product_not_existing(test_api_client):
     assert response.status_code == 404
 
 
-def test_product_search( test_api_client: TestClient, test_api_product: tuple[str, str]):
+def test_product_search(test_api_client: TestClient, test_api_product: tuple[str, str]):
     response = test_api_client.get(f"/product/search/{test_api_product[0]}")
 
     assert response.status_code == 200

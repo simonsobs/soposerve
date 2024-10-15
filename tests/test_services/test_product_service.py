@@ -469,7 +469,7 @@ async def test_text_name_search(database, created_user, storage):
         metadata=None,
         sources=[],
         user=created_user,
-        storage=storage
+        storage=storage,
     )
 
     product_B, _ = await product.create(
@@ -478,7 +478,7 @@ async def test_text_name_search(database, created_user, storage):
         metadata=None,
         sources=[],
         user=created_user,
-        storage=storage
+        storage=storage,
     )
 
     # Search for them
@@ -493,4 +493,3 @@ async def test_text_name_search(database, created_user, storage):
 
     await product.delete_one(product_A, storage=storage, data=True)
     await product.delete_one(product_B, storage=storage, data=True)
-

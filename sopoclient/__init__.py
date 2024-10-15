@@ -5,8 +5,12 @@ API key can be stored in the SOPO_API_KEY environment variable.
 Host can be stored in the SOPO_HOST environment variable.
 """
 
-from .core import Client
+__all__ = [
+    "Client",
+    "collections",
+    "product",
+    "relationships",
+]
 
-from . import collections
-from . import product
-from . import relationships
+from . import collections, product, relationships
+from .core import Client
