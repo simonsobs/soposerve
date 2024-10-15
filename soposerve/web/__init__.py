@@ -52,9 +52,9 @@ async def product_view(request: Request, id: str):
     )
 
 
-@web_router.get("/collections/{name}")
-async def collection_view(request: Request, name: str):
-    collection_instance = await collection.read(name)
+@web_router.get("/collections/{id}")
+async def collection_view(request: Request, id: str):
+    collection_instance = await collection.read(id)
 
     return templates.TemplateResponse(
         "collection.html", {"request": request, "collection": collection_instance}

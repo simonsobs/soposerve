@@ -18,6 +18,8 @@ def test_api_products_for_use(test_api_client: TestClient, test_api_user: str):
         json={"description": "test_description"},
     )
 
+    collection_id = response.json()
+
     product_names = [f"Product {x}" for x in range(4)]
     product_ids = []
 
@@ -32,29 +34,32 @@ def test_api_products_for_use(test_api_client: TestClient, test_api_user: str):
             },
         )
         assert response.status_code == 200
-        product_ids.append(response.json()["id"])
+        product_id = response.json()["id"]
+        product_ids.append(product_id)
 
         response = test_api_client.put(
-            f"/relationships/collection/{collection_name}/{name}",
+            f"/relationships/collection/{collection_id}/{product_id}",
         )
         assert response.status_code == 200
 
-    yield collection_name, product_names, product_ids
+    yield collection_name, collection_id, product_names, product_ids
 
     for id in product_ids:
         response = test_api_client.delete(f"/product/{id}", params={"data": True})
         assert response.status_code == 200
 
-    response = test_api_client.delete(f"/relationships/collection/{collection_name}")
+    response = test_api_client.delete(f"/relationships/collection/{collection_id}")
     assert response.status_code == 200
 
 
 def test_read_collection(
     test_api_client: TestClient, test_api_products_for_use: tuple[str, list[str]]
 ):
-    collection_name, product_names, product_ids = test_api_products_for_use
+    collection_name, collection_id, product_names, product_ids = (
+        test_api_products_for_use
+    )
 
-    response = test_api_client.get(f"/relationships/collection/{collection_name}")
+    response = test_api_client.get(f"/relationships/collection/{collection_id}")
     assert response.status_code == 200
 
     assert response.json()["name"] == collection_name
@@ -68,10 +73,12 @@ def test_read_collection(
 
 
 def test_create_child_relationship(test_api_client, test_api_products_for_use):
-    collection_name, product_names, product_ids = test_api_products_for_use
+    collection_name, collection_id, product_names, product_ids = (
+        test_api_products_for_use
+    )
 
     response = test_api_client.put(
-        f"/relationships/product/{product_names[0]}/child_of/{product_names[1]}"
+        f"/relationships/product/{product_ids[0]}/child_of/{product_ids[1]}"
     )
     assert response.status_code == 200
 
@@ -91,20 +98,18 @@ def test_create_child_relationship(test_api_client, test_api_products_for_use):
 
 
 def test_read_non_existent_collection(test_api_client):
-    response = test_api_client.get("/relationships/collection/Nonexistent")
+    response = test_api_client.get(f"/relationships/collection/{'7' * 24}")
     assert response.status_code == 404
     assert response.json()["detail"] == "Collection not found."
 
 
 def test_add_to_non_existent_collection(test_api_client):
-    response = test_api_client.put(
-        "/relationships/collection/Nonexistent/doesnt_matter"
-    )
+    response = test_api_client.put(f"/relationships/collection/{'7' * 24}/{'7' * 24}")
     assert response.status_code == 404
 
     # Also test removal
     response = test_api_client.delete(
-        "/relationships/collection/Nonexistent/doesnt_matter"
+        f"/relationships/collection/{'7' * 24}/{'7' * 24}"
     )
     assert response.status_code == 404
 
@@ -113,32 +118,32 @@ def test_add_non_existent_product_to_existing_collection(
     test_api_client, test_api_products_for_use
 ):
     response = test_api_client.put(
-        f"/relationships/collection/{test_api_products_for_use[0]}/non_existent"
+        f"/relationships/collection/{test_api_products_for_use[1]}/{'7' * 24}"
     )
     assert response.status_code == 404
 
     # Also test removal
     response = test_api_client.delete(
-        f"/relationships/collection/{test_api_products_for_use[0]}/non_existent"
+        f"/relationships/collection/{test_api_products_for_use[1]}/{'7' * 24}"
     )
     assert response.status_code == 404
 
 
 def test_delete_non_existent_collection(test_api_client):
-    response = test_api_client.delete("/relationships/collection/Nonexistent")
+    response = test_api_client.delete(f"/relationships/collection/{'7' * 24}")
     assert response.status_code == 404
     assert response.json()["detail"] == "Collection not found."
 
 
 def test_add_child_product_to_non_existent_parent(test_api_client):
     response = test_api_client.put(
-        "/relationships/product/Nonexistent/child_of/doesnt_matter"
+        f"/relationships/product/{'7' * 24}/child_of/{'7' * 24}"
     )
     assert response.status_code == 404
 
 
 def test_remove_child_product_from_non_existent_parent(test_api_client):
     response = test_api_client.delete(
-        "/relationships/product/Nonexistent/child_of/doesnt_matter"
+        f"/relationships/product/{'7' * 24}/child_of/{'7' * 24}"
     )
     assert response.status_code == 404

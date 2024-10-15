@@ -458,3 +458,38 @@ async def test_product_middle_deletion(database, created_user, storage):
     from soposerve.service import storage as storage_service
 
     assert not await storage_service.confirm(file=middle.sources[0], storage=storage)
+
+
+@pytest.mark.asyncio(scope="session")
+async def test_text_name_search(database, created_user, storage):
+    # Insert two products with similar names.
+    product_A, _ = await product.create(
+        name="My Favorite Product A",
+        description="A product",
+        metadata=None,
+        sources=[],
+        user=created_user,
+        storage=storage,
+    )
+
+    product_B, _ = await product.create(
+        name="my favorite product b",
+        description="A product",
+        metadata=None,
+        sources=[],
+        user=created_user,
+        storage=storage,
+    )
+
+    # Search for them
+
+    results = await product.search_by_name("my favorite")
+
+    assert len(results) == 2
+
+    assert {x.id for x in results} == {product_A.id, product_B.id}
+
+    # Clean up.
+
+    await product.delete_one(product_A, storage=storage, data=True)
+    await product.delete_one(product_B, storage=storage, data=True)

@@ -23,6 +23,7 @@ dependencies = [
     "jinja2",
     "xxhash",
     "jinja-markdown",
+    "typer",
 ]
 
 [project.optional-dependencies]
@@ -37,6 +38,9 @@ dev = [
 astro = [
     "astropy"
 ]
+
+[project.scripts]
+sopo = "sopoclient.cli:main"
 
 [tool.ruff.lint]
 extend-select = ["I"]

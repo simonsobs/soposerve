@@ -5,6 +5,7 @@ The database access layer for SOPO. Uses MongoDB and Beanie.
 from datetime import datetime
 from enum import Enum
 
+import pymongo
 from beanie import BackLink, Document, Indexed, Link, PydanticObjectId
 from pydantic import BaseModel, Field
 
@@ -59,7 +60,7 @@ class ComplianceInformation(BaseModel):
 
 
 class User(Document):
-    name: str = Indexed(str, unique=True)
+    name: Indexed(str, unique=True)
     api_key: str
     privileges: list[Privilege]
 
@@ -126,7 +127,7 @@ class ProductMetadata(BaseModel):
 
 
 class Product(Document, ProductMetadata):
-    name: str = Indexed(str)
+    name: Indexed(str, pymongo.TEXT)
 
     sources: list[File]
     owner: Link[User]
@@ -162,7 +163,7 @@ class Product(Document, ProductMetadata):
 
 class Collection(Document):
     # TODO: Implement updated time for collections.
-    name: str = Indexed(str, unique=True)
+    name: Indexed(str, pymongo.TEXT, unique=True)
     description: str
     products: list[BackLink[Product]] = Field(
         json_schema_extra={"original_field": "collections"}
