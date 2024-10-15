@@ -14,7 +14,7 @@ from soposerve.api.models.product import (
     UpdateProductRequest,
     UpdateProductResponse,
 )
-from soposerve.database import Privilege
+from soposerve.database import Privilege, ProductMetadata
 from soposerve.service import product, users
 
 product_router = APIRouter(prefix="/product")
@@ -267,3 +267,20 @@ async def delete_tree(
         storage=request.app.storage,
         data=data,
     )
+
+
+@product_router.get("/search/{text}")
+async def search(
+    text: str,
+    request: Request,
+    calling_user: UserDependency,
+) -> list[ProductMetadata]:
+    """
+    Search for a product by name.
+    """
+
+    await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
+
+    items = await product.search_by_name(name=text)
+
+    return [item.to_metadata() for item in items]
