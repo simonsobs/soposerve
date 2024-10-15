@@ -5,7 +5,9 @@
 *.egg-info
 *.pyc
 *.coverage*
+build/*
 
 env*
 
 examples/*.fits
+
