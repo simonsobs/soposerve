@@ -60,7 +60,7 @@ class ComplianceInformation(BaseModel):
 
 
 class User(Document):
-    name: str = Indexed(str, unique=True)
+    name: Indexed(str, unique=True)
     api_key: str
     privileges: list[Privilege]
 
