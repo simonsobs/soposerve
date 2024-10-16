@@ -7,7 +7,7 @@ import pytest
 from soposerve.service import users
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_read_user(created_user):
     this_user = await users.read(name=created_user.name)
     assert this_user.name == created_user.name
@@ -16,7 +16,7 @@ async def test_read_user(created_user):
     assert this_user.name == created_user.name
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_update_user(created_user):
     this_user = await users.update(
         name=created_user.name,
@@ -37,7 +37,7 @@ async def test_update_user(created_user):
     assert this_user.privileges == [users.Privilege.LIST_PRODUCT]
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_read_user_not_found():
     with pytest.raises(users.UserNotFound):
         await users.read(name="non_existent_user")

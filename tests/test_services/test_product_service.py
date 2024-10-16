@@ -13,7 +13,7 @@ from beanie.odm.fields import Link
 from soposerve.service import product, users, versioning
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_existing_file(created_full_product, database):
     selected_product = await product.read_by_id(created_full_product.id)
 
@@ -37,7 +37,7 @@ async def test_get_existing_file(created_full_product, database):
             assert original == loaded
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_create_file_with_multiple_sources(database, created_user, storage):
     sources = [
         product.PreUploadFile(name="file1.txt", size=128, checksum="not_real"),
@@ -68,7 +68,7 @@ async def test_create_file_with_multiple_sources(database, created_user, storage
     await product.delete_one(created_product, storage=storage, data=True)
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_presign_read(created_full_product, storage):
     sources = await product.read_files(created_full_product, storage)
 
@@ -76,7 +76,7 @@ async def test_presign_read(created_full_product, storage):
         assert source.url is not None
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_missing_file(database):
     with pytest.raises(product.ProductNotFound):
         await product.read_by_name(name="Missing Product", version=None)
@@ -88,7 +88,7 @@ async def test_get_missing_file(database):
         await product.read_by_id("abcdefghijk")
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_to_collection(created_collection, created_full_product, database):
     await product.add_collection(
         product=created_full_product,
@@ -109,7 +109,7 @@ async def test_add_to_collection(created_collection, created_full_product, datab
     assert created_collection.name not in [c.name for c in selected_product.collections]
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_update_metadata(created_full_product, database, storage):
     new_user = await users.create(
         name="new_user", privileges=[users.Privilege.LIST_PRODUCT]
@@ -161,7 +161,7 @@ async def test_update_metadata(created_full_product, database, storage):
     await users.delete(new_user.name)
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_update_sources(created_full_product, database, storage):
     # Get the current version of the created_full_product in case it has been
     # mutated.
@@ -216,7 +216,7 @@ async def test_update_sources(created_full_product, database, storage):
         assert source.name in [x.name for x in new_product.sources]
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_update_sources_failure_modes(created_full_product, database, storage):
     created_full_product = await product.walk_to_current(product=created_full_product)
 
@@ -281,7 +281,7 @@ async def test_update_sources_failure_modes(created_full_product, database, stor
     assert current.version == starting_version
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_read_most_recent_products(database, created_user, storage):
     # Insert a bunch of products.
     for i in range(20):
@@ -330,7 +330,7 @@ async def test_read_most_recent_products(database, created_user, storage):
     products = await product.read_most_recent(fetch_links=False, maximum=8)
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_walk_history(database, created_full_product):
     latest = await product.walk_to_current(created_full_product)
 
@@ -340,7 +340,7 @@ async def test_walk_history(database, created_full_product):
     assert latest.version in versions.keys()
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_add_relationships(database, created_user, created_full_product, storage):
     # First, make a secondary metadata-only product.
     secondary_product, _ = await product.create(
@@ -384,7 +384,7 @@ async def test_add_relationships(database, created_user, created_full_product, s
     )
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_product_middle_deletion(database, created_user, storage):
     initial, _ = await product.create(
         name="Middle-out Product",
@@ -460,7 +460,7 @@ async def test_product_middle_deletion(database, created_user, storage):
     assert not await storage_service.confirm(file=middle.sources[0], storage=storage)
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_text_name_search(database, created_user, storage):
     # Insert two products with similar names.
     product_A, _ = await product.create(

@@ -24,6 +24,8 @@ dependencies = [
     "xxhash",
     "jinja-markdown",
     "typer",
+    "httpx",
+    "astropy",
 ]
 
 [project.optional-dependencies]
@@ -34,9 +36,6 @@ dev = [
     "coverage",
     "pytest-cov",
     "pytest-asyncio"
-]
-astro = [
-    "astropy"
 ]
 
 [project.scripts]

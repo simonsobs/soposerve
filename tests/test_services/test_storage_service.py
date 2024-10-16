@@ -6,7 +6,7 @@ import requests
 from soposerve.service import storage as storage_service
 
 
-@pytest.mark.asyncio(scope="session")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_create_storage_item(storage, created_user, database):
     file, put = await storage_service.create(
         name="test_file.txt",
