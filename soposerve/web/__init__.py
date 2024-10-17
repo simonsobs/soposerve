@@ -6,6 +6,7 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
+from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
 
 # Consider: jinja2-fragments for integration with HTMX.
@@ -53,7 +54,7 @@ async def product_view(request: Request, id: str):
 
 
 @web_router.get("/collections/{id}")
-async def collection_view(request: Request, id: str):
+async def collection_view(request: Request, id: PydanticObjectId):
     collection_instance = await collection.read(id)
 
     return templates.TemplateResponse(

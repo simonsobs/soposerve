@@ -2,24 +2,28 @@
 A CLI interface to the SOPO client.
 """
 
-import os
-
 import rich
 import typer
 
 import sopoclient as sc
 
 from . import helper
+from .core import ClientSettings, MultiCache
 
 CLIENT: sc.Client
+CACHE: MultiCache
 CONSOLE = rich.console.Console()
 
 # Meta-setup
 APP = typer.Typer()
-product_app = typer.Typer()
+product_app = typer.Typer(help="Commands for dealing directly with products")
 APP.add_typer(product_app, name="product")
-collection_app = typer.Typer()
+collection_app = typer.Typer(help="Commands for dealing with collections")
 APP.add_typer(collection_app, name="collection")
+cache_app = typer.Typer(
+    help="Maintenance commands for the cache. There are also tools for cache management in the product and collection commands."
+)
+APP.add_typer(cache_app, name="cache")
 
 
 @product_app.command("read")
@@ -58,6 +62,30 @@ def product_search(text: str):
     CONSOLE.print(table)
 
 
+@product_app.command("cache")
+def product_cache(id: str):
+    """
+    Cache a product by its ID.
+    """
+    global CLIENT, CACHE
+
+    response = sc.product.cache(client=CLIENT, cache=CACHE, id=id)
+
+    CONSOLE.print(f"Cached product {id} including {len(response)} files")
+
+
+@product_app.command("uncache")
+def product_uncache(id: str):
+    """
+    Uncache a product by its ID.
+    """
+    global CACHE
+
+    sc.product.uncache(client=CLIENT, cache=CACHE, id=id)
+
+    CONSOLE.print(f"Uncached product {id}")
+
+
 @collection_app.command("read")
 def collection_read(id: str):
     """
@@ -78,7 +106,7 @@ def collection_read(id: str):
 @collection_app.command("search")
 def collection_search(name: str):
     """
-    Read the information of a collection by its name.
+    Search for collections by name.
     """
     global CLIENT, CONSOLE
 
@@ -89,13 +117,62 @@ def collection_search(name: str):
     CONSOLE.print(table)
 
 
+@collection_app.command("cache")
+def collection_cache(id: str):
+    """
+    Cache a collection by its name.
+    """
+    global CLIENT, CACHE
+
+    response = sc.collections.cache(client=CLIENT, cache=CACHE, id=id)
+
+    CONSOLE.print(f"Cached collection {id} including {len(response)} files")
+
+
+@collection_app.command("uncache")
+def collection_uncache(id: str):
+    """
+    Uncache a collection by its name.
+    """
+    global CACHE
+
+    sc.collections.uncache(client=CLIENT, cache=CACHE, id=id)
+
+    CONSOLE.print(f"Uncached collection {id}")
+
+
+@cache_app.command("clear")
+def cache_clear(uuid: str):
+    """
+    Clear the cache of a single file, labelled by its UUID (note that product IDs don't work here).
+    """
+    global CACHE
+
+    for cache in CACHE.caches:
+        if cache.writeable:
+            sc.caching.clear_single(cache=cache, id=id)
+            CONSOLE.print(f"Cleared cache {cache.path} of {id}")
+
+
+@cache_app.command("clear-all")
+def cache_clear_all():
+    """
+    Clear all caches of all files.
+    """
+    global CACHE
+
+    for cache in CACHE.caches:
+        if cache.writeable:
+            sc.caching.clear_all(cache=cache)
+            CONSOLE.print(f"Cleared cache {cache.path}")
+
+
 def main():
-    global CLIENT, APP
+    settings = ClientSettings()
 
-    API_KEY = os.getenv("SOPO_API_KEY")
-    HOST = os.getenv("SOPO_HOST")
-    SOPO_VERBOSE = bool(os.getenv("SOPO_VERBOSE"))
+    global CLIENT, APP, CACHE
 
-    CLIENT = sc.Client(api_key=API_KEY, host=HOST, verbose=SOPO_VERBOSE)
+    CLIENT = settings.client
+    CACHE = settings.multi_cache
 
     APP()

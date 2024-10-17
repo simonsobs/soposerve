@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="""Delete a product from the example SOPO server.""",
     )
-    parser.add_argument("id", help="The id of the product to delete.")
+    parser.add_argument("id", help="The id of the product to delete")
 
     args = parser.parse_args()
 

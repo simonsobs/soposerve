@@ -18,8 +18,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="""Upload a product to the example SOPO server.""",
     )
-    parser.add_argument("name", help="The name of the product to create.")
-    parser.add_argument("description", help="The description of the product.")
+    parser.add_argument("name", help="The name of the product to create")
+    parser.add_argument("description", help="The description of the product")
     parser.add_argument(
         "sources", nargs="+", help="The sources (files) to upload.", type=Path
     )

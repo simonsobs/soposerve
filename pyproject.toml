@@ -50,6 +50,7 @@ asyncio_mode = "auto"
 [tool.coverage.run]
 source = [
     "soposerve",
+    "sopoclient"
 ]
 omit = [
     "soposerve/web/*"
