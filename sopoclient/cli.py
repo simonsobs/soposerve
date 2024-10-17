@@ -106,7 +106,7 @@ def collection_read(id: str):
 @collection_app.command("search")
 def collection_search(name: str):
     """
-    Read the information of a collection by its name.
+    Search for collections by name.
     """
     global CLIENT, CONSOLE
 
