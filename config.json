@@ -1,0 +1,8 @@
+{
+  "api_key": "TEST_API_KEY",
+  "host": "http://127.0.0.1:8000",
+  "verbose": true,
+  "caches": [
+    {"path": "/tmp"}
+  ]
+}
