@@ -27,7 +27,7 @@ class CacheNotWriteableError(Exception):
     """
 
     def __init__(self):
-        super().__init__("The cache is not writeable.")
+        super().__init__("The cache is not writeable")
 
 
 class Cache(BaseModel):
@@ -396,3 +396,28 @@ class MultiCache(BaseModel):
                 )
 
         raise CacheNotWriteableError
+
+    def remove(self, id: str):
+        """
+        Remove a source from all caches.
+        """
+
+        for cache in self.caches:
+            cache._remove(id)
+
+
+def clear_all(cache: Cache):
+    """
+    Clear all the caches.
+    """
+
+    for file in cache.complete_id_list:
+        cache._remove(file)
+
+
+def clear_single(cache: Cache, id: str):
+    """
+    Clear a single cached item.
+    """
+
+    cache._remove(id)

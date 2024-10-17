@@ -10,7 +10,8 @@ __all__ = [
     "collections",
     "product",
     "relationships",
+    "caching",
 ]
 
-from . import collections, product, relationships
+from . import caching, collections, product, relationships
 from .core import Client

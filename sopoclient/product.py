@@ -215,7 +215,7 @@ def search(client: Client, text: str) -> list[ProductMetadata]:
     models = [ProductMetadata.model_validate(x) for x in response.json()]
 
     if client.verbose:
-        console.print(f"Successfully searched for products matching {text}.")
+        console.print(f"Successfully searched for products matching {text}")
 
     return models
 
@@ -290,3 +290,29 @@ def cache(client: Client, cache: MultiCache, id: str) -> list[Path]:
             console.print(f"Cached file {file.name} ({file.uuid})", style="yellow")
 
     return response_paths
+
+
+def uncache(client: Client, cache: MultiCache, id: str) -> None:
+    """
+    Clear the cache of a product.
+
+    Arguments
+    ----------
+    client: Client
+        The client to use for interacting with the SOPO API.
+    cache: MultiCache
+        The cache to use for storing the product.
+    id : str
+        The ID of the product to remove from the cache.
+    """
+
+    product = read(client, id)
+
+    for vid, version in product.versions.items():
+        for source in version.sources:
+            cache.remove(source.uuid)
+
+            if client.verbose:
+                console.print(f"Removed file {source.name} ({source.uuid}) from cache")
+
+    return

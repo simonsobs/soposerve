@@ -8,6 +8,7 @@ from soposerve.api.models.relationships import ReadCollectionResponse
 
 from .core import Client, MultiCache, console
 from .product import cache as cache_product
+from .product import uncache as uncache_product
 
 
 def create(
@@ -82,7 +83,7 @@ def read(
     model = ReadCollectionResponse.model_validate_json(response.content)
 
     if client.verbose:
-        console.print(f"Successfully read collection {model.name} ({id}).")
+        console.print(f"Successfully read collection {model.name} ({id})")
 
     return model
 
@@ -116,7 +117,7 @@ def search(client: Client, name: str) -> list[ReadCollectionResponse]:
     models = [ReadCollectionResponse.model_validate(x) for x in response.json()]
 
     if client.verbose:
-        console.print(f"Successfully searched for collection {name}.")
+        console.print(f"Successfully searched for collection {name}")
 
     return models
 
@@ -246,3 +247,28 @@ def cache(client: Client, cache: MultiCache, id: str) -> list[Path]:
         paths += cache_product(client, cache, product.id)
 
     return paths
+
+
+def uncache(client: Client, cache: MultiCache, id: str) -> None:
+    """
+    Remove a collection from local caches.
+
+    Arguments
+    ---------
+    client: Client
+        The client to use for interacting with the SOPO API.
+    cache : MultiCache
+        The cache to use for storing the collection.
+    id : str
+        The id of the collection to uncache.
+
+    Raises
+    ------
+    CacheNotWriteableError
+        If the cache is not writeable
+    """
+
+    collection = read(client, id)
+
+    for product in collection.products:
+        uncache_product(client, cache, product.id)
