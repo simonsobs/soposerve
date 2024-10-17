@@ -18,6 +18,7 @@ import sqlite3
 from pathlib import Path
 
 import httpx
+from pydantic import BaseModel
 
 
 class CacheNotWriteableError(Exception):
@@ -29,7 +30,7 @@ class CacheNotWriteableError(Exception):
         super().__init__("The cache is not writeable.")
 
 
-class Cache:
+class Cache(BaseModel):
     """
     A cache for sources used by the SOPO client. All sources are labelled by their
     unique ID, given by the main mongodb database.
@@ -78,26 +79,25 @@ class Cache:
     """
 
     path: Path
-    database: Path
+    database_name: str = "cache.db"
 
-    connection: sqlite3.Connection
+    _database: Path
+    _connection: sqlite3.Connection
 
-    def __init__(self, path: Path, database_name: str = "cache.db"):
-        self.path = path
-        self.database = path / database_name
-
-        self.connection = self._initialize_database()
+    def model_post_init(__context):
+        __context._database = __context.object.path / __context.object.database_name
+        __context.object._connection = __context.object._initialize_database()
 
     def _initialize_database(self) -> sqlite3.Connection:
         """
         Initialize the cache database.
         """
 
-        if self.database.exists():
-            return sqlite3.connect(self.database)
+        if self._database.exists():
+            return sqlite3.connect(self._database)
         else:
             # Create the database
-            connection = sqlite3.connect(self.database)
+            connection = sqlite3.connect(self._database)
 
             cursor = connection.cursor()
             cursor.execute(
@@ -113,7 +113,7 @@ class Cache:
         Check if the cache is writeable.
         """
 
-        return os.access(self.database, os.W_OK)
+        return os.access(self._database, os.W_OK)
 
     def _add(self, id: str, path: str, checksum: str, size: int):
         """
@@ -121,36 +121,36 @@ class Cache:
         be called _before_ downloading the actual source.
         """
 
-        cursor = self.connection.cursor()
+        cursor = self._connection.cursor()
         cursor.execute(
             "INSERT INTO sources (id, path, checksum, size, available) VALUES (?, ?, ?, ?, ?)",
             (id, path, checksum, size, False),
         )
-        self.connection.commit()
+        self._connection.commit()
 
     def _mark_available(self, id: str):
         """
         Mark a source as available.
         """
 
-        cursor = self.connection.cursor()
+        cursor = self._connection.cursor()
         cursor.execute(
             "UPDATE sources SET available = ? WHERE id = ?",
             (True, id),
         )
-        self.connection.commit()
+        self._connection.commit()
 
     def _mark_unavailable(self, id: str):
         """
         Mark a source as unavailable.
         """
 
-        cursor = self.connection.cursor()
+        cursor = self._connection.cursor()
         cursor.execute(
             "UPDATE sources SET available = ? WHERE id = ?",
             (False, id),
         )
-        self.connection.commit()
+        self._connection.commit()
 
     def _get(self, id: str) -> Path | None:
         """
@@ -158,7 +158,7 @@ class Cache:
         If it is available we return the absolute path on the system to the file.
         """
 
-        cursor = self.connection.cursor()
+        cursor = self._connection.cursor()
         cursor.execute(
             "SELECT path FROM sources WHERE id = ? AND available = ?",
             (id, True),
@@ -182,12 +182,12 @@ class Cache:
         if path is not None:
             path.unlink()
 
-        cursor = self.connection.cursor()
+        cursor = self._connection.cursor()
         cursor.execute(
             "DELETE FROM sources WHERE id = ?",
             (id,),
         )
-        self.connection.commit()
+        self._connection.commit()
 
     def _fetch(
         self, id: str, path: str, checksum: str, size: int, presigned_url: str
@@ -306,7 +306,7 @@ class Cache:
         List all the IDs in the cache
         """
 
-        cursor = self.connection.cursor()
+        cursor = self._connection.cursor()
         cursor.execute("SELECT id FROM sources")
 
         return [row[0] for row in cursor.fetchall()]

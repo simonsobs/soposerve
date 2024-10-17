@@ -3,9 +3,52 @@ Core client object for interacting with the SOPO API.
 """
 
 import httpx
+from pydantic_settings import (
+    BaseSettings,
+    JsonConfigSettingsSource,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 from rich.console import Console
 
+from .caching import Cache
+
 console = Console()
+
+
+class ClientSettings(BaseSettings):
+    """
+    Main settings for the SOPO API client. Used to configure:
+
+    1. API access (key and host)
+    2. Caching (path to cache(s))
+    3. Verbosity.
+    """
+
+    api_key: str
+    host: str
+    verbose: bool = False
+
+    caches: list[Cache] = []
+
+    model_config = SettingsConfigDict(json_file="config.json", env_prefix="SOPO")
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: BaseSettings,
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (
+            init_settings,
+            dotenv_settings,
+            JsonConfigSettingsSource(settings_cls),
+            env_settings,
+            file_secret_settings,
+        )
 
 
 class Client(httpx.Client):

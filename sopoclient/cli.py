@@ -2,8 +2,6 @@
 A CLI interface to the SOPO client.
 """
 
-import os
-
 import rich
 import typer
 
@@ -90,12 +88,14 @@ def collection_search(name: str):
 
 
 def main():
+    from core import ClientSettings
+
+    settings = ClientSettings()
+
     global CLIENT, APP
 
-    API_KEY = os.getenv("SOPO_API_KEY")
-    HOST = os.getenv("SOPO_HOST")
-    SOPO_VERBOSE = bool(os.getenv("SOPO_VERBOSE"))
-
-    CLIENT = sc.Client(api_key=API_KEY, host=HOST, verbose=SOPO_VERBOSE)
+    CLIENT = sc.Client(
+        api_key=settings.api_key, host=settings.host, verbose=settings.verbose
+    )
 
     APP()
