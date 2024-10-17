@@ -8,8 +8,10 @@ import typer
 import sopoclient as sc
 
 from . import helper
+from .core import ClientSettings, MultiCache
 
 CLIENT: sc.Client
+CACHE: MultiCache
 CONSOLE = rich.console.Console()
 
 # Meta-setup
@@ -56,6 +58,18 @@ def product_search(text: str):
     CONSOLE.print(table)
 
 
+@product_app.command("cache")
+def product_cache(id: str):
+    """
+    Cache a product by its ID.
+    """
+    global CLIENT, CACHE
+
+    response = sc.product.cache(client=CLIENT, cache=CACHE, id=id)
+
+    CONSOLE.print(f"Cached product {id} including {len(response)} files.")
+
+
 @collection_app.command("read")
 def collection_read(id: str):
     """
@@ -87,15 +101,24 @@ def collection_search(name: str):
     CONSOLE.print(table)
 
 
-def main():
-    from core import ClientSettings
+@collection_app.command("cache")
+def collection_cache(id: str):
+    """
+    Cache a collection by its name.
+    """
+    global CLIENT, CACHE
 
+    response = sc.collections.cache(client=CLIENT, cache=CACHE, id=id)
+
+    CONSOLE.print(f"Cached collection {id} including {len(response)} files.")
+
+
+def main():
     settings = ClientSettings()
 
-    global CLIENT, APP
+    global CLIENT, APP, CACHE
 
-    CLIENT = sc.Client(
-        api_key=settings.api_key, host=settings.host, verbose=settings.verbose
-    )
+    CLIENT = settings.client
+    CACHE = settings.multi_cache
 
     APP()

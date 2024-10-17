@@ -10,8 +10,9 @@ from sopometa import ALL_METADATA_TYPE
 from sopometa.simple import SimpleMetadata
 from soposerve.api.models.product import ReadProductResponse
 from soposerve.database import ProductMetadata
+from soposerve.service.product import PostUploadFile
 
-from .core import Client, console
+from .core import Client, MultiCache, console
 
 
 def create(
@@ -217,3 +218,75 @@ def search(client: Client, text: str) -> list[ProductMetadata]:
         console.print(f"Successfully searched for products matching {text}.")
 
     return models
+
+
+def cache(client: Client, cache: MultiCache, id: str) -> list[Path]:
+    """
+    Cache a product from SOPO.
+
+    Arguments
+    ----------
+    client: Client
+        The client to use for interacting with the SOPO API.
+    cache: MultiCache
+        The cache to use for storing the product.
+    id : str
+        The ID of the product to cache.
+
+    Returns
+    -------
+    list[Path]
+        The list of paths to the cached sources.
+
+    Raises
+    ------
+    httpx.HTTPStatusError
+        If a request to the API fails
+    CacheNotWriteableError
+        If the cache is not writeable
+    """
+
+    response = client.get(f"/product/{id}/files")
+
+    response.raise_for_status()
+
+    post_upload_files = [
+        PostUploadFile.model_validate(x) for x in response.json()["files"]
+    ]
+
+    if client.verbose:
+        console.print(f"Successfully read product {id}")
+
+    response_paths = []
+
+    for file in post_upload_files:
+        # See if it's already cached.
+        try:
+            cached = cache.available(file.uuid)
+            response_paths.append(cached)
+
+            if client.verbose:
+                console.print(f"Found cached file {file.name}", style="green")
+
+            continue
+        except FileNotFoundError:
+            if client.verbose:
+                console.print(
+                    f"File {file.name} ({file.uuid}) not found in cache", style="red"
+                )
+            cached = None
+
+        cached = cache.get(
+            id=file.uuid,
+            path=file.object_name,
+            checksum=file.checksum,
+            size=file.size,
+            presigned_url=file.url,
+        )
+
+        response_paths.append(cached)
+
+        if client.verbose:
+            console.print(f"Cached file {file.name} ({file.uuid})", style="yellow")
+
+    return response_paths

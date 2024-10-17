@@ -46,6 +46,7 @@ class PreUploadFile(BaseModel):
 
 
 class PostUploadFile(BaseModel):
+    uuid: str
     name: str
     size: int
     checksum: str
@@ -221,6 +222,7 @@ async def confirm(product: Product, storage: Storage) -> bool:
 async def read_files(product: Product, storage: Storage) -> list[PostUploadFile]:
     return [
         PostUploadFile(
+            uuid=x.uuid,
             name=x.name,
             size=x.size,
             checksum=x.checksum,

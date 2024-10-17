@@ -33,7 +33,7 @@ class CacheNotWriteableError(Exception):
 class Cache(BaseModel):
     """
     A cache for sources used by the SOPO client. All sources are labelled by their
-    unique ID, given by the main mongodb database.
+    unique UUID, given by the main mongodb database (note this is not _id).
 
     The general execution flow when using a (set of) cache(s) is:
 
@@ -76,6 +76,9 @@ class Cache(BaseModel):
 
         if path is None:
             raise FileNotFoundError
+
+    There are a number of utilities implemented in the MultiCache object that perform
+    these kind of duties for you.
     """
 
     path: Path
@@ -84,9 +87,9 @@ class Cache(BaseModel):
     _database: Path
     _connection: sqlite3.Connection
 
-    def model_post_init(__context):
-        __context._database = __context.object.path / __context.object.database_name
-        __context.object._connection = __context.object._initialize_database()
+    def model_post_init(self, __context):
+        self._database = self.path / self.database_name
+        self._connection = self._initialize_database()
 
     def _initialize_database(self) -> sqlite3.Connection:
         """
@@ -124,7 +127,7 @@ class Cache(BaseModel):
         cursor = self._connection.cursor()
         cursor.execute(
             "INSERT INTO sources (id, path, checksum, size, available) VALUES (?, ?, ?, ?, ?)",
-            (id, path, checksum, size, False),
+            (str(id), str(path), str(checksum), int(size), False),
         )
         self._connection.commit()
 
@@ -136,7 +139,7 @@ class Cache(BaseModel):
         cursor = self._connection.cursor()
         cursor.execute(
             "UPDATE sources SET available = ? WHERE id = ?",
-            (True, id),
+            (True, str(id)),
         )
         self._connection.commit()
 
@@ -148,7 +151,7 @@ class Cache(BaseModel):
         cursor = self._connection.cursor()
         cursor.execute(
             "UPDATE sources SET available = ? WHERE id = ?",
-            (False, id),
+            (False, str(id)),
         )
         self._connection.commit()
 
@@ -159,9 +162,10 @@ class Cache(BaseModel):
         """
 
         cursor = self._connection.cursor()
+
         cursor.execute(
             "SELECT path FROM sources WHERE id = ? AND available = ?",
-            (id, True),
+            (str(id), True),
         )
 
         result = cursor.fetchone()
@@ -185,7 +189,7 @@ class Cache(BaseModel):
         cursor = self._connection.cursor()
         cursor.execute(
             "DELETE FROM sources WHERE id = ?",
-            (id,),
+            (str(id),),
         )
         self._connection.commit()
 
@@ -310,3 +314,85 @@ class Cache(BaseModel):
         cursor.execute("SELECT id FROM sources")
 
         return [row[0] for row in cursor.fetchall()]
+
+
+class MultiCache(BaseModel):
+    """
+    An interface to multiple caches. There is one main rule:
+
+    Caches are ordered by priority. We will always try the first caches in
+    the list first, and files will be ingested on a first-cache-first-served
+    basis.
+    """
+
+    caches: list[Cache]
+
+    def available(self, id: str) -> Path:
+        """
+        Check if a source is available in any cache with id ``id``.
+        If it is, we return the Path. If not, we raise a FileNotFoundError.
+
+        Parameters
+        ----------
+        id : str
+            The ID of the source
+
+        Returns
+        -------
+        Path
+            The path to the source in the cache
+
+        Raises
+        ------
+        FileNotFoundError
+            If the source is not available in the cache
+        """
+
+        for cache in self.caches:
+            try:
+                return cache.available(id)
+            except FileNotFoundError:
+                continue
+
+        raise FileNotFoundError
+
+    def get(self, id: str, path: str, checksum: str, size: int, presigned_url: str):
+        """
+        Get and store an item in the cache. You should likely use this only after
+        ``available`` has raised a FileNotFoundError.
+
+        Parameters
+        ----------
+        id : str
+            The ID of the source
+        path : str
+            The path to the source
+        checksum : str
+            The checksum of the source
+        size : int
+            The size of the source
+        presigned_url : str
+            The presigned URL to fetch the source from, if it not in the cache.
+
+        Returns
+        -------
+        Path
+            The path to the source in the cache
+
+        Raises
+        ------
+        CacheNotWriteableError
+            If no caches are writeable
+        """
+
+        for cache in self.caches:
+            if cache.writeable:
+                return cache.get(
+                    id=id,
+                    path=path,
+                    checksum=checksum,
+                    size=size,
+                    presigned_url=presigned_url,
+                )
+
+        raise CacheNotWriteableError

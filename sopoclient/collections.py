@@ -2,9 +2,12 @@
 Methods for interacting with the collections layer of the SOPO API
 """
 
+from pathlib import Path
+
 from soposerve.api.models.relationships import ReadCollectionResponse
 
-from .core import Client, console
+from .core import Client, MultiCache, console
+from .product import cache as cache_product
 
 
 def create(
@@ -207,3 +210,39 @@ def delete(client: Client, id: str) -> bool:
         console.print(f"Successfully deleted collection {id}.", style="bold green")
 
     return True
+
+
+def cache(client: Client, cache: MultiCache, id: str) -> list[Path]:
+    """
+    Cache a collection from SOPO.
+
+    Arguments
+    ---------
+    client: Client
+        The client to use for interacting with the SOPO API.
+    cache : MultiCache
+        The cache to use for storing the collection.
+    id : str
+        The id of the collection to cache.
+
+    Returns
+    -------
+    list[Path]
+        The paths to the cached files.
+
+    Raises
+    ------
+    httpx.HTTPStatusError
+        If a request to the API fails
+    CacheNotWriteableError
+        If the cache is not writeable
+    """
+
+    collection = read(client, id)
+
+    paths = []
+
+    for product in collection.products:
+        paths += cache_product(client, cache, product.id)
+
+    return paths
