@@ -13,6 +13,8 @@ from sopoclient.caching import Cache
 def cache(tmp_path):
     cache = Cache(path=Path(tmp_path))
 
+    assert cache.writeable
+
     yield cache
 
     for id in cache.complete_id_list:

@@ -4,6 +4,8 @@ Tests the cache functionality.
 
 from pathlib import Path
 
+import pytest
+
 
 def test_add_file_to_cache(cache):
     """
@@ -46,11 +48,13 @@ def test_add_real_file_to_cache(cache):
     assert str(path) == str(cache.path / Path("my/path/to/file.png"))
 
     # Now get it back again
-    path = cache.get(
+    path = cache.available(
         id="abcdefghijk",
-        path="my/path/to/file.png",
-        checksum="not-a-real-checksum",
-        size=1234,
-        # Not a real presigned url! It will never be tried if the file is in the cache
-        presigned_url="https://example.com/this-will-never-be-reached",
     )
+
+    assert path.exists()
+
+
+def test_unavailable(cache):
+    with pytest.raises(FileNotFoundError):
+        cache.available("not-a-real-id")
