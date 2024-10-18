@@ -4,7 +4,7 @@ Tests the functions in the user service.
 
 import pytest
 
-from soposerve.service import users
+from hipposerve.service import users
 
 
 @pytest.mark.asyncio(loop_scope="session")

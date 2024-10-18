@@ -6,14 +6,14 @@ import pytest_asyncio
 import requests
 from fastapi.testclient import TestClient
 
-from soposerve.api.models.product import (
+from hipposerve.api.models.product import (
     CreateProductResponse,
     PreUploadFile,
     ReadFilesResponse,
     ReadProductResponse,
     UpdateProductResponse,
 )
-from soposerve.service import versioning
+from hipposerve.service import versioning
 
 
 @pytest_asyncio.fixture(scope="function")

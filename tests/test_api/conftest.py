@@ -3,8 +3,8 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from soposerve.api.models.users import CreateUserResponse
-from soposerve.database import Privilege
+from hipposerve.api.models.users import CreateUserResponse
+from hipposerve.database import Privilege
 
 ### -- Service Mock Fixtures -- ###
 
@@ -24,7 +24,7 @@ def test_api_server(database_container, storage_container):
     }
     os.environ.update(settings)
 
-    from soposerve.api.app import app
+    from hipposerve.api.app import app
 
     yield app
 

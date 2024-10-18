@@ -3,7 +3,7 @@ import io
 import pytest
 import requests
 
-from soposerve.service import storage as storage_service
+from hipposerve.service import storage as storage_service
 
 
 @pytest.mark.asyncio(loop_scope="session")
