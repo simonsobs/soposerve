@@ -10,7 +10,7 @@ import requests
 from beanie import PydanticObjectId
 from beanie.odm.fields import Link
 
-from soposerve.service import product, users, versioning
+from hipposerve.service import product, users, versioning
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -455,7 +455,7 @@ async def test_product_middle_deletion(database, created_user, storage):
 
     # See if we deleted that file we uploaded. As it was not part of v1.0.2 and
     # not part of v1.0.0, it should be gone.
-    from soposerve.service import storage as storage_service
+    from hipposerve.service import storage as storage_service
 
     assert not await storage_service.confirm(file=middle.sources[0], storage=storage)
 

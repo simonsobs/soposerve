@@ -3,7 +3,7 @@ import pytest_asyncio
 from testcontainers.minio import MinioContainer
 from testcontainers.mongodb import MongoDbContainer
 
-from soposerve.storage import Storage
+from hipposerve.storage import Storage
 
 ### -- Database Fixtures -- ###
 
@@ -14,7 +14,7 @@ def database_container():
         "username": "root",
         "password": "password",
         "port": 27017,
-        "dbname": "sopo_test",
+        "dbname": "hippo_test",
     }
 
     with MongoDbContainer(**kwargs) as container:

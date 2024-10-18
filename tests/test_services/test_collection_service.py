@@ -5,7 +5,7 @@ Tests for the collection service.
 import pytest
 from beanie import PydanticObjectId
 
-from soposerve.service import collection
+from hipposerve.service import collection
 
 
 @pytest.mark.asyncio(loop_scope="session")

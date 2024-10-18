@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from sopoclient.caching import Cache
+from hippoclient.caching import Cache
 
 
 @pytest.fixture

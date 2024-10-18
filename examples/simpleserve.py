@@ -1,5 +1,5 @@
 """
-A simple SOPO server example. This runs with uvicorn,
+A simple hippo server example. This runs with uvicorn,
 and serves the web frontend at http://localhost:8000/web.
 Containers for Mongo and Minio are provided through
 testcontainers; the same patterns are used in testing.
@@ -28,7 +28,7 @@ database_kwargs = {
     "username": "root",
     "password": "password",
     "port": 27017,
-    "dbname": "sopo_test",
+    "dbname": "hippo_test",
 }
 
 storage_kwargs = {}
@@ -38,7 +38,7 @@ def containers_to_environment(
     database_container: MongoDbContainer, storage_container: MinioContainer
 ):
     """
-    This is required because SOPO uses a pydantic-settings
+    This is required because hippo uses a pydantic-settings
     model for configuration.
     """
     storage_config = storage_container.get_config()
@@ -49,8 +49,8 @@ def containers_to_environment(
         "minio_url": storage_config["endpoint"],
         "minio_access": storage_config["access_key"],
         "minio_secret": storage_config["secret_key"],
-        "title": "Test SOPO",
-        "description": "Test SOPO Description",
+        "title": "Test hippo",
+        "description": "Test hippo Description",
         "debug": "yes",
         "add_cors": "yes",
         "web": "yes",
@@ -65,10 +65,10 @@ def main():
         with MinioContainer(**storage_kwargs) as storage_container:
             containers_to_environment(database_container, storage_container)
 
-            from soposerve.api.app import app
+            from hipposerve.api.app import app
 
             config = uvicorn.Config(
-                app, port=8000, reload=True, reload_dirs="soposerve"
+                app, port=8000, reload=True, reload_dirs="hipposerve"
             )
             server = uvicorn.Server(config)
 

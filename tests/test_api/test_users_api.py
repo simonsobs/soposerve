@@ -4,12 +4,12 @@ Tests the users API endpoints.
 
 from fastapi.testclient import TestClient
 
-from soposerve.api.models.users import (
+from hipposerve.api.models.users import (
     CreateUserResponse,
     ReadUserResponse,
     UpdateUserResponse,
 )
-from soposerve.service.users import Privilege
+from hipposerve.service.users import Privilege
 
 
 def test_create_user_that_exists(test_api_client: TestClient, test_api_user: str):

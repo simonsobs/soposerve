@@ -1,4 +1,4 @@
-from soposerve.service import versioning
+from hipposerve.service import versioning
 
 
 def test_version_revision():

@@ -11,7 +11,7 @@ import requests
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from soposerve.database import BEANIE_MODELS
+from hipposerve.database import BEANIE_MODELS
 
 ### -- Dependency Injection Fixtures -- ###
 
@@ -32,7 +32,7 @@ async def database(database_container):
 
 @pytest_asyncio.fixture(scope="session")
 async def created_user(database):
-    from soposerve.service import users
+    from hipposerve.service import users
 
     user = await users.create(name="test_user", privileges=list(users.Privilege))
 
@@ -43,7 +43,7 @@ async def created_user(database):
 
 @pytest_asyncio.fixture(scope="session")
 async def created_full_product(database, storage, created_user):
-    from soposerve.service import product
+    from hipposerve.service import product
 
     PRODUCT_NAME = "My Favourite Product"
     PRODUCT_DESCRIPTION = "The best product ever."
@@ -86,7 +86,7 @@ async def created_full_product(database, storage, created_user):
 
 @pytest_asyncio.fixture(scope="session")
 async def created_collection(database):
-    from soposerve.service import collection
+    from hipposerve.service import collection
 
     COLLECTION_NAME = "My Favourite Collection"
     COLLECTION_DESCRIPTION = "The best collection ever."
