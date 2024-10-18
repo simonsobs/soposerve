@@ -1,7 +1,9 @@
 HIPPO
 =====
 
-<img src="logo.svg" style="display:block;margin-left:auto;margin-right:auto;width:30%"/>
+<p align="center">
+<img src="logo.svg" style="width:30%"/>
+</p>
 
 The HIerarchical Product Post Office
 ------------------------------------
