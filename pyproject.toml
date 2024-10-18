@@ -39,7 +39,7 @@ dev = [
 ]
 
 [project.scripts]
-hippo = "hippoclient.cli:main"
+henry = "hippoclient.cli:main"
 
 [tool.ruff.lint]
 extend-select = ["I"]
