@@ -29,7 +29,7 @@ def add_child(client: Client, parent: str, child: str) -> bool:
         If a request to the API fails
     """
 
-    response = client.put(f"/relationships/product/{parent}/child_of/{child}")
+    response = client.put(f"/relationships/product/{child}/child_of/{parent}")
 
     response.raise_for_status()
 
@@ -66,7 +66,7 @@ def remove_child(client: Client, parent: str, child: str) -> bool:
         If a request to the API fails
     """
 
-    response = client.delete(f"/relationships/product/{parent}/child_of/{child}")
+    response = client.delete(f"/relationships/product/{child}/child_of/{parent}")
 
     response.raise_for_status()
 
