@@ -20,6 +20,8 @@ from pathlib import Path
 import httpx
 from pydantic import BaseModel
 
+from hipposerve.database import FileMetadata
+
 
 class CacheNotWriteableError(Exception):
     """
@@ -404,6 +406,34 @@ class MultiCache(BaseModel):
 
         for cache in self.caches:
             cache._remove(id)
+
+    def names_to_paths(self, file_metadata: list[FileMetadata]) -> dict[str, Path]:
+        """
+        Convert a list of FileMetadata objects to a dictionary of names to paths.
+        """
+
+        paths = {}
+
+        for cache in self.caches:
+            for file in file_metadata:
+                path = cache.available(file.uuid)
+                paths[file.name] = path
+
+        return paths
+
+    def uuids_to_paths(self, file_metadata: list[FileMetadata]) -> dict[str, Path]:
+        """
+        Convert a list of FileMetadata objects to a dictionary of UUIDs to paths.
+        """
+
+        paths = {}
+
+        for cache in self.caches:
+            for file in file_metadata:
+                path = cache.available(file.uuid)
+                paths[file.uuid] = path
+
+        return paths
 
 
 def clear_all(cache: Cache):

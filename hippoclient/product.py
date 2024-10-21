@@ -123,9 +123,10 @@ def create(
     return this_product_id
 
 
-def read(client: Client, id: str) -> ReadProductResponse:
+def read_with_versions(client: Client, id: str) -> ReadProductResponse:
     """
-    Read a product from hippo.
+    Read a product from hippo by ID. Always returns the requested version,
+    without information about other versions.
 
     Arguments
     ---------
@@ -152,9 +153,41 @@ def read(client: Client, id: str) -> ReadProductResponse:
     model = ReadProductResponse.model_validate_json(response.content)
 
     if client.verbose:
-        console.print(
-            f"Successfully read product {id} ({model.versions[model.requested].name})"
-        )
+        console.print(f"Successfully read product {id}")
+
+    return model
+
+
+def read(client: Client, id: str) -> ProductMetadata:
+    """
+    Read a product from hippo by ID. Always returns the requested version,
+    without information about other versions.
+
+    Arguments
+    ---------
+    client: Client
+        The client to use for interacting with the hippo API.
+    id : str
+        The ID of the product to read.
+
+    Returns
+    -------
+    ReadProductResponse
+        The response from the API.
+
+    Raises
+    ------
+    httpx.HTTPStatusError
+        If a request to the API fails
+    """
+
+    model = read_with_versions(client, id)
+
+    # This model includes version history. We don't want that.
+    model = model.versions[model.requested]
+
+    if client.verbose:
+        console.print(f"Successfully read product ({model.name})")
 
     return model
 

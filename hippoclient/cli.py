@@ -34,13 +34,13 @@ def product_read(id: str):
     """
     global CLIENT, CONSOLE
 
-    product = sc.product.read(client=CLIENT, id=id)
+    product = sc.product.read_with_versions(client=CLIENT, id=id)
 
     product_extracted_version = product.versions[product.requested]
 
     CONSOLE.print(product_extracted_version.name, style="bold underline color(3)")
     CONSOLE.print(
-        "Versions: "
+        "\nVersions: "
         + helper.render_version_list(
             product.versions, product.current, product.requested
         )
@@ -48,7 +48,6 @@ def product_read(id: str):
     CONSOLE.print(
         rich.markdown.Markdown(product_extracted_version.description.strip("\n"))
     )
-    CONSOLE.print("\n" + "Metadata" + "\n", style="bold color(2)")
     CONSOLE.print(product_extracted_version.metadata)
     CONSOLE.print("\n" + "Sources" + "\n", style="bold color(2)")
     CONSOLE.print(helper.render_source_list(product_extracted_version.sources, CACHE))
