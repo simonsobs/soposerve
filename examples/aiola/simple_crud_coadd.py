@@ -98,7 +98,7 @@ cache = settings.cache
 # be different in your case.
 # %%
 PATCH = "D6"
-COLLECTION = "6716941a35f1371c061060ae" # None
+COLLECTION = None
 
 if COLLECTION is None:
     raise ValueError(
