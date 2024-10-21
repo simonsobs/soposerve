@@ -100,7 +100,12 @@ cache = settings.cache
 
 # %%
 PATCH = "D6"
-COLLECTION = "67166b59bff07cc529e7e603"
+COLLECTION = None
+
+if COLLECTION is None:
+    raise ValueError(
+        "Please set the COLLECTION variable to the ID of the collection you want to use."
+    )
 
 # Find our collection!
 collection = collections.read(client=client, id=COLLECTION)
@@ -431,3 +436,5 @@ for product_id in products_in_patch:
 # Note here that we do not have a `cached` version of this file. But we have it on disk!
 # That's because hippo doesn't know about your own filesystem, just the cache. You'll need
 # to download it back from hippo to get it back into your cache.
+
+# %%
