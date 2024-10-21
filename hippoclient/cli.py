@@ -39,8 +39,15 @@ def product_read(id: str):
     product_extracted_version = product.versions[product.requested]
 
     CONSOLE.print(product_extracted_version.name, style="bold underline color(3)")
-    CONSOLE.print("Versions: " + helper.render_version_list(product.versions, product.current, product.requested))
-    CONSOLE.print(rich.markdown.Markdown(product_extracted_version.description.strip("\n")))
+    CONSOLE.print(
+        "Versions: "
+        + helper.render_version_list(
+            product.versions, product.current, product.requested
+        )
+    )
+    CONSOLE.print(
+        rich.markdown.Markdown(product_extracted_version.description.strip("\n"))
+    )
     CONSOLE.print("\n" + "Metadata" + "\n", style="bold color(2)")
     CONSOLE.print(product_extracted_version.metadata)
     CONSOLE.print("\n" + "Sources" + "\n", style="bold color(2)")

@@ -19,15 +19,18 @@ from typing import Annotated, Union
 from pydantic import Field
 
 from hippometa.map import MapMetadata
+from hippometa.mapset import MapSet
+from hippometa.mapset import MapSetMap as MapSetMap
 from hippometa.simple import SimpleMetadata
 
 ALL_METADATA_TYPE = Annotated[
     Union[
         MapMetadata,
         SimpleMetadata,
+        MapSet,
         None,
     ],
     Field(discriminator="metadata_type"),
 ]
 
-ALL_METADATA = [MapMetadata, SimpleMetadata, None]
+ALL_METADATA = [MapMetadata, SimpleMetadata, MapSet, None]

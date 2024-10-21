@@ -4,11 +4,13 @@ Populates the simple example server with a bunch of ACT maps.
 
 from pathlib import Path
 
+import astropy.io.fits as fits
+
 from hippoclient import Client
 from hippoclient.collections import add as add_to_collection
 from hippoclient.collections import create as create_collection
 from hippoclient.product import create as create_product
-from hippometa import MapMetadata
+from hippometa import MapSet, MapSetMap
 
 API_KEY = "TEST_API_KEY"
 SERVER_LOCATION = "http://127.0.0.1:8000"
@@ -76,11 +78,21 @@ def get_set(path: Path) -> str:
 
 
 def get_map_type(path: Path) -> str:
-    map_types = ["map_srcfree", "srcs", "ivar", "xlink"]
+    map_types = {
+        "coadd_srcs": "source_only",
+        "coadd_map_srcfree": "source_free",
+        "coadd_ivar": "ivar_coadd",
+        "coadd_xlink": "xlink_coadd",
+        # Coadd is primary, fallback is splits
+        "map_srcfree": "source_free_split",
+        "srcs": "source_only_split",
+        "ivar": "ivar_split",
+        "xlink": "xlink_split",
+    }
 
-    for map_type in map_types:
+    for map_type, return_value in map_types.items():
         if map_type in path.name:
-            return map_type
+            return return_value
 
 
 def get_description(path: Path) -> str:
@@ -110,6 +122,11 @@ def get_name(path: Path) -> str:
     set_ = get_set(path)
 
     return f"ACT DR4 (Patch {patch}) 4-way ({set_})"
+
+
+def get_units(path: Path) -> str:
+    with fits.open(path) as hdul:
+        return hdul[0].header.get("BUNIT", "Unknown")
 
 
 if __name__ == "__main__":
@@ -148,13 +165,31 @@ if __name__ == "__main__":
     )
 
     for sub_set in sub_sets.keys():
+        metadata = MapSet(
+            maps={
+                get_map_type(fits_file): MapSetMap(
+                    map_type=get_map_type(fits_file),
+                    filename=fits_file.name,
+                    units=get_units(fits_file),
+                )
+                for fits_file in sub_sets[sub_set]
+            },
+            pixelisation="healpix",
+            telescope="ACT",
+            instrument="ACTPol",
+            release="DR4",
+            season="s13",
+            patch=get_patch(sub_sets[sub_set][0]),
+            frequency="150",
+            polarization_convention="IAU",
+        )
         primary_map = find_primary_map(sub_sets[sub_set])
 
         product_id = create_product(
             client=client,
             name=sub_set,
             description=get_description(primary_map),
-            metadata=MapMetadata.from_fits(primary_map),
+            metadata=metadata,
             sources=sub_sets[sub_set],
             source_descriptions=sub_sets_descriptions[sub_set],
         )

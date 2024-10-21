@@ -12,7 +12,9 @@ from hipposerve.api.models.relationships import (
 from hipposerve.database import FileMetadata, ProductMetadata
 
 
-def render_version_list(versions: list[str], current_version: str, requested_version: str) -> str:
+def render_version_list(
+    versions: list[str], current_version: str, requested_version: str
+) -> str:
     """
     Render a list of versions to a bbcode string.
 
@@ -85,9 +87,7 @@ def render_source_list(
     a cache, we also query it to see if the files are cached.
     """
 
-    table = rich.table.Table(
-        "Name", "Description", "UUID", "Size [B]", "Cached"
-    )
+    table = rich.table.Table("Name", "Description", "UUID", "Size [B]", "Cached")
 
     for source in input:
         if cache is not None:
@@ -98,7 +98,7 @@ def render_source_list(
                 cached = "No"
         else:
             cached = "Unknown"
-        
+
         table.add_row(
             source.name,
             source.description or "",

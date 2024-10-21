@@ -18,7 +18,8 @@ from hipposerve.service import collection, product
 
 web_router = APIRouter(prefix="/web")
 templates = Jinja2Templates(
-    directory="hipposerve/web/templates", extensions=["jinja_markdown.MarkdownExtension"]
+    directory="hipposerve/web/templates",
+    extensions=["jinja_markdown.MarkdownExtension"],
 )
 
 
