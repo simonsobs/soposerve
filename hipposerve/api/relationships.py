@@ -63,6 +63,7 @@ async def read_collection(
                 description=x.description,
                 owner=x.owner.name,
                 uploaded=x.uploaded,
+                metadata=x.metadata,
             )
             for x in item.products
         ],

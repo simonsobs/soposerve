@@ -7,6 +7,8 @@ import datetime
 from beanie import PydanticObjectId
 from pydantic import BaseModel
 
+from hippometa import ALL_METADATA_TYPE
+
 
 class CreateCollectionRequest(BaseModel):
     """
@@ -27,6 +29,7 @@ class ReadCollectionProductResponse(BaseModel):
     owner: str
     version: str
     uploaded: datetime.datetime
+    metadata: ALL_METADATA_TYPE
 
 
 class ReadCollectionResponse(BaseModel):
