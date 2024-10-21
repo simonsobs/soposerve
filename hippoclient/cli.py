@@ -49,7 +49,6 @@ def product_read(id: str):
         rich.markdown.Markdown(product_extracted_version.description.strip("\n"))
     )
     CONSOLE.print(product_extracted_version.metadata)
-    CONSOLE.print("\n" + "Sources" + "\n", style="bold color(2)")
     CONSOLE.print(helper.render_source_list(product_extracted_version.sources, CACHE))
     CONSOLE.print("\n" + "Relationships" + "\n", style="bold color(2)")
     CONSOLE.print("Collections: " + ", ".join(product_extracted_version.collections))
@@ -119,7 +118,7 @@ def collection_read(id: str):
 
     CONSOLE.print(collection.name + "\n", style="bold underline color(3)")
     CONSOLE.print(rich.markdown.Markdown(collection.description.strip("\n")))
-    CONSOLE.print("\n" + "Products" + "\n", style="bold color(2)")
+    CONSOLE.print("\n")
     CONSOLE.print(table)
 
 

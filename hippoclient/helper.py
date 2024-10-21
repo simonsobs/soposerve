@@ -45,7 +45,12 @@ def render_product_metadata_list(
     Render a list of product meadata into a rich table.
     """
 
-    table = rich.table.Table("ID", "Name", "Version", "Uploaded")
+    table = rich.table.Table(title="Products")
+
+    table.add_column("ID", justify="center", width=24)
+    table.add_column("Name", justify="left")
+    table.add_column("Version", justify="center", width=7)
+    table.add_column("Uploaded", justify="center", width=16)
 
     for product in input:
         table.add_row(
@@ -65,7 +70,11 @@ def render_collection_metadata_list(
     Render a list of collection metadata into a rich table.
     """
 
-    table = rich.table.Table("ID", "Name", "Description")
+    table = rich.table.Table(title="Collections")
+
+    table.add_column("ID", justify="center", width=24)
+    table.add_column("Name", justify="left")
+    table.add_column("Description", justify="left")
 
     for collection in input:
         description = collection.description.strip("\n")
@@ -87,7 +96,9 @@ def render_source_list(
     a cache, we also query it to see if the files are cached.
     """
 
-    table = rich.table.Table("Name", "Description", "UUID", "Size [B]", "Cached")
+    table = rich.table.Table(
+        "Name", "Description", "UUID", "Size [B]", "Cached", title="Sources"
+    )
 
     for source in input:
         if cache is not None:

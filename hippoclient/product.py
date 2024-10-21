@@ -60,6 +60,9 @@ def create(
     # Check and validate the sources.
     assert len(sources) == len(source_descriptions)
 
+    # Co-erce sources to paths as they will inevitably be strings...
+    sources = [Path(x) for x in sources]
+
     source_metadata = []
 
     for source, source_description in zip(sources, source_descriptions):
