@@ -84,7 +84,7 @@ class ClientSettings(BaseSettings):
         )
 
     @property
-    def multi_cache(self) -> MultiCache:
+    def cache(self) -> MultiCache:
         """
         Return a MultiCache object for the caches.
         """

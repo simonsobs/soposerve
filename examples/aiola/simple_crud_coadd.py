@@ -13,7 +13,7 @@ from hippoclient.core import ClientSettings
 settings = ClientSettings()
 
 client = settings.client
-cache = settings.multi_cache
+cache = settings.cache
 
 PATCH = "D6"
 COLLECTION = sys.argv[1]

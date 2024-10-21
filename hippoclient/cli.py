@@ -194,6 +194,6 @@ def main():
     global CLIENT, APP, CACHE
 
     CLIENT = settings.client
-    CACHE = settings.multi_cache
+    CACHE = settings.cache
 
     APP()
