@@ -18,7 +18,6 @@
 # force folks to upload all of their source code, but it is extremely helpful to be able
 # to know what data was used to create a particula result. That's only possible if your
 # data is tracked, versioned, and has the correct relationships present.
-
 # %%
 # Just some standard imports; nothing to see here.
 import numpy as np
@@ -97,10 +96,9 @@ cache = settings.cache
 # ```
 # The collection ID that you need is that one on the left (67166b59bff07cc529e7e603); this will
 # be different in your case.
-
 # %%
 PATCH = "D6"
-COLLECTION = None
+COLLECTION = "6716941a35f1371c061060ae" # None
 
 if COLLECTION is None:
     raise ValueError(
@@ -120,24 +118,25 @@ collections.cache(client=client, cache=cache, id=COLLECTION)
 # ```
 # henry collection read 67166b59bff07cc529e7e603
 # ```
+# ```
 # ACT DR4 Frequency Maps at 98 and 150 GHz presented in Aiola et al. 2020
-
+#
 # These FITS files are the maps made with the nighttime 2013(s13) to 2016(s16)
 # data from the ACTPol camera on the ACT telescope at 98(f090) and 150(f150) GHz.
-
+#
 # These maps and their properties are described in Aiola et al. (2020) and Choi et
 # al. (2020)
-
+#
 #                               Naming and products
-
+#
 # The maps are released both as 2- or 4-way independet splits, used to compute the
 # power spectra, and as inverse-variance map-space co-added.
-
+#
 #                                Naming convention
-
+#
 # act_{release}_{season}_{patch}_{array}_{freq}_nohwp_night_3pass_{nway}_{set}_{pr
 # oduct}.fits
-
+#
 #  • "release": these maps are part of the DR4 data release, and versioning allows
 #    for future modifications of thise relase [possible tags: dr4.xy]
 #  • "season": observation season [possible tags: s13, s14, s15, s16]
@@ -149,33 +148,33 @@ collections.cache(client=client, cache=cache, id=COLLECTION)
 #  • "set": split identifier or co-add version [possible tags: set0, set1, set2,
 #    set3, coadd]
 #  • "product": see below for list of released products
-
+#
 #                                Available products
-
+#
 # More detailes availble in Sec. 5 of Aiola et al (2020)
-
+#
 #  • "map_srcfree": observed I,Q,U Stokes components with signal from point
 #    sources subtracted [uK]
 #  • "srcs": I,Q,U Stokes components of the point sources signal [uK]
 #  • NOTE: "map_srcfree"+"srcs" is the observed sky
 #  • "ivar": inverse-variance pixel weight [uK^-2]
 #  • "xlink": cross-linking information encoded as I,Q,U Stokes components [uK^-2]
-
+#
 #                                 Post-processing
-
+#
 # The "map_srcfree", "srcs", and "ivar" maps are calibrated with a single
 # coefficient, which is measured for each field and reported in Choi et al (2020).
 # An extra polarization efficiency parameter is included (and let to vary) in the
 # likelihood analysis and NOT considered here.
-
+#
 #                                     Remarks
-
+#
 #  • These maps are released following the IAU polarization convention
 #    (POLCCONV='IAU' in FITS header).
 #  • Baseline software to handle these maps is Pixell
 #    (https://github.com/simonsobs/pixell).
-
-
+#
+#
 #                                     Products
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
 # ┃            ID            ┃ Name                 ┃ Version ┃     Uploaded     ┃
@@ -215,7 +214,7 @@ collections.cache(client=client, cache=cache, id=COLLECTION)
 # We can view an individual product with its ID:
 # ```
 # ACT DR4 (Patch D6) 4-way (coadd)
-
+#
 # Versions: 1.0.0
 # ACT DR4 4-way Co-added Maps. Includes all the maps from the co-added maps, see
 # the collection for more details (Patch D6).
@@ -279,8 +278,6 @@ collections.cache(client=client, cache=cache, id=COLLECTION)
 # the inverse-variance map, the cross-linking map, and the source map. The coadds have
 # `coadd` maps associated with them. Let's filter out our patch and only look at the
 # splits:
-
-
 # %%
 def product_valid(product):
     return (
@@ -301,8 +298,6 @@ print("Products: " + ", ".join(products_in_patch))
 # accessible version of what we just read from `henry` above. We can then ask the `cache`
 # for the relationship between filenames and the full on-disk path in the cache using the
 # `names_to_paths` function. We can then read the data from the FITS files and coadd them.
-
-
 # %%
 def coadd_maps(product_ids: list[str], client, cache) -> np.array:
     sum_of_ivars = None
@@ -345,9 +340,8 @@ coadded_map = coadd_maps(
 # Now we have a coadded map, we can save it to disk and upload it to hippo. In general, we would
 # want to use pixell for this and include much more metadata, but for this simple test we can use
 # the basic `SimpleMetadata` module.
-
+# %%
 fits.PrimaryHDU(coadded_map).writeto(f"coadd_{PATCH}.fits", overwrite=True)
-
 
 # Now send it back to the server.
 metadata = product.SimpleMetadata()
@@ -412,6 +406,7 @@ for product_id in products_in_patch:
 # And...
 # ```
 # henry product read 67168da3bff07cc529e7ea3b
+# ```
 # ```
 # Coadded DR4 Map (Patch D6)
 #
