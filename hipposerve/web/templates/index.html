@@ -1,37 +1,37 @@
 {% extends "core.html" %}
 {% block content %}
 <div class="container">
-<h2>Recently Created Collections</h2>
-<table class="table">
-    <tr>
-        <th>Name</th>
-        <th colspan="2">Description</th>
-        <th>Number of Products</th>
-    </tr>
-    {% for collection in collections %}
-    <tr>
-        <td><a href='collections/{{ collection.id | e }}'>{{ collection.name }}</a></td>
-        <td colspan="2">{{ collection.description | truncate }}</td>
-        <td>{{ collection.products|length }}</td>
-    </tr>
-    {% endfor %}
-</table>
-<h2>Recently Uploaded Products</h2>
-<table class="table">
-    <tr>
-        <th>Name</th>
-        <th colspan="2">Description</th>
-        <th>Uploaded</th>
-        <th>Owner</th>
-    </tr>
-    {% for product in products %}
-    <tr>
-        <td><a href='products/{{ product.id | e }}'>{{ product.name }}</a></td>
-        <td colspan="2">{{ product.description }}</td>
-        <td>{{ product.uploaded.strftime("%Y-%m-%d") }}</td>
-        <td>{{ product.owner.name }}</td>
-    </tr>
-    {% endfor %}
-</table>
+    <h2>Recently Created Collections</h2>
+    <table class="table">
+        <tr>
+            <th>Name</th>
+            <th colspan="2">Description</th>
+            <th>Number of Products</th>
+        </tr>
+        {% for collection in collections %}
+        <tr>
+            <td><a href='collections/{{ collection.id | e }}'>{{ collection.name }}</a></td>
+            <td colspan="2">{{ collection.description | truncate }}</td>
+            <td>{{ collection.products|length }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2>Recently Uploaded Products</h2>
+    <table class="table">
+        <tr>
+            <th>Name</th>
+            <th colspan="2">Description</th>
+            <th>Uploaded</th>
+            <th>Owner</th>
+        </tr>
+        {% for product in products %}
+        <tr>
+            <td><a href='products/{{ product.id | e }}'>{{ product.name }}</a></td>
+            <td colspan="2">{{ product.description }}</td>
+            <td>{{ product.uploaded.strftime("%Y-%m-%d") }}</td>
+            <td>{{ product.owner.name }}</td>
+        </tr>
+        {% endfor %}
+    </table>
 </div>
 {% endblock %}
