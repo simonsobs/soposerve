@@ -11,8 +11,15 @@
       margin: 1em;
       position: relative;
     }
-    h2:not(:first-of-type), h3, h4, h5, h6 {
+    h2:not(:first-of-type),
+    h3,
+    h4:not(:first-of-type),
+    h5:not(:first-of-type),
+    h6 {
       margin-top: 2em;
+    }
+    h4, h5 {
+      margin-top: 1em;
     }
     .jump-to-top {
       display: none;

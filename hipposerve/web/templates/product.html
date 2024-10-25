@@ -13,14 +13,14 @@
 
     <h3>Sources</h3>
     <table class="table">
-        <tr>`
+        <tr>
             <th>Link</th>
             <th>Size</th>
         </tr>
         {% for source in sources %}
         <tr>
             <td><a href='{{ source.url }}'>{{ source.name }}</a></td>
-            <td>{{ source.size }} B</td>
+            <td style="white-space: nowrap;">{{ source.size }} B</td>
         </tr>
         {% endfor %}
     </table>
