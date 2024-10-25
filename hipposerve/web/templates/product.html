@@ -13,7 +13,7 @@
 
     <h3>Sources</h3>
     <table class="table">
-        <tr>
+        <tr>`
             <th>Link</th>
             <th>Size</th>
         </tr>
@@ -28,15 +28,36 @@
     <div class="row">
         <div class="col">
             {% if product.metadata %}
-            <h3>Metadata</h3>
-            {% for key, value in product.metadata.model_dump().items() %}
-            {% if key != 'metadata_type' %}
-            <ul class="list-group d-inline-flex p-2 font-monospace small ps-0">
-                <li class="list-group-item list-group-item-primary">{{ key }}</li>
-                <li class="list-group-item">{{ value }}</li>
-            </ul>
-            {% endif %}
-            {% endfor %}
+                <h3>Metadata</h3>
+                {% for key, value in product.metadata.model_dump().items() %}
+                    {% if key != 'metadata_type' %}
+                        <ul class="list-group d-inline-flex p-2 font-monospace small ps-0">
+                            <li class="list-group-item list-group-item-primary">{{ key }}</li>
+                            {% if value is mapping %}
+                                <li class="list-group-item">
+                                    <table style="font-size: 0.9em;" class="table">
+                                        {% for keysub1, valuesub1 in value.items() %}
+                                            {% if loop.index == 1 %}
+                                                <tr>
+                                                    {% for keysub2, valuesub2 in valuesub1.items() %}
+                                                        <th>{{ keysub2 }}</th>
+                                                    {% endfor %}
+                                                </tr>
+                                            {% endif %}
+                                            <tr>
+                                                {% for keysub2, valuesub2 in valuesub1.items() %}
+                                                    <td>{{ valuesub2 }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                </li>
+                            {% else %}
+                                <li class="list-group-item">{{ value }}</li>
+                            {% endif %}
+                        </ul>
+                    {% endif %}
+                {% endfor %}
             {% endif %}
         </div>
 
