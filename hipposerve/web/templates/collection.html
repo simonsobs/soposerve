@@ -1,6 +1,6 @@
 {% extends "core.html" %}
 {% block content %}
-<div class="container">
+<div class="container-fluid fs-base">
 <h2>{{ collection.name }}</h2>
 {% markdown %}
 {{ collection.description }}
@@ -12,7 +12,7 @@
         <th>Version</th>
     </tr>
     {% for product in collection.products %}
-    <tr>
+    <tr class="small">
         <td><a href='../products/{{ product.id | e}}'>{{ product.name }}</a></td>
         <td>{{ product.uploaded.strftime('%Y-%m-%d %H:%M:%S') }}</td>
         <td>{{ product.version }}</td>

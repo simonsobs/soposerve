@@ -7,30 +7,30 @@
     <title>Simons Observatory Post Office</title>
   </head>
   <style>
-    body {
-      margin: 1em;
-      position: relative;
+    h1 {
+      font-size: 1.75rem;
     }
-    h2:not(:first-of-type),
-    h3,
-    h4:not(:first-of-type),
-    h5:not(:first-of-type),
+    h2 {
+      font-size: 1.5rem;
+    }
+    h3 {
+      font-size: 1.25rem;
+    }
+    h4 {
+      font-size: 1.125rem;
+    }
+    h5 {
+      font-size: 1rem;
+    }
     h6 {
-      margin-top: 2em;
-    }
-    h4, h5 {
-      margin-top: 1em;
+      font-size: 0.9rem;
     }
     .jump-to-top {
       display: none;
-      position: fixed;
-      right: 1em;
-      bottom: 1em;
       opacity: 0.3;
-      font-size: 1.5em;
     }
     .jump-to-top:hover {
-      opacity: 1;
+      opacity: 0.6;
     }
   </style>
   <script>
@@ -51,10 +51,10 @@
       }
     }
   </script>
-  <body onscroll="debounce(onScroll, 100)">
+  <body class="position-relative m-3 small" onscroll="debounce(onScroll, 100)">
     {% block content %}{% endblock %}
     <button
-      class="btn btn-outline-secondary jump-to-top"
+      class="btn btn-outline-secondary jump-to-top px-2 py-0 position-fixed end-0 bottom-0 mb-3 mx-3 fs-5"
       title="Go back to the top of the page"
       onclick="jumpToTop()"
     >
