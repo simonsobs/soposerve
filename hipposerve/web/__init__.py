@@ -8,6 +8,7 @@ NOTE: Code coverage is an explicit NON-goal for the web
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
 
 # Consider: jinja2-fragments for integration with HTMX.
 from fastapi.templating import Jinja2Templates
@@ -38,7 +39,6 @@ async def index(request: Request):
 async def product_view(request: Request, id: str):
     product_instance = await product.read_by_id(id)
     sources = await product.read_files(product_instance, storage=request.app.storage)
-
     # Grab the history!
     latest_version = await product.walk_to_current(product_instance)
     version_history = await product.walk_history(latest_version)
@@ -60,4 +60,18 @@ async def collection_view(request: Request, id: PydanticObjectId):
 
     return templates.TemplateResponse(
         "collection.html", {"request": request, "collection": collection_instance}
+    )
+
+
+@web_router.get("/search", response_class=HTMLResponse)
+async def search_view(request: Request, q: str = None, filter: str = 'products'):
+    if filter == 'products':
+        results = await product.search_by_name(q)
+    elif filter == 'collections':
+        results = await collection.search_by_name(q)
+    else:
+        results = None
+
+    return templates.TemplateResponse(
+        "search_results.html", {"request": request, "query": q, "filter": filter, "results": results}
     )
