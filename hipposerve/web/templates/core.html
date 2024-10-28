@@ -51,7 +51,8 @@
       }
     }
   </script>
-  <body class="position-relative m-3 small" onscroll="debounce(onScroll, 100)">
+  <body class="position-relative m-3 mt-0 small" onscroll="debounce(onScroll, 100)">
+    {% include "navigation.html" %}
     {% block content %}{% endblock %}
     <button
       class="btn btn-outline-secondary jump-to-top px-2 py-0 position-fixed end-0 bottom-0 mb-3 mx-3 fs-5"
