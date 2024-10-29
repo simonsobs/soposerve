@@ -64,14 +64,15 @@ async def collection_view(request: Request, id: PydanticObjectId):
 
 
 @web_router.get("/search", response_class=HTMLResponse)
-async def search_view(request: Request, q: str = None, filter: str = 'products'):
-    if filter == 'products':
+async def search_view(request: Request, q: str = None, filter: str = "products"):
+    if filter == "products":
         results = await product.search_by_name(q)
-    elif filter == 'collections':
+    elif filter == "collections":
         results = await collection.search_by_name(q)
     else:
         results = None
 
     return templates.TemplateResponse(
-        "search_results.html", {"request": request, "query": q, "filter": filter, "results": results}
+        "search_results.html",
+        {"request": request, "query": q, "filter": filter, "results": results},
     )
