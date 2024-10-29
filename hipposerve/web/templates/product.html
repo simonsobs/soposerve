@@ -1,99 +1,128 @@
 {% extends "core.html" %}
 {% block content %}
-<div class="container">
+<div class="container-fluid">
+    <h1>{{ product.name }}</h1>
+    <span class="badge text-bg-secondary">Uploaded: {{ product.uploaded.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+    <span class="badge text-bg-secondary">Modified: {{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+    <span class="badge text-bg-secondary">Owner: {{ product.owner.name }}</span>
 
-<h1>{{ product.name }}</h1>
-<span class="badge text-bg-secondary">Uploaded: {{ product.uploaded.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-<span class="badge text-bg-secondary">Modified: {{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-<span class="badge text-bg-secondary">Owner: {{ product.owner.name }}</span>
+    <h2 class="mt-3">Product Description</h2>
+    {% markdown %}
+    {{ product.description }}
+    {% endmarkdown %}
 
-<h2>Product Description</h2>
-{% markdown %}
-{{ product.description }}
-{% endmarkdown %}
-
-<h3>Sources</h3>
-<table class="table">
-    <tr>
-        <th>Link</th>
-        <th>Size</th>
-    </tr>
-    {% for source in sources %}
-    <tr>
-        <td><a href='{{ source.url }}'>{{ source.name }}</a></td>
-        <td>{{ source.size }} B</td>
-    </tr>
-    {% endfor %}
-</table>
-
-<div class="row">
-<div class="col">
-{% if product.metadata %}
-<h3>Metadata</h3>
-{% for key, value in product.metadata.model_dump().items() %}
-{% if key != 'metadata_type' %}
-<ul class="list-group d-inline-flex p-2 font-monospace small ps-0">
-    <li class="list-group-item list-group-item-primary">{{ key }}</li>
-    <li class="list-group-item">{{ value }}</li>
-</ul>
-{% endif %}
-{% endfor %}
-{% endif %}
-</div>
-<div class="col">
-{% if product.child_of %}
-<div class="row">
-<p>
-    Parents:
-    <ul>
-        {% for parent in product.child_of %}
-        <li><a href='{{ parent.id | e}}'>{{ parent.name }}</a></li>
+    <h3>Sources</h3>
+    <table class="table small">
+        <tr>
+            <th>Link</th>
+            <th>Size</th>
+        </tr>
+        {% for source in sources %}
+        <tr>
+            <td><a href='{{ source.url }}'>{{ source.name }}</a></td>
+            <td class="text-nowrap">{{ source.size }} B</td>
+        </tr>
         {% endfor %}
-    </ul>
-</p>
-</div>
-{% endif %}
-{% if product.parent_of %}
-<div class="row">
-<p>
-    Children:
-    <ul>
-        {% for child in product.parent_of %}
-        <li><a href='{{ child.id | e }}'>{{ child.name }}</a></li>
-        {% endfor %}
-    </ul>
-</p>
-</div>
-{% endif %}
-{% if product.collections %}
-<div class="row">
-<h3>Collections</h3>
-<div class="container">
-{% for collection in product.collections %}
-<a href="../collections/{{ collection.id | e }}">
-<button type="button" class="btn btn-outline-primary">
-   {{ collection.name }}
-</button>
-</a>
-{% endfor %}
-</div>
-</div>
-{% endif %}
-<div class="row">
-<h3>Version History</h3>
-<table class="table">
-    <tr>
-        <th>Version</th>
-        <th>Updated</th>
-    </tr>
-    {% for version, metadata in versions.items() %}
-    <tr>
-        <td><a href='{{ metadata.id | e }}'>{{ version }}</a></td>
-        <td>{{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-    </tr>
-    {% endfor %}
-</table>
-</div>
-</div>
+    </table>
+
+    <div class="row">
+        <div class="col">
+            {% if product.metadata %}
+                <h3 class="mt-2">Metadata</h3>
+                {% for key, value in product.metadata.model_dump().items() %}
+                    {% if key != 'metadata_type' %}
+                        <ul class="list-group d-inline-flex p-2 font-monospace small ps-0">
+                            <li class="list-group-item list-group-item-primary">{{ key }}</li>
+                            {% if value is mapping %}
+                                <li class="list-group-item">
+                                    <table class="table small">
+                                        {% for keysub1, valuesub1 in value.items() %}
+                                            {% if loop.index == 1 %}
+                                                <tr>
+                                                    {% for keysub2, valuesub2 in valuesub1.items() %}
+                                                        <th>{{ keysub2 }}</th>
+                                                    {% endfor %}
+                                                </tr>
+                                            {% endif %}
+                                            <tr>
+                                                {% for keysub2, valuesub2 in valuesub1.items() %}
+                                                    <td>{{ valuesub2 }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                </li>
+                            {% else %}
+                                <li class="list-group-item">{{ value }}</li>
+                            {% endif %}
+                        </ul>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="col">
+            {% if product.child_of %}
+            <div class="row">
+                <p>
+                    Parents:
+                    <ul>
+                        {% for parent in product.child_of %}
+                        <li><a href='{{ parent.id | e}}'>{{ parent.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </p>
+            </div>
+            {% endif %}
+            
+            {% if product.parent_of %}
+            <div class="row">
+                <p>
+                    Children:
+                    <ul>
+                        {% for child in product.parent_of %}
+                        <li><a href='{{ child.id | e }}'>{{ child.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </p>
+            </div>
+            {% endif %}
+
+            {% if product.collections %}
+            <div class="row">
+                <div class="container">
+                    <h3 class="mt-2">Collections</h3>
+                    <ul class="list-group d-inline-flex p-2 small ps-0">
+                        {% for collection in product.collections %}
+                        <li class="list-group-item">
+                            <a href="../collections/{{ collection.id | e }}">
+                            {{ collection.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="container">
+                    <h3 class="mt-2">Version History</h3>
+                    <table class="table small">
+                        <tr>
+                            <th>Version</th>
+                            <th>Updated</th>
+                        </tr>
+                        {% for version, metadata in versions.items() %}
+                        <tr>
+                            <td><a href='{{ metadata.id | e }}'>{{ version }}</a></td>
+                            <td>{{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
