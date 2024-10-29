@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse
 # Consider: jinja2-fragments for integration with HTMX.
 from fastapi.templating import Jinja2Templates
 
+from hippometa import ALL_METADATA
 from hipposerve.service import collection, product
 
 # TODO: Static file moutning.
@@ -64,7 +65,9 @@ async def collection_view(request: Request, id: PydanticObjectId):
 
 
 @web_router.get("/search", response_class=HTMLResponse)
-async def search_view(request: Request, q: str = None, filter: str = "products"):
+async def search_results_view(
+    request: Request, q: str = None, filter: str = "products"
+):
     if filter == "products":
         results = await product.search_by_name(q)
     elif filter == "collections":
@@ -75,4 +78,20 @@ async def search_view(request: Request, q: str = None, filter: str = "products")
     return templates.TemplateResponse(
         "search_results.html",
         {"request": request, "query": q, "filter": filter, "results": results},
+    )
+
+
+@web_router.get("/search/metadata", response_class=HTMLResponse)
+async def search_metadata_view(request: Request):
+    metadata_info = {}
+
+    for metadata_class in ALL_METADATA:
+        if metadata_class is not None:
+            class_name = metadata_class.__name__
+            fields = metadata_class.__annotations__
+            metadata_info[class_name] = fields
+
+    return templates.TemplateResponse(
+        "search_metadata.html",
+        {"request": request, "metadata": metadata_info},
     )

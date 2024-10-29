@@ -1,0 +1,73 @@
+{% extends "core.html" %}
+{% block content %}
+<div class="container-fluid fs-base">
+    <h2>
+        Search by Metadata
+    </h2>
+    <form>
+        <div style="width: 15rem;">
+            <select
+                class="form-select form-select-sm"
+                id="metadata-type-select"
+                aria-label="Choose metadata type"
+                onchange="showFields(this.value)"
+            >
+                <option value="">Choose a metadata type</option>
+                {% for class_name, fields in metadata.items() %}
+                    <option value="{{ class_name }}">{{ class_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% for class_name, fields in metadata.items() %}
+            <div
+                id="{{ class_name }}-fields"
+                class="justify-content-center metadata-fields input-group input-group-sm mt-3 p-3 border border-light"
+                style="display: none;"
+            >
+                {% if fields.items()|length > 1 %}
+                    <fieldset>
+                        <legend class="fs-6">Metadata Fields</legend>
+                        {% for field_name, field_type in fields.items() %}
+                            {% if field_name != 'metadata_type' %}
+                                <label
+                                    class="form-label small m-1"
+                                    for="{{ class_name }}-{{ field_name}}"
+                                    >
+                                    {{ field_name }}
+                                    <input
+                                        id="{{ class_name }}-{{ field_name}}"
+                                        class="form-control small"
+                                        type="text"
+                                        name="{{ field_name }}"
+                                        placeholder="{{ field_type }}"
+                                        style="font-size: 1em;"
+                                    >
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    </fieldset>
+                    <button class="btn btn-dark btn-sm mt-2 rounded-1" type="submit">Search {{ class_name }}</button>
+                {% else %}
+                    <span class="fs-6">No metadata fields</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showFields(selectedClass) {
+        console.log(selectedClass)
+        document.querySelectorAll('.metadata-fields').forEach(div => {
+            div.style.display = 'none';
+        })
+
+        const selectedFields = document.getElementById(`${selectedClass}-fields`);
+        if (selectedFields) {
+            selectedFields.style.display = 'flex';
+        }
+    }
+</script>
+{% endblock %}
