@@ -26,6 +26,8 @@ dependencies = [
     "typer",
     "httpx",
     "astropy",
+    "pyjwt",
+    "passlib","python-multipart","bcrypt==4.0.1"
 ]
 
 [project.optional-dependencies]

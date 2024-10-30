@@ -6,13 +6,21 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
+from typing import Annotated
+
 from beanie import PydanticObjectId
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 # Consider: jinja2-fragments for integration with HTMX.
+from fastapi.responses import RedirectResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 
 from hipposerve.service import collection, product
+from hipposerve.service import users as user_service
+from hipposerve.settings import SETTINGS
+
+from .auth import LoggedInUser, create_access_token
 
 # TODO: Static file moutning.
 
@@ -61,3 +69,54 @@ async def collection_view(request: Request, id: PydanticObjectId):
     return templates.TemplateResponse(
         "collection.html", {"request": request, "collection": collection_instance}
     )
+
+
+# --- Authentication ---
+
+
+@web_router.post("/token")
+async def login_for_access_token(
+    request: Request,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+) -> RedirectResponse:
+    try:
+        user = await user_service.read_with_password_verification(
+            name=form_data.username,
+            password=form_data.password,
+            context=SETTINGS.crypt_context,
+        )
+    except user_service.UserNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = create_access_token(
+        user=user, expires_delta=SETTINGS.web_jwt_expires
+    )
+
+    new_response = RedirectResponse(
+        url=request.url.path.replace("/token", "/user"), status_code=302
+    )
+    new_response.set_cookie(key="access_token", value=access_token, httponly=True)
+    return new_response
+
+
+@web_router.get("/logout")
+async def logout(request: Request) -> RedirectResponse:
+    new_response = RedirectResponse(
+        url=request.url.path.replace("/logout", ""), status_code=302
+    )
+    new_response.delete_cookie(key="access_token")
+    return new_response
+
+
+@web_router.get("/user")
+async def read_user(request: Request, user: LoggedInUser):
+    return templates.TemplateResponse("user.html", {"request": request, "user": user})
+
+
+@web_router.get("/login")
+async def login(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})

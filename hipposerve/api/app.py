@@ -35,7 +35,12 @@ async def lifespan(app: FastAPI):
         try:
             user = await users.read(name="admin")
         except UserNotFound:
-            user = await users.create(name="admin", privileges=list(users.Privilege))
+            user = await users.create(
+                name="admin",
+                password="TEST_PASSWORD",
+                privileges=list(users.Privilege),
+                context=SETTINGS.crypt_context,
+            )
 
         await user.set({users.User.api_key: "TEST_API_KEY"})
         print(

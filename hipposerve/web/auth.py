@@ -1,0 +1,115 @@
+"""
+Authentication layer for the Web UI. Provides two core dependencies:
+
+- `LoggedInUser` - a dependency that requires a user to be logged in. If the user is not logged in, a 401 Unauthorized response is returned.
+- `PotentialLoggedInUser` - a dependency that returns a user if they are logged in, or `None` if they are not.
+"""
+
+from datetime import datetime, timedelta, timezone
+from typing import Annotated
+
+import jwt
+from beanie import PydanticObjectId
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.openapi.models import OAuthFlows
+from fastapi.security import OAuth2
+from fastapi.security.utils import get_authorization_scheme_param
+from pydantic import BaseModel
+
+from hipposerve.service import users as users_service
+from hipposerve.settings import SETTINGS
+
+
+class OAuth2PasswordBearerWithCookie(OAuth2):
+    def __init__(
+        self,
+        tokenUrl: str,
+        scheme_name: str = None,
+        scopes: dict = None,
+        auto_error: bool = True,
+    ):
+        if not scopes:
+            scopes = {}
+        flows = OAuthFlows(password={"tokenUrl": tokenUrl, "scopes": scopes})
+        super().__init__(flows=flows, scheme_name=scheme_name, auto_error=auto_error)
+
+    async def __call__(self, request: Request) -> str | None:
+        authorization: str = request.cookies.get("access_token")
+
+        scheme, param = get_authorization_scheme_param(authorization)
+        if not authorization or scheme.lower() != "bearer":
+            if self.auto_error:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            else:
+                return None
+
+        return param
+
+
+oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/web/token")
+
+
+class WebTokenData(BaseModel):
+    username: str | None = None
+    user_id: PydanticObjectId | None = None
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(
+            token, SETTINGS.web_jwt_secret, algorithms=[SETTINGS.web_jwt_algorithm]
+        )
+        sub = payload.get("sub")
+        if sub is None:
+            raise credentials_exception
+        username, user_id = sub.split(":::")
+        token_data = WebTokenData(username=username, user_id=user_id)
+    except jwt.PyJWTError:
+        raise credentials_exception
+    except ValueError:
+        # Unable to split
+        raise credentials_exception
+
+    try:
+        user = await users_service.read_by_id(id=token_data.user_id)
+    except users_service.UserNotFound:
+        raise credentials_exception
+
+    return user
+
+
+async def get_potential_current_user(request: Request):
+    try:
+        token = await oauth2_scheme(request=request)
+        if token:
+            return await get_current_user(token)
+    except HTTPException:
+        return None
+
+    return None
+
+
+def create_access_token(user: users_service.User, expires_delta: timedelta):
+    to_encode = {
+        "exp": datetime.now(timezone.utc) + expires_delta,
+        "sub": f"{user.name}:::{user.id}",
+    }
+    encoded_jwt = jwt.encode(
+        to_encode, SETTINGS.web_jwt_secret, algorithm=SETTINGS.web_jwt_algorithm
+    )
+    return f"Bearer {encoded_jwt}"
+
+
+LoggedInUser = Annotated[users_service.User, Depends(get_current_user)]
+PotentialLoggedInUser = Annotated[
+    users_service.User | None, Depends(get_potential_current_user)
+]

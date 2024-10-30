@@ -13,6 +13,7 @@ view their metadata through the web frontend.
 """
 
 import os
+from subprocess import check_output
 
 import uvicorn
 from testcontainers.minio import MinioContainer
@@ -55,6 +56,9 @@ def containers_to_environment(
         "add_cors": "yes",
         "web": "yes",
         "create_test_user": "yes",
+        "web_jwt_secret": check_output(["openssl", "rand", "-hex", "32"])
+        .decode("utf-8")
+        .strip(),
     }
 
     os.environ.update(settings)
