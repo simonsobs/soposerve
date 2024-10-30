@@ -4,12 +4,17 @@
     <h2>
         Search by Metadata
     </h2>
-    <form>
+    <form
+        role="search"
+        action="/web/searchmetadata/results"
+        method="get"
+    >
         <div style="width: 15rem;">
             <select
                 class="form-select form-select-sm"
                 id="metadata-type-select"
                 aria-label="Choose metadata type"
+                name="metadata_type"
                 onchange="showFields(this.value)"
             >
                 <option value="">Choose a metadata type</option>
@@ -59,14 +64,19 @@
 {% block scripts %}
 <script>
     function showFields(selectedClass) {
-        console.log(selectedClass)
         document.querySelectorAll('.metadata-fields').forEach(div => {
             div.style.display = 'none';
+            div.querySelectorAll('input').forEach(input => {
+                input.disabled = true;
+            })
         })
 
         const selectedFields = document.getElementById(`${selectedClass}-fields`);
         if (selectedFields) {
             selectedFields.style.display = 'flex';
+            selectedFields.querySelectorAll('input').forEach(input => {
+                input.disabled = false;
+            })
         }
     }
 </script>
