@@ -3,7 +3,7 @@ The product service layer.
 """
 
 import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from beanie import Link, PydanticObjectId, WriteRules
 from beanie.operators import Text
@@ -170,6 +170,21 @@ async def search_by_name(name: str, fetch_links: bool = True) -> list[Product]:
         .to_list()
     )
 
+    return results
+
+
+async def search_by_metadata(
+    metadata_filters: dict[str, Any], fetch_links: bool = True
+) -> list[Product]:
+    """
+    Search for products by metadata.
+    """
+
+    # Construct the query by embedding metadata field names and values
+    query = {f"metadata.{key}": value for key, value in metadata_filters.items()}
+
+    # Execute the query
+    results = await Product.find(query, fetch_links=fetch_links).to_list()
     return results
 
 
