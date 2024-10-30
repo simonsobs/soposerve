@@ -2,6 +2,7 @@
 {% block content %}
 <div class="container-fluid fs-base">
 <h2>{{ collection.name }}</h2>
+<span class="badge text-bg-secondary mb-1 p-2">ID: {{ collection.id }}</span>
 {% markdown %}
 {{ collection.description }}
 {% endmarkdown %}
