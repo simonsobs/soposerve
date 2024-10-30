@@ -2,23 +2,27 @@
 {% block content %}
 <div class="container-fluid fs-base">
     <h2>
-        {% if query %}
-            Showing {{ results | length }} results for <span class="fw-bolder fst-italic">{{ filter }}</span> and <span class="fw-bolder fst-italic">{{ query }}</span>
+        Showing {{ results | length }} results for 
+        {% if metadata_type %}
+            the metadata search
+            <pre style="font-size: 12px;" class="ms-4 mt-1">{{ metadata_filters | tojson(indent=2) }}</pre>
         {% else %}
-            Enter a search query
+            <span class="fw-bolder fst-italic">{{ filter }}</span> and <span class="fw-bolder fst-italic">{{ '""' if query is none else query }}</span>
         {% endif %}
     </h2>
-    <table class="table small">
-        <tr>
-            <th>Name</th>
-            <th>Description</th>
-        </tr>
-    {% for result in results %}
-        <tr>
-            <td><a href='./{{ filter }}/{{ result.id | e}}'>{{ result.name }}</td>
-            <td>{{ result.description | truncate }}</td>
-        </tr>
-    {% endfor %}
-    </table>
+    {% if results | length > 0 %}
+        <table class="table small">
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+        {% for result in results %}
+            <tr>
+                <td><a href='./{{ filter }}/{{ result.id | e}}'>{{ result.name }}</td>
+                <td>{{ result.description | truncate }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% endif %}
 </div>
 {% endblock %}
