@@ -64,7 +64,7 @@ async def collection_view(request: Request, id: PydanticObjectId):
     )
 
 
-@web_router.get("/search", response_class=HTMLResponse)
+@web_router.get("/search/results", response_class=HTMLResponse)
 async def search_results_view(
     request: Request, q: str = None, filter: str = "products"
 ):
@@ -73,7 +73,7 @@ async def search_results_view(
     elif filter == "collections":
         results = await collection.search_by_name(q)
     else:
-        results = None
+        results = []
 
     return templates.TemplateResponse(
         "search_results.html",
@@ -81,7 +81,32 @@ async def search_results_view(
     )
 
 
-@web_router.get("/search/metadata", response_class=HTMLResponse)
+@web_router.get("/searchmetadata/results", response_class=HTMLResponse)
+async def searchmetadata_results_view(
+    request: Request, q: str = None, filter: str = "products"
+):
+    query_params = dict(request.query_params)
+    metadata_filters = {
+        key: value
+        for key, value in query_params.items()
+        if value and key != "metadata_type"
+    }
+    results = await product.search_by_metadata(metadata_filters)
+
+    return templates.TemplateResponse(
+        "search_results.html",
+        {
+            "request": request,
+            "query": q,
+            "filter": filter,
+            "results": results,
+            "metadata_filters": metadata_filters,
+            "metadata_type": query_params["metadata_type"],
+        },
+    )
+
+
+@web_router.get("/searchmetadata", response_class=HTMLResponse)
 async def search_metadata_view(request: Request):
     metadata_info = {}
 
