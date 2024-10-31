@@ -6,6 +6,8 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
+from typing import Literal, get_origin
+
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
@@ -114,7 +116,15 @@ async def search_metadata_view(request: Request):
         if metadata_class is not None:
             class_name = metadata_class.__name__
             fields = metadata_class.__annotations__
-            metadata_info[class_name] = fields
+            temp_fields = {}
+            for field_key, field_type in fields.items():
+                if get_origin(field_type) is not dict:
+                    if getattr(field_type, "__origin__", None) is Literal:
+                        literal_values = field_type.__args__
+                        temp_fields[field_key] = " | ".join(literal_values)
+                    else:
+                        temp_fields[field_key] = field_type
+            metadata_info[class_name] = temp_fields
 
     return templates.TemplateResponse(
         "search_metadata.html",
