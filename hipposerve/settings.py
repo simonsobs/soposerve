@@ -24,7 +24,10 @@ class Settings(BaseSettings):
     debug: bool = True
 
     create_test_user: bool = False
-    "Create a test user with API key 'TEST_API_KEY' and all privaleges on startup."
+    "Create a test user with API key 'test_user_api_key' and all privaleges on startup."
+    test_user_password: str = "TEST_PASSWORD"
+    "Password for the test user."
+    test_user_api_key: str = "TEST_API_KEY"
 
     web: bool = False
     "Serve the web frontend."
@@ -33,7 +36,7 @@ class Settings(BaseSettings):
     web_jwt_algorithm: str = "HS256"
     "Algorithm for JWT"
     web_jwt_expires: timedelta = timedelta(hours=1)
-    "Expiration time for JWT in seconds"
+    "Expiration time for JWT"
 
 
 SETTINGS = Settings()

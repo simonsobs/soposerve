@@ -21,6 +21,47 @@ from hipposerve.settings import SETTINGS
 
 
 class OAuth2PasswordBearerWithCookie(OAuth2):
+    """
+    A custom OAuth2 scheme (extremely similar to the built-in FastAPI
+    ``OAuth2PasswordBearer`` scheme) that reads the token from a cookie
+    instead of the `Authorization` header. The key method here is ``__call__``,
+    which reads the token from the cookie, given a request object, and returns
+    the token as a string.
+    
+    For more complete documentation see the FastAPI documentation on OAuth2
+    authentication schemes: ``https://fastapi.tiangolo.com/reference/security/``.
+
+    Parameters
+    ----------
+    tokenUrl : str
+        The URL to obtain the OAuth2 token. This would be the path operation that has
+        ``OAuth2PasswordRequestForm`` as a dependency.
+    scheme_name : str, optional
+        The name of the scheme for OpenAPI docs. Defaults to `None`.
+    scopes : dict, optional
+        The OAuth2 scopes that would be required by the path operations
+        that use this dependency.
+    auto_error : bool, optional
+        By default, if no HTTP Authorization header is provided, required for
+        OAuth2 authentication, it will automatically cancel the request and
+        send the client an error.
+
+        If auto_error is set to False, when the HTTP Authorization cookie
+        is not available, instead of erroring out, the dependency result
+        will be None.
+
+        This is provided for compatibility with other OAuth2 schemes, however
+        in hippo we use two separate dependencies for this purpose.
+
+    Notes
+    -----
+    This should, in theory, enable the 'docs' Web UI to store the token in a cookie
+    and work as expected. However, the current implementation does not fully satisfy
+    this as I believe the password form is expecting to use a header. A potential
+    way around this would be to set both, but that could lead to inconsistencies.
+
+    """
+
     def __init__(
         self,
         tokenUrl: str,

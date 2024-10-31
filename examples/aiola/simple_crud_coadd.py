@@ -6,7 +6,7 @@
 #
 # In this script, we:
 # 1. Read a collection.
-# 2. Filter the products in the collection to findg the ones we want
+# 2. Filter the products in the collection to find the ones we want
 #    (in this case, the splits in a particular patch).
 # 3. Read the data from the products.
 # 4. Create a co-added map from the splits.
