@@ -97,7 +97,7 @@ async def login_with_github_for_access_token(
             "https://github.com/login/oauth/access_token",
             data={
                 "client_id": SETTINGS.web_github_client_id,
-                "client_secret": SETTINGS.web_allow_github_login,
+                "client_secret": SETTINGS.web_github_client_secret,
                 "code": code,
             },
             headers={"Accept": "application/json"},
@@ -217,4 +217,4 @@ async def read_user(request: Request, user: LoggedInUser):
 
 @web_router.get("/login")
 async def login(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("login.html", {"request": request, "github_client_id": SETTINGS.web_github_client_id})

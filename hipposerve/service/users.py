@@ -10,7 +10,7 @@ from passlib.context import CryptContext
 from hipposerve.database import Privilege, User
 
 # TODO: Settings
-API_KEY_BYTES = 256
+API_KEY_BYTES = 128
 
 
 def API_KEY():

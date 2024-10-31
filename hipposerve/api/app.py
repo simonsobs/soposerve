@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
                 context=SETTINGS.crypt_context,
             )
 
-        await user.set({users.User.api_key: SETTINGS.TEST_USER_API_KEY})
+        await user.set({users.User.api_key: SETTINGS.test_user_api_key})
         print(
             f"Created test user: {user.name} with API key: {user.api_key}. "
             "You should NOT see this message in production."
