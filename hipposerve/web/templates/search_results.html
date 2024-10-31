@@ -7,7 +7,7 @@
             the metadata search
             <pre style="font-size: 12px;" class="ms-4 mt-1">{{ metadata_filters | tojson(indent=2) }}</pre>
         {% else %}
-            <span class="fw-bolder fst-italic">{{ filter }}</span> and <span class="fw-bolder fst-italic">{{ '""' if query is none else query }}</span>
+            <span class="fw-bolder fst-italic">{{ filter }}</span> and <span class="fw-bolder fst-italic">{{ "' '" if query is none or query == '' else query }}</span>
         {% endif %}
     </h2>
     {% if results | length > 0 %}
