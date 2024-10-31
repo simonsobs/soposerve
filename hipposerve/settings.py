@@ -31,12 +31,22 @@ class Settings(BaseSettings):
 
     web: bool = False
     "Serve the web frontend."
+
     web_jwt_secret: str | None = None
     "Secret key for JWT (32 bytes hex)"
     web_jwt_algorithm: str = "HS256"
     "Algorithm for JWT"
     web_jwt_expires: timedelta = timedelta(hours=1)
     "Expiration time for JWT"
+
+    web_allow_github_login: bool = False
+    "Allow login with GitHub"
+    web_github_client_id: str | None = None
+    "GitHub client ID"
+    web_github_client_secret: str | None = None
+    "GitHub client secret"
+    web_github_required_organisation_membership: str | None = None
+    "Required GitHub organisation membership for login, if None any organisation is allowed."
 
 
 SETTINGS = Settings()
