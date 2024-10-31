@@ -26,6 +26,7 @@
               id="search-filter"
               style="height: 100%; padding-top: 15px;"
               name="filter"
+              onchange="onFilterChange(event)"
             >
               <option value="products" {% if filter == "products" %}selected{% endif %}>Products</option>
               <option value="collections" {% if filter == "collections" %}selected{% endif %}>Collections</option>
@@ -39,7 +40,6 @@
             type="search"
             id="search-bar"
             name="q"
-            placeholder="Search..."
             style="flex-grow: 2;"
             value="{{ '' if query is none else query }}"
           >
@@ -58,3 +58,29 @@
       </div>
     </div>
   </nav>
+
+  {% block scripts %}
+    <script>
+      let selectedFilter = '';
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        if (selectedFilter.length) {
+          return;
+        } else {
+          selectedFilter = 'products';
+          setPlaceholder();
+        }
+      })
+
+      function setPlaceholder() {
+        const inputEl = document.querySelector('#search-bar');
+        inputEl.placeholder = "Search by " + selectedFilter.substring(0, selectedFilter.length - 1) + " names...";
+      }
+
+      function onFilterChange(e) {
+        selectedFilter = e.target.value;
+        setPlaceholder();
+      }
+
+    </script>
+  {% endblock %}
