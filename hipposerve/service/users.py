@@ -17,6 +17,7 @@ PASSWORD_BYTES = 32
 def API_KEY():
     return secrets.token_urlsafe(API_KEY_BYTES)
 
+
 def EMPTY_PASSWORD():
     return secrets.token_urlsafe(PASSWORD_BYTES)
 

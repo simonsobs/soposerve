@@ -36,7 +36,12 @@ async def database(database_container):
 async def created_user(database):
     from hipposerve.service import users
 
-    user = await users.create(name="test_user", privileges=list(users.Privilege), password="password", hasher=PasswordHash([Argon2Hasher()]))
+    user = await users.create(
+        name="test_user",
+        privileges=list(users.Privilege),
+        password="password",
+        hasher=PasswordHash([Argon2Hasher()]),
+    )
 
     yield user
 

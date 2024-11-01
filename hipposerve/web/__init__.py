@@ -8,6 +8,7 @@ NOTE: Code coverage is an explicit NON-goal for the web
 
 from typing import Annotated
 
+import httpx
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
@@ -19,7 +20,6 @@ from fastapi.templating import Jinja2Templates
 from hipposerve.service import collection, product
 from hipposerve.service import users as user_service
 from hipposerve.settings import SETTINGS
-import httpx
 
 from .auth import LoggedInUser, create_access_token
 
@@ -74,6 +74,7 @@ async def collection_view(request: Request, id: PydanticObjectId):
 
 # --- Authentication ---
 
+
 @web_router.get("/github")
 async def login_with_github_for_access_token(
     request: Request,
@@ -84,7 +85,7 @@ async def login_with_github_for_access_token(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="GitHub login is not enabled.",
         )
-    
+
     # See if we can exchange the code for a token.
 
     unauthorized = HTTPException(
@@ -105,21 +106,18 @@ async def login_with_github_for_access_token(
 
     if response.status_code != 200:
         raise unauthorized
-    
+
     access_token = response.json().get("access_token")
 
     if access_token is None:
         raise unauthorized
-    
+
     async with httpx.AsyncClient() as client:
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Accept": "application/json",
         }
-        response = await client.get(
-            "https://api.github.com/user",
-            headers=headers
-        )
+        response = await client.get("https://api.github.com/user", headers=headers)
 
         if response.status_code != 200:
             raise unauthorized
@@ -127,10 +125,7 @@ async def login_with_github_for_access_token(
         user_info = response.json()
 
         if SETTINGS.web_github_required_organisation_membership is not None:
-            response = await client.get(
-                user_info["organizations_url"],
-                headers=headers
-            )
+            response = await client.get(user_info["organizations_url"], headers=headers)
 
             if response.status_code != 200:
                 raise unauthorized
@@ -145,7 +140,7 @@ async def login_with_github_for_access_token(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You are not a member of the required organisation.",
                 )
-            
+
     # At this point we are authenticated and have the user information.
     # Try to match this against a user in the database.
     try:
@@ -170,7 +165,7 @@ async def login_with_github_for_access_token(
 
     new_response.set_cookie(key="access_token", value=access_token, httponly=True)
     return new_response
-        
+
 
 @web_router.post("/token")
 async def login_for_access_token(
@@ -217,4 +212,7 @@ async def read_user(request: Request, user: LoggedInUser):
 
 @web_router.get("/login")
 async def login(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "github_client_id": SETTINGS.web_github_client_id})
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "github_client_id": SETTINGS.web_github_client_id},
+    )

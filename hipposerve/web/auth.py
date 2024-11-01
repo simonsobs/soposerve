@@ -27,7 +27,7 @@ class OAuth2PasswordBearerWithCookie(OAuth2):
     instead of the `Authorization` header. The key method here is ``__call__``,
     which reads the token from the cookie, given a request object, and returns
     the token as a string.
-    
+
     For more complete documentation see the FastAPI documentation on OAuth2
     authentication schemes: ``https://fastapi.tiangolo.com/reference/security/``.
 

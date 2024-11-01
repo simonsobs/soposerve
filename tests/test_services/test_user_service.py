@@ -3,11 +3,10 @@ Tests the functions in the user service.
 """
 
 import pytest
-
-from hipposerve.service import users
-
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
+
+from hipposerve.service import users
 
 
 @pytest.mark.asyncio(loop_scope="session")
