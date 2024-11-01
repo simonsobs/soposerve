@@ -94,11 +94,36 @@ async def searchmetadata_results_view(
     request: Request, q: str = None, filter: str = "products"
 ):
     query_params = dict(request.query_params)
-    metadata_filters = {
-        key: value
-        for key, value in query_params.items()
-        if value and key != "metadata_type"
-    }
+    metadata_class = next(
+        (cls for cls in ALL_METADATA if cls.__name__ == query_params["metadata_type"])
+    )
+    metadata_fields = metadata_class.__annotations__
+    metadata_filters = {}
+
+    for key, value in query_params.items():
+        if key != "metadata_type":
+            if get_origin(metadata_fields[key]) is list:
+                list_type = get_args(metadata_fields[key])[0].__name__
+                if list_type == "int" or list_type == "float":
+                    numerical_values = value.split(",")
+                    min = (
+                        numerical_values[0]
+                        if numerical_values[0] != "undefined"
+                        else None
+                    )
+                    max = (
+                        numerical_values[1]
+                        if numerical_values[1] != "undefined"
+                        else None
+                    )
+                    if min is not None:
+                        metadata_filters[key] = {"$gte": min}
+                    if max is not None:
+                        metadata_filters[key] = metadata_filters.get(key, {})
+                        metadata_filters[key]["$lte"] = max
+            else:
+                metadata_filters[key] = {"$regex": value, "$options": "i"}
+
     results = await product.search_by_metadata(metadata_filters)
 
     return templates.TemplateResponse(
