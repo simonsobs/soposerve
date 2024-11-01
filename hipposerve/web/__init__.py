@@ -6,7 +6,7 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
-from typing import Literal, get_origin
+from typing import Literal, get_args, get_origin
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
@@ -116,15 +116,29 @@ async def search_metadata_view(request: Request):
         if metadata_class is not None:
             class_name = metadata_class.__name__
             fields = metadata_class.__annotations__
-            temp_fields = {}
+
+            # Separate number fields from other types so we can render the number
+            # fields together in the metadata search page
+            number_fields = {}
+            other_fields = {}
+
             for field_key, field_type in fields.items():
                 if get_origin(field_type) is not dict:
                     if getattr(field_type, "__origin__", None) is Literal:
                         literal_values = field_type.__args__
-                        temp_fields[field_key] = " | ".join(literal_values)
+                        other_fields[field_key] = " | ".join(literal_values)
+                    elif get_origin(field_type) is list:
+                        list_type = get_args(field_type)[0]
+                        list_type_str = f"list[{list_type.__name__}]"
+
+                        if list_type_str in ["list[int]", "list[float]"]:
+                            number_fields[field_key] = list_type_str
+                        else:
+                            other_fields[field_key] = list_type_str
                     else:
-                        temp_fields[field_key] = field_type
-            metadata_info[class_name] = temp_fields
+                        other_fields[field_key] = field_type
+
+            metadata_info[class_name] = {**number_fields, **other_fields}
 
     return templates.TemplateResponse(
         "search_metadata.html",
