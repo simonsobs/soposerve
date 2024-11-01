@@ -19,6 +19,7 @@ MAP_TYPES = Literal[
     "ivar_split",
     "xlink_coadd",
     "xlink_split",
+    "mask",
 ]
 
 
