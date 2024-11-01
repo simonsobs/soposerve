@@ -53,3 +53,31 @@ async def test_read_user_not_found():
 
     with pytest.raises(users.UserNotFound):
         await users.user_from_api_key(api_key="hahahahaha")
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_update_password():
+    user = await users.create(
+        name="test_user_for_changing_password",
+        privileges=[users.Privilege.CREATE_PRODUCT],
+        password="password",
+        hasher=PasswordHash([Argon2Hasher()]),
+    )
+
+    user = await users.update(
+        name=user.name,
+        privileges=None,
+        password="new_password",
+        hasher=PasswordHash([Argon2Hasher()]),
+        refresh_key=False,
+    )
+
+    # Check we can validate
+    assert (
+        await users.read_with_password_verification(
+            user.name, "new_password", PasswordHash([Argon2Hasher()])
+        )
+        == user
+    )
+
+    await users.delete(name=user.name)
