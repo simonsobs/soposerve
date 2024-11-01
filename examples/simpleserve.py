@@ -72,7 +72,10 @@ def main():
             from hipposerve.api.app import app
 
             config = uvicorn.Config(
-                app, port=8000, reload=True, reload_dirs="hipposerve"
+                app,
+                port=8000,
+                reload=True,
+                reload_dirs=["hipposerve/web", "hipposerve/web/templates"],
             )
             server = uvicorn.Server(config)
 
