@@ -6,17 +6,14 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
-
-from typing import Literal, get_args, get_origin, Annotated
-
-from beanie import PydanticObjectId
-from fastapi import  APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import HTMLResponse
+from typing import Annotated, Literal, get_args, get_origin
 
 import httpx
+from beanie import PydanticObjectId
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 # Consider: jinja2-fragments for integration with HTMX.
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 
@@ -73,7 +70,6 @@ async def collection_view(request: Request, id: PydanticObjectId):
     return templates.TemplateResponse(
         "collection.html", {"request": request, "collection": collection_instance}
     )
-
 
 
 @web_router.get("/search/results", response_class=HTMLResponse)
@@ -153,6 +149,9 @@ async def search_metadata_view(request: Request):
     return templates.TemplateResponse(
         "search_metadata.html",
         {"request": request, "metadata": metadata_info},
+    )
+
+
 # --- Authentication ---
 
 
