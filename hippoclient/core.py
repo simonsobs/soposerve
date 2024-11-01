@@ -64,7 +64,9 @@ class ClientSettings(BaseSettings):
 
     caches: list[Cache] = []
 
-    model_config = SettingsConfigDict(json_file=("config.json", "~/.hippo.conf"), env_prefix="hippo_")
+    model_config = SettingsConfigDict(
+        json_file=("config.json", "~/.hippo.conf"), env_prefix="hippo_"
+    )
 
     @classmethod
     def settings_customise_sources(

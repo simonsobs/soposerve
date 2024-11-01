@@ -112,6 +112,7 @@ collection = collections.read(client=client, id=COLLECTION)
 # download any missing files if they are needed.
 collections.cache(client=client, cache=cache, id=COLLECTION)
 
+
 # %% [markdown]
 # If we view that collection, there are a number of patches and products including
 # coadded maps. We just want splits:
@@ -292,6 +293,7 @@ products_in_patch = [
 print(f"Found {len(products_in_patch)} products in patch {PATCH}.")
 print("Products: " + ", ".join(products_in_patch))
 
+
 # %% [markdown]
 # Now that we have the products we want, we can read them and coadd them. To do this, we
 # need to call the `product.read` function for each product, which gets us the programatically-
@@ -431,5 +433,3 @@ for product_id in products_in_patch:
 # Note here that we do not have a `cached` version of this file. But we have it on disk!
 # That's because hippo doesn't know about your own filesystem, just the cache. You'll need
 # to download it back from hippo to get it back into your cache.
-
-# %%

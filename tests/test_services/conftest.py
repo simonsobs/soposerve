@@ -10,6 +10,8 @@ import pytest_asyncio
 import requests
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 
 from hipposerve.database import BEANIE_MODELS
 
@@ -34,7 +36,12 @@ async def database(database_container):
 async def created_user(database):
     from hipposerve.service import users
 
-    user = await users.create(name="test_user", privileges=list(users.Privilege))
+    user = await users.create(
+        name="test_user",
+        privileges=list(users.Privilege),
+        password="password",
+        hasher=PasswordHash([Argon2Hasher()]),
+    )
 
     yield user
 

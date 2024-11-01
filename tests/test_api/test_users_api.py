@@ -19,7 +19,8 @@ def test_create_user_that_exists(test_api_client: TestClient, test_api_user: str
             "privileges": [
                 Privilege.DOWNLOAD_PRODUCT.value,
                 Privilege.LIST_PRODUCT.value,
-            ]
+            ],
+            "password": "password",
         },
     )
 
