@@ -51,6 +51,8 @@
                                                     id="{{ class_name }}-{{ field_name}}-min"
                                                     class="form-control small"
                                                     type="number"
+                                                    data-key="{{ field_name }}"
+                                                    data-minmax="min"
                                                     name="{{ field_name }}-min"
                                                     style="font-size: 1em; width: 20ch;"
                                                     step="{{ 1 if field_type == 'list[int]' else 'any' }}"
@@ -65,6 +67,8 @@
                                                     id="{{ class_name }}-{{ field_name}}-max"
                                                     class="form-control small"
                                                     type="number"
+                                                    data-key="{{ field_name }}"
+                                                    data-minmax="max"
                                                     name="{{ field_name }}-max"
                                                     style="font-size: 1em; width: 20ch;"
                                                     step="{{ 1 if field_type == 'list[int]' else 'any' }}"
@@ -126,18 +130,38 @@
         const form = document.querySelector("#search-metadata-form");
         const formData = new FormData(form);
         const params = new URLSearchParams();
+        const numberInputs = Array.from(form.querySelectorAll('input[type="number"]:not([disabled])'));
 
-        // Add only non-empty values to URLSearchParams
+        // create a key:value object for the range inputs
+        const rangeParams = {};
+
         formData.forEach((value, key) => {
             if (value) {
                 if (Number(value)) {
-                    // TODO: group a metadata field's min and max into
-                    // a single param
+                    const numberInput = numberInputs.find(el => el.name === key);
+                    if (numberInput) {
+                        // use the dataset.key HTML attribute that is the same as the
+                        // input's name attribute but without the "-min" or "-max" suffix
+                        const parentKey = numberInput.dataset.key;
+                        const minOrMax =  numberInput.dataset.minmax;
+
+                        rangeParams[parentKey] = {
+                            ...rangeParams[parentKey],
+                            [minOrMax]: value,
+                        }
+                    }
                 } else {
                     params.append(key, value);
                 }
             }
         });
+
+        for (const key in rangeParams) {
+            params.append(
+                key,
+                `${rangeParams[key].min},${rangeParams[key].max}`
+            );
+        }
 
         window.location.href = `${form.action}?${params.toString()}`;
     }
