@@ -61,6 +61,7 @@ class ComplianceInformation(BaseModel):
 
 class User(Document):
     name: Indexed(str, unique=True)
+    hashed_password: str
     api_key: str
     privileges: list[Privilege]
 

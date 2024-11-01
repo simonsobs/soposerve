@@ -433,5 +433,3 @@ for product_id in products_in_patch:
 # Note here that we do not have a `cached` version of this file. But we have it on disk!
 # That's because hippo doesn't know about your own filesystem, just the cache. You'll need
 # to download it back from hippo to get it back into your cache.
-
-# %%

@@ -3,6 +3,8 @@ Tests the functions in the user service.
 """
 
 import pytest
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 
 from hipposerve.service import users
 
@@ -21,6 +23,8 @@ async def test_update_user(created_user):
     this_user = await users.update(
         name=created_user.name,
         privileges=[users.Privilege.DOWNLOAD_PRODUCT],
+        password=None,
+        hasher=PasswordHash([Argon2Hasher()]),
         refresh_key=True,
     )
 
@@ -30,6 +34,8 @@ async def test_update_user(created_user):
     this_user = await users.update(
         name=created_user.name,
         privileges=[users.Privilege.LIST_PRODUCT],
+        password=None,
+        hasher=PasswordHash([Argon2Hasher()]),
         refresh_key=False,
     )
 
@@ -47,3 +53,31 @@ async def test_read_user_not_found():
 
     with pytest.raises(users.UserNotFound):
         await users.user_from_api_key(api_key="hahahahaha")
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_update_password():
+    user = await users.create(
+        name="test_user_for_changing_password",
+        privileges=[users.Privilege.CREATE_PRODUCT],
+        password="password",
+        hasher=PasswordHash([Argon2Hasher()]),
+    )
+
+    user = await users.update(
+        name=user.name,
+        privileges=None,
+        password="new_password",
+        hasher=PasswordHash([Argon2Hasher()]),
+        refresh_key=False,
+    )
+
+    # Check we can validate
+    assert (
+        await users.read_with_password_verification(
+            user.name, "new_password", PasswordHash([Argon2Hasher()])
+        )
+        == user
+    )
+
+    await users.delete(name=user.name)

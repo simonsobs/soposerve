@@ -15,6 +15,7 @@ from hipposerve.api.models.users import (
     UpdateUserResponse,
 )
 from hipposerve.service import users
+from hipposerve.settings import SETTINGS
 
 users_router = APIRouter(prefix="/users")
 
@@ -41,7 +42,9 @@ async def create_user(
     except users.UserNotFound:
         user = await users.create(
             name=name,
+            password=request.password,
             privileges=request.privileges,
+            hasher=SETTINGS.hasher,
         )
 
     return CreateUserResponse(api_key=user.api_key)
@@ -78,6 +81,8 @@ async def update_user(
         name=name,
         privileges=request.privileges,
         refresh_key=request.refresh_key,
+        password=request.password,
+        hasher=SETTINGS.hasher,
     )
 
     return UpdateUserResponse(api_key=user.api_key if request.refresh_key else None)

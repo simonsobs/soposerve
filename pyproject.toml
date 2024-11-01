@@ -26,6 +26,9 @@ dependencies = [
     "typer",
     "httpx",
     "astropy",
+    "pyjwt",
+    "pwdlib[argon2]",
+    "python-multipart",
 ]
 
 [project.optional-dependencies]

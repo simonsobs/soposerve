@@ -9,6 +9,8 @@ import pytest
 import requests
 from beanie import PydanticObjectId
 from beanie.odm.fields import Link
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 
 from hipposerve.service import product, users, versioning
 
@@ -112,7 +114,10 @@ async def test_add_to_collection(created_collection, created_full_product, datab
 @pytest.mark.asyncio(loop_scope="session")
 async def test_update_metadata(created_full_product, database, storage):
     new_user = await users.create(
-        name="new_user", privileges=[users.Privilege.LIST_PRODUCT]
+        name="new_user",
+        privileges=[users.Privilege.LIST_PRODUCT],
+        password="password",
+        hasher=PasswordHash([Argon2Hasher()]),
     )
 
     existing_version = created_full_product.version

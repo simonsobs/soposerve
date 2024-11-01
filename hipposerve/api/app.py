@@ -35,9 +35,14 @@ async def lifespan(app: FastAPI):
         try:
             user = await users.read(name="admin")
         except UserNotFound:
-            user = await users.create(name="admin", privileges=list(users.Privilege))
+            user = await users.create(
+                name="admin",
+                password=SETTINGS.test_user_password,
+                privileges=list(users.Privilege),
+                hasher=SETTINGS.hasher,
+            )
 
-        await user.set({users.User.api_key: "TEST_API_KEY"})
+        await user.set({users.User.api_key: SETTINGS.test_user_api_key})
         print(
             f"Created test user: {user.name} with API key: {user.api_key}. "
             "You should NOT see this message in production."
