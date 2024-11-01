@@ -6,17 +6,21 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
-from typing import Annotated
+
+from typing import Literal, get_args, get_origin, Annotated
+
+from beanie import PydanticObjectId
+from fastapi import  APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import HTMLResponse
 
 import httpx
-from beanie import PydanticObjectId
-from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 # Consider: jinja2-fragments for integration with HTMX.
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 
+from hippometa import ALL_METADATA
 from hipposerve.service import collection, product
 from hipposerve.service import users as user_service
 from hipposerve.settings import SETTINGS
@@ -47,7 +51,6 @@ async def index(request: Request):
 async def product_view(request: Request, id: str):
     product_instance = await product.read_by_id(id)
     sources = await product.read_files(product_instance, storage=request.app.storage)
-
     # Grab the history!
     latest_version = await product.walk_to_current(product_instance)
     version_history = await product.walk_history(latest_version)
@@ -72,6 +75,84 @@ async def collection_view(request: Request, id: PydanticObjectId):
     )
 
 
+
+@web_router.get("/search/results", response_class=HTMLResponse)
+async def search_results_view(
+    request: Request, q: str = None, filter: str = "products"
+):
+    if filter == "products":
+        results = await product.search_by_name(q)
+    elif filter == "collections":
+        results = await collection.search_by_name(q)
+    else:
+        results = []
+
+    return templates.TemplateResponse(
+        "search_results.html",
+        {"request": request, "query": q, "filter": filter, "results": results},
+    )
+
+
+@web_router.get("/searchmetadata/results", response_class=HTMLResponse)
+async def searchmetadata_results_view(
+    request: Request, q: str = None, filter: str = "products"
+):
+    query_params = dict(request.query_params)
+    metadata_filters = {
+        key: value
+        for key, value in query_params.items()
+        if value and key != "metadata_type"
+    }
+    results = await product.search_by_metadata(metadata_filters)
+
+    return templates.TemplateResponse(
+        "search_results.html",
+        {
+            "request": request,
+            "query": q,
+            "filter": filter,
+            "results": results,
+            "metadata_filters": metadata_filters,
+            "metadata_type": query_params["metadata_type"],
+        },
+    )
+
+
+@web_router.get("/searchmetadata", response_class=HTMLResponse)
+async def search_metadata_view(request: Request):
+    metadata_info = {}
+
+    for metadata_class in ALL_METADATA:
+        if metadata_class is not None:
+            class_name = metadata_class.__name__
+            fields = metadata_class.__annotations__
+
+            # Separate number fields from other types so we can render the number
+            # fields together in the metadata search page
+            number_fields = {}
+            other_fields = {}
+
+            for field_key, field_type in fields.items():
+                if get_origin(field_type) is not dict:
+                    if getattr(field_type, "__origin__", None) is Literal:
+                        literal_values = field_type.__args__
+                        other_fields[field_key] = " | ".join(literal_values)
+                    elif get_origin(field_type) is list:
+                        list_type = get_args(field_type)[0]
+                        list_type_str = f"list[{list_type.__name__}]"
+
+                        if list_type_str in ["list[int]", "list[float]"]:
+                            number_fields[field_key] = list_type_str
+                        else:
+                            other_fields[field_key] = list_type_str
+                    else:
+                        other_fields[field_key] = field_type
+
+            metadata_info[class_name] = {**number_fields, **other_fields}
+
+    return templates.TemplateResponse(
+        "search_metadata.html",
+        {"request": request, "metadata": metadata_info},
 # --- Authentication ---
 
 

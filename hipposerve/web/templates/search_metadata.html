@@ -1,0 +1,145 @@
+{% extends "core.html" %}
+{% block content %}
+<div class="container-fluid fs-base">
+    <h2>
+        Search by Metadata
+    </h2>
+    <form
+        id="search-metadata-form"
+        role="search"
+        action="/web/searchmetadata/results"
+        method="get"
+        onsubmit="submitMetadataSearch(event)"
+    >
+        <div style="width: 15rem;">
+            <select
+                class="form-select form-select-sm"
+                id="metadata-type-select"
+                aria-label="Choose metadata type"
+                name="metadata_type"
+                onchange="showFields(this.value)"
+            >
+                <option value="">Choose a metadata type</option>
+                {% for class_name, fields in metadata.items() %}
+                    <option value="{{ class_name }}">{{ class_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% for class_name, fields in metadata.items() %}
+            <div
+                id="{{ class_name }}-fields"
+                class="justify-content-center metadata-fields input-group input-group-sm mt-3 p-3 border border-light"
+                style="display: none;"
+            >
+                {% if fields.items()|length > 1 %}
+                    <fieldset>
+                        <legend class="fs-6 fw-bolder">Metadata Fields</legend>
+                        {% for field_name, field_type in fields.items() %}
+                            {% if field_name != 'metadata_type' %}
+                                {% if field_type == 'list[int]' or field_type == 'list[float]' %}
+                                    <div
+                                        class="small d-inline-block m-1 p-2 border border-light rounded-2 bg-light"
+                                    >
+                                        <div class="fw-bold">{{field_name}}</div>
+                                        
+                                            <label
+                                                class="form-label small m-0"
+                                                for="{{ class_name }}-{{ field_name}}-min"
+                                            >
+                                                Min
+                                                <input
+                                                    id="{{ class_name }}-{{ field_name}}-min"
+                                                    class="form-control small"
+                                                    type="number"
+                                                    name="{{ field_name }}-min"
+                                                    style="font-size: 1em; width: 20ch;"
+                                                    step="{{ 1 if field_type == 'list[int]' else 'any' }}"
+                                                >
+                                            </label>
+                                            <label
+                                                class="form-label small m-0"
+                                                for="{{ class_name }}-{{ field_name}}-max"
+                                            >
+                                                Max
+                                                <input
+                                                    id="{{ class_name }}-{{ field_name}}-max"
+                                                    class="form-control small"
+                                                    type="number"
+                                                    name="{{ field_name }}-max"
+                                                    style="font-size: 1em; width: 20ch;"
+                                                    step="{{ 1 if field_type == 'list[int]' else 'any' }}"
+                                                >
+                                            </label>
+                                        
+                                    </div>
+                                {% else %}
+                                    <label
+                                        class="form-label small m-1 fw-bold"
+                                        for="{{ class_name }}-{{ field_name}}"
+                                        >
+                                        {{ field_name }}
+                                        <input
+                                            id="{{ class_name }}-{{ field_name}}"
+                                            class="form-control small"
+                                            type="text"
+                                            name="{{ field_name }}"
+                                            placeholder="{{ field_type }}"
+                                            style="font-size: 1em;"
+                                        >
+                                    </label>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </fieldset>
+                    <button class="btn btn-dark btn-sm mt-2 rounded-1" type="submit">Search {{ class_name }}</button>
+                {% else %}
+                    <span class="fs-6">No metadata fields</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function showFields(selectedClass) {
+        document.querySelectorAll('.metadata-fields').forEach(div => {
+            div.style.display = 'none';
+            div.querySelectorAll('input').forEach(input => {
+                input.disabled = true;
+            })
+        })
+
+        const selectedFields = document.getElementById(`${selectedClass}-fields`);
+        if (selectedFields) {
+            selectedFields.style.display = 'flex';
+            selectedFields.querySelectorAll('input').forEach(input => {
+                input.disabled = false;
+            })
+        }
+    }
+
+    function submitMetadataSearch(e) {
+        e.preventDefault();
+
+        const form = document.querySelector("#search-metadata-form");
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+
+        // Add only non-empty values to URLSearchParams
+        formData.forEach((value, key) => {
+            if (value) {
+                if (Number(value)) {
+                    // TODO: group a metadata field's min and max into
+                    // a single param
+                } else {
+                    params.append(key, value);
+                }
+            }
+        });
+
+        window.location.href = `${form.action}?${params.toString()}`;
+    }
+</script>
+{% endblock %}
