@@ -2,7 +2,7 @@ HIPPO
 =====
 
 <p align="center">
-<img src="logo.svg" style="width:30%"/>
+<img src="hipposerve/web/static/logo.svg" style="width:30%"/>
 </p>
 
 The HIerarchical Product Post Office

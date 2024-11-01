@@ -67,9 +67,10 @@ app.include_router(product_router)
 app.include_router(relationship_router)
 
 if SETTINGS.web:  # pragma: no cover
-    from hipposerve.web import web_router
+    from hipposerve.web import static_files, web_router
 
     app.include_router(web_router)
+    app.mount(**static_files)
 
 if SETTINGS.add_cors:
     app.add_middleware(

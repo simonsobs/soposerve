@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 # Consider: jinja2-fragments for integration with HTMX.
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from hippometa import ALL_METADATA
@@ -27,10 +28,17 @@ from .auth import LoggedInUser, create_access_token
 # TODO: Static file moutning.
 
 web_router = APIRouter(prefix="/web")
+
 templates = Jinja2Templates(
     directory="hipposerve/web/templates",
     extensions=["jinja_markdown.MarkdownExtension"],
 )
+
+static_files = {
+    "path": "/web/static",
+    "name": "static",
+    "app": StaticFiles(directory="hipposerve/web/static"),
+}
 
 
 @web_router.get("/")
