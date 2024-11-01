@@ -9,6 +9,7 @@ from hipposerve.service.users import Privilege
 
 class CreateUserRequest(BaseModel):
     privileges: list[Privilege]
+    password: str | None
     # TODO: Compliance
 
 
@@ -23,8 +24,9 @@ class ReadUserResponse(BaseModel):
 
 
 class UpdateUserRequest(BaseModel):
-    privileges: list[Privilege] | None
-    refresh_key: bool
+    privileges: list[Privilege] | None = None
+    refresh_key: bool = False
+    password: str | None = None
 
 
 class UpdateUserResponse(BaseModel):

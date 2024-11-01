@@ -27,7 +27,8 @@ dependencies = [
     "httpx",
     "astropy",
     "pyjwt",
-    "passlib","python-multipart","bcrypt==4.0.1"
+    "pwdlib[argon2]",
+    "python-multipart",
 ]
 
 [project.optional-dependencies]

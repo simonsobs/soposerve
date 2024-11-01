@@ -4,7 +4,8 @@ Server settings, uses pydantic settings models.
 
 from datetime import timedelta
 
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 from pydantic_settings import BaseSettings
 
 
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     title: str
     description: str
 
-    crypt_context: CryptContext = CryptContext("bcrypt")
+    hasher: PasswordHash = PasswordHash([Argon2Hasher()])
 
     add_cors: bool = True
     debug: bool = True

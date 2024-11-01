@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
                 name="admin",
                 password=SETTINGS.test_user_password,
                 privileges=list(users.Privilege),
-                context=SETTINGS.crypt_context,
+                hasher=SETTINGS.hasher,
             )
 
         await user.set({users.User.api_key: SETTINGS.test_user_api_key})

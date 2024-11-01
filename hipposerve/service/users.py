@@ -5,16 +5,20 @@ Facilities for creating and updating users.
 import secrets
 
 from beanie import PydanticObjectId
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
 
 from hipposerve.database import Privilege, User
 
 # TODO: Settings
 API_KEY_BYTES = 128
+PASSWORD_BYTES = 32
 
 
 def API_KEY():
     return secrets.token_urlsafe(API_KEY_BYTES)
+
+def EMPTY_PASSWORD():
+    return secrets.token_urlsafe(PASSWORD_BYTES)
 
 
 # TODO: Centralised exceptions?
@@ -27,9 +31,13 @@ class AuthenticationError(Exception):
 
 
 async def create(
-    name: str, password: str, privileges: list[Privilege], context: CryptContext
+    name: str, password: str | None, privileges: list[Privilege], hasher: PasswordHash
 ) -> User:
-    hashed_password = context.hash(password)
+    if password is None:
+        # When using GitHub auth we don't have a password.
+        hashed_password = hasher.hash(EMPTY_PASSWORD())
+    else:
+        hashed_password = hasher.hash(password)
 
     user = User(
         name=name,
@@ -65,7 +73,7 @@ async def read_by_id(id: PydanticObjectId) -> User:
 
 async def update(
     name: str,
-    context: CryptContext,
+    hasher: PasswordHash,
     password: str | None,
     privileges: list[Privilege] | None,
     refresh_key: bool = False,
@@ -79,7 +87,7 @@ async def update(
         await user.set({User.api_key: API_KEY()})
 
     if password is not None:
-        hashed_password = context.hash(password)
+        hashed_password = hasher.hash(password)
         await user.set({User.hashed_password: hashed_password})
 
     return user
@@ -105,11 +113,11 @@ async def user_from_api_key(api_key: str) -> User:
 
 
 async def read_with_password_verification(
-    name: str, password: str, context: CryptContext
+    name: str, password: str, hasher: PasswordHash
 ) -> User:
     user = await read(name=name)
 
-    if context.verify(password, user.hashed_password):
+    if hasher.verify(password, user.hashed_password):
         return user
     else:
         raise UserNotFound

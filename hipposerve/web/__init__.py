@@ -157,7 +157,7 @@ async def login_with_github_for_access_token(
             # TODO: MAKE PASSWORDS OPTIONAL
             password="GitHub",
             privileges=list(user_service.Privilege),
-            context=SETTINGS.crypt_context,
+            hasher=SETTINGS.hasher,
         )
 
     access_token = create_access_token(
@@ -181,7 +181,7 @@ async def login_for_access_token(
         user = await user_service.read_with_password_verification(
             name=form_data.username,
             password=form_data.password,
-            context=SETTINGS.crypt_context,
+            hasher=SETTINGS.hasher,
         )
     except user_service.UserNotFound:
         raise HTTPException(

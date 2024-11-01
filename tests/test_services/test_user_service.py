@@ -6,6 +6,9 @@ import pytest
 
 from hipposerve.service import users
 
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
+
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_read_user(created_user):
@@ -21,6 +24,8 @@ async def test_update_user(created_user):
     this_user = await users.update(
         name=created_user.name,
         privileges=[users.Privilege.DOWNLOAD_PRODUCT],
+        password=None,
+        hasher=PasswordHash([Argon2Hasher()]),
         refresh_key=True,
     )
 
@@ -30,6 +35,8 @@ async def test_update_user(created_user):
     this_user = await users.update(
         name=created_user.name,
         privileges=[users.Privilege.LIST_PRODUCT],
+        password=None,
+        hasher=PasswordHash([Argon2Hasher()]),
         refresh_key=False,
     )
 
