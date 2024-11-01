@@ -164,7 +164,7 @@ class Product(Document, ProductMetadata):
 
 class Collection(Document):
     # TODO: Implement updated time for collections.
-    name: Indexed(str, pymongo.TEXT, unique=True)
+    name: Indexed(str, pymongo.TEXT)
     description: str
     products: list[BackLink[Product]] = Field(
         json_schema_extra={"original_field": "collections"}

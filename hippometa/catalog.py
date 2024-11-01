@@ -10,7 +10,7 @@ class CatalogMetadata(BaseMetadata):
 
     metadata_type: Literal["catalog"] = "catalog"
 
-    file_type: Literal["csv", "fits", "hdf5"]
+    file_type: Literal["csv", "fits", "hdf5", "txt"]
     column_description: dict[str, str]
 
     telescope: str | None = None
