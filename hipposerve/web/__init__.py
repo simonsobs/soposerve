@@ -172,6 +172,12 @@ async def login_for_access_token(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> RedirectResponse:
+    if not SETTINGS.web_only_allow_github_login:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="GitHub login is the only login method enabled",
+        )
+
     try:
         user = await user_service.read_with_password_verification(
             name=form_data.username,
@@ -214,5 +220,10 @@ async def read_user(request: Request, user: LoggedInUser):
 async def login(request: Request):
     return templates.TemplateResponse(
         "login.html",
-        {"request": request, "github_client_id": SETTINGS.web_github_client_id},
+        {
+            "request": request,
+            "github_client_id": SETTINGS.web_github_client_id,
+            "only_allow_github_login": SETTINGS.web_only_allow_github_login,
+            "allow_github_login": SETTINGS.web_allow_github_login,
+        },
     )

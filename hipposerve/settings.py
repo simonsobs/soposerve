@@ -42,6 +42,8 @@ class Settings(BaseSettings):
 
     web_allow_github_login: bool = False
     "Allow login with GitHub"
+    web_only_allow_github_login: bool = False
+    "Only allow login with GitHub"
     web_github_client_id: str | None = None
     "GitHub client ID"
     web_github_client_secret: str | None = None
