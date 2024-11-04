@@ -4,6 +4,7 @@ API endpoints for relationships between products and collections.
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, Request, status
+from loguru import logger
 
 from hipposerve.api.auth import UserDependency, check_user_for_privilege
 from hipposerve.api.models.relationships import (
@@ -22,14 +23,22 @@ async def create_collection(
     name: str,
     model: CreateCollectionRequest,
     calling_user: UserDependency,
-) -> str:
+) -> PydanticObjectId:
+    """
+    Create a new collection with {name}.
+    """
+
+    logger.info(f"Request to create collection: {name} from {calling_user.name}")
+
     await check_user_for_privilege(calling_user, Privilege.CREATE_COLLECTION)
 
     # TODO: What to do if collection exists?
     # TODO: Collections should have a 'manager' who can change their properties.
     coll = await collection.create(name=name, description=model.description)
 
-    return str(coll.id)
+    logger.info(f"Collection {coll.id} ({name}) created for {calling_user.name}")
+
+    return coll.id
 
 
 @relationship_router.get("/collection/{id}")
@@ -41,6 +50,8 @@ async def read_collection(
     """
     Read a collection's details.
     """
+
+    logger.info(f"Request to read collection: {id} from {calling_user.name}")
 
     await check_user_for_privilege(calling_user, Privilege.READ_COLLECTION)
 
@@ -81,9 +92,13 @@ async def search_collection(
     fetched separately through the read_collection endpoint.
     """
 
+    logger.info(f"Request to search for collection: {name} from {calling_user.name}")
+
     await check_user_for_privilege(calling_user, Privilege.READ_COLLECTION)
 
     results = await collection.search_by_name(name=name)
+
+    logger.info(f"Found {len(results)} collections for {name} from {calling_user.name}")
 
     return [
         ReadCollectionResponse(
@@ -102,6 +117,15 @@ async def add_product_to_collection(
     product_id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
+    """
+    Add a product to a collection.
+    """
+
+    logger.info(
+        f"Request to add product {product_id} to collection {collection_id} "
+        f"from {calling_user.name}"
+    )
+
     await check_user_for_privilege(calling_user, Privilege.UPDATE_COLLECTION)
 
     try:
@@ -114,6 +138,7 @@ async def add_product_to_collection(
     try:
         item = await product.read_by_id(id=product_id)
         await product.add_collection(product=item, collection=coll)
+        logger.info(f"Successfully added {item.name} to collection {coll.name}")
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -126,6 +151,15 @@ async def remove_product_from_collection(
     product_id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
+    """
+    Remove a product from a collection.
+    """
+
+    logger.info(
+        f"Request to remove product {product_id} from collection {collection_id} "
+        f"from {calling_user.name}"
+    )
+
     await check_user_for_privilege(calling_user, Privilege.UPDATE_COLLECTION)
 
     try:
@@ -138,6 +172,7 @@ async def remove_product_from_collection(
     try:
         item = await product.read_by_id(id=product_id)
         await product.remove_collection(product=item, collection=coll)
+        logger.info(f"Successfully removed {item.name} from collection {coll.name}")
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -149,10 +184,17 @@ async def delete_collection(
     id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
+    """
+    Delete a collection.
+    """
+
+    logger.info(f"Request to delete collection: {id} from {calling_user.name}")
+
     await check_user_for_privilege(calling_user, Privilege.DELETE_COLLECTION)
 
     try:
         await collection.delete(id=id)
+        logger.info(f"Successfully deleted collection {id} from {calling_user.name}")
     except collection.CollectionNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
@@ -165,6 +207,15 @@ async def add_child_product(
     child_id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
+    """
+    Add a child product to a parent product.
+    """
+
+    logger.info(
+        f"Request to add product {child_id} as child of {parent_id} "
+        f"from {calling_user.name}"
+    )
+
     await check_user_for_privilege(calling_user, Privilege.CREATE_RELATIONSHIP)
 
     try:
@@ -175,6 +226,7 @@ async def add_child_product(
             destination=destination,
             type="child",
         )
+        logger.info(f"Successfully added {destination.name} as child of {source.name}")
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -187,6 +239,15 @@ async def remove_child_product(
     child_id: PydanticObjectId,
     calling_user: UserDependency,
 ) -> None:
+    """
+    Remove a parent-child relationship between two products.
+    """
+
+    logger.info(
+        f"Request to remove product {child_id} as child of {parent_id} "
+        f"from {calling_user.name}"
+    )
+
     await check_user_for_privilege(calling_user, Privilege.DELETE_RELATIONSHIP)
 
     try:
@@ -196,6 +257,9 @@ async def remove_child_product(
             source=source,
             destination=destination,
             type="child",
+        )
+        logger.info(
+            f"Successfully removed {destination.name} as child of {source.name}"
         )
     except product.ProductNotFound:
         raise HTTPException(

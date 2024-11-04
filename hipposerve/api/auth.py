@@ -7,6 +7,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyHeader
+from loguru import logger
 
 from hipposerve.service import users
 
@@ -15,7 +16,9 @@ api_key_header = APIKeyHeader(name="X-API-Key")
 
 async def get_user(api_key_header: str = Security(api_key_header)) -> users.User:
     try:
-        return await users.user_from_api_key(api_key_header)
+        user = await users.user_from_api_key(api_key_header)
+        logger.info(f"Authenticated user using API key: {user.name}")
+        return user
     except users.UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

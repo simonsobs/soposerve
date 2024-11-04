@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from beanie import init_beanie
 from fastapi import FastAPI
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from starlette.middleware.cors import CORSMiddleware
 
@@ -43,14 +44,14 @@ async def lifespan(app: FastAPI):
             )
 
         await user.set({users.User.api_key: SETTINGS.test_user_api_key})
-        print(
-            f"Created test user: {user.name} with API key: {user.api_key}. "
-            "You should NOT see this message in production."
+        logger.warning(
+            f"Created test user: {user.name} with API key: {user.api_key}, "
+            "you should NOT see this message in production"
         )
 
-    print("Startup complete")
+    logger.info("Startup complete")
     yield
-    print("Shutdown complete")
+    logger.info("Shutdown complete")
 
 
 app = FastAPI(
@@ -69,10 +70,16 @@ app.include_router(relationship_router)
 if SETTINGS.web:  # pragma: no cover
     from hipposerve.web import static_files, web_router
 
+    logger.info(f"Web interface enabled, serving it from {web_router.prefix}")
+
     app.include_router(web_router)
     app.mount(**static_files)
 
 if SETTINGS.add_cors:
+    logger.warning(
+        "Completely open CORS policy enabled, designed for testing and development"
+    )
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
