@@ -97,9 +97,20 @@ oauth2_scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/web/token")
 class WebTokenData(BaseModel):
     username: str | None = None
     user_id: PydanticObjectId | None = None
+    origin: str | None = None
+
+    def encode(self):
+        return f"{self.username}:::{self.user_id}:::{self.origin}"
+
+    @classmethod
+    def decode(cls, token: str):
+        username, user_id, origin = token.split(":::")
+        return cls(username=username, user_id=PydanticObjectId(user_id), origin=origin)
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)], request: Request
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -112,13 +123,28 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         sub = payload.get("sub")
         if sub is None:
             raise credentials_exception
-        username, user_id = sub.split(":::")
-        token_data = WebTokenData(username=username, user_id=user_id)
+        token_data = WebTokenData.decode(sub)
     except jwt.PyJWTError:
         raise credentials_exception
     except ValueError:
         # Unable to split
         raise credentials_exception
+
+    if SETTINGS.web_jwt_check_origin:
+        potential_origin = request.headers.get("Origin")
+
+        if potential_origin is None:
+            # Not included in this request..?
+            # But we can try to get sec-fetch-site
+            potential_origin = request.headers.get("Sec-Fetch-Site")
+            if potential_origin != "same-origin":
+                raise credentials_exception
+        else:
+            if token_data.origin != request.headers.get("Origin"):
+                raise credentials_exception
+
+        # if we make it here, we have verified that the origin of the request
+        # is the same as the origin of the token.
 
     try:
         user = await users_service.read_by_id(id=token_data.user_id)
@@ -139,14 +165,19 @@ async def get_potential_current_user(request: Request):
     return None
 
 
-def create_access_token(user: users_service.User, expires_delta: timedelta):
+def create_access_token(
+    user: users_service.User, expires_delta: timedelta, origin: str
+):
     to_encode = {
         "exp": datetime.now(timezone.utc) + expires_delta,
-        "sub": f"{user.name}:::{user.id}",
+        "sub": WebTokenData(
+            username=user.name, user_id=user.id, origin=origin
+        ).encode(),
     }
     encoded_jwt = jwt.encode(
         to_encode, SETTINGS.web_jwt_secret, algorithm=SETTINGS.web_jwt_algorithm
     )
+    print(to_encode)
     return f"Bearer {encoded_jwt}"
 
 
