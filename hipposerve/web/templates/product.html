@@ -38,6 +38,8 @@
                                 <li class="list-group-item">
                                     <table class="table small">
                                         {% for keysub1, valuesub1 in value.items() %}
+                                            {# Two possible cases: valuesub1 can be iterable OR it can just be a value #}
+                                            {% if valuesub1 is iterable and valuesub1 is not string %}
                                             {% if loop.index == 1 %}
                                                 <tr>
                                                     {% for keysub2, valuesub2 in valuesub1.items() %}
@@ -50,6 +52,12 @@
                                                     <td>{{ valuesub2 }}</td>
                                                 {% endfor %}
                                             </tr>
+                                            {% else %}
+                                                <tr>
+                                                    <td>{{ keysub1 }}</td>
+                                                    <td>{{ valuesub1 }}</td>
+                                                </tr>
+                                            {% endif %}
                                         {% endfor %}
                                     </table>
                                 </li>
