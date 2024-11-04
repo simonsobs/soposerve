@@ -25,3 +25,20 @@ be able to find what you're looking for.
 
 Enter hippo! Hippo allows you to upload data products and access them both manually and
 programatically through a metadata-driven interaction.
+
+Examples
+--------
+
+There are a number of example cases in the `example` directory. To lauch the development
+server, you should run
+
+```
+python3 examples/simpleserve.py
+```
+
+This will create a test account (`admin`) with API key `TEST_API_KEY` and password
+`TEST_PASSWORD`. You can use the upload scripts in `examples/{name}` that upload
+data from the [NASA LAMBDA instance](https://lambda.gsfc.nasa.gov/product/act/actpol_prod_table.html).
+
+You may need to copy `config.json` to `~/.hippo.conf` to correctly load the environment
+or export appropriate variables.
