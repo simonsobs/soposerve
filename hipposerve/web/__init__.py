@@ -81,6 +81,10 @@ async def collection_view(request: Request, id: PydanticObjectId):
     )
 
 
+# --- Search ---
+
+
+# Query and render search results from the navigation bar's "search by name" option
 @web_router.get("/search/results", response_class=HTMLResponse)
 async def search_results_view(
     request: Request, q: str = None, filter: str = "products"
@@ -98,11 +102,14 @@ async def search_results_view(
     )
 
 
+# Query and render search results for the more complex metadata request
 @web_router.get("/searchmetadata/results", response_class=HTMLResponse)
 async def searchmetadata_results_view(
     request: Request, q: str = None, filter: str = "products"
 ):
     query_params = dict(request.query_params)
+    # Determine which metadata_class we're searching on so we can get the fields;
+    # we will use the fields with the query_params to craft type-specific queries
     metadata_class = next(
         (cls for cls in ALL_METADATA if cls.__name__ == query_params["metadata_type"])
     )
@@ -111,10 +118,12 @@ async def searchmetadata_results_view(
 
     for key, value in query_params.items():
         if key != "metadata_type":
+            # Literals don't need any regex or case insensitity
             if getattr(metadata_fields[key], "__origin__", None) is Literal:
                 metadata_filters[key] = value
             elif get_origin(metadata_fields[key]) is list:
                 list_type = get_args(metadata_fields[key])[0].__name__
+                # Add some number-specific query logic to str[int] and str[float]
                 if list_type == "int" or list_type == "float":
                     numerical_values = value.split(",")
                     min = (
@@ -132,13 +141,20 @@ async def searchmetadata_results_view(
                     if max is not None:
                         metadata_filters[key] = metadata_filters.get(key, {})
                         metadata_filters[key]["$lte"] = max
+                # Add query logic to list[str] types
+                elif list_type == "str":
+                    metadata_filters[key] = {
+                        "$in": [v.strip() for v in value.split(",")]
+                    }
             elif (
                 get_origin(metadata_fields[key]) in {types.UnionType, Union}
                 and list[str] in get_args(metadata_fields[key])
                 and type(None) in get_args(metadata_fields[key])
             ):
+                # Add same query logic to 'list[str] | None' as was applied to 'list[str]' above
                 metadata_filters[key] = {"$in": [v.strip() for v in value.split(",")]}
             else:
+                # Default queries include regex and case insensitivity
                 metadata_filters[key] = {"$regex": value, "$options": "i"}
 
     results = await product.search_by_metadata(metadata_filters)
