@@ -124,6 +124,7 @@ async def get_current_user(
         if sub is None:
             raise credentials_exception
         token_data = WebTokenData.decode(sub)
+        print(token_data)
     except jwt.PyJWTError:
         raise credentials_exception
     except ValueError:
@@ -131,20 +132,12 @@ async def get_current_user(
         raise credentials_exception
 
     if SETTINGS.web_jwt_check_origin:
-        potential_origin = request.headers.get("Origin")
-
-        if potential_origin is None:
-            # Not included in this request..?
-            # But we can try to get sec-fetch-site
-            potential_origin = request.headers.get("Sec-Fetch-Site")
-            if potential_origin != "same-origin":
-                raise credentials_exception
-        else:
-            if token_data.origin != request.headers.get("Origin"):
-                raise credentials_exception
-
-        # if we make it here, we have verified that the origin of the request
-        # is the same as the origin of the token.
+        # Don't use the Origin header as it's often not set (e.g. it is never set
+        # on GET requests as the browser already checked that). Let's just use the
+        # Sec-Fetch-Site header instead.
+        potential_origin = request.headers.get("Sec-Fetch-Site")
+        if potential_origin == "cross-origin":
+            raise credentials_exception
 
     try:
         user = await users_service.read_by_id(id=token_data.user_id)
