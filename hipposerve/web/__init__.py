@@ -281,8 +281,6 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    print(request.headers)
-
     access_token = create_access_token(
         user=user,
         expires_delta=SETTINGS.web_jwt_expires,
