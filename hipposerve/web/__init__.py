@@ -111,7 +111,9 @@ async def searchmetadata_results_view(
 
     for key, value in query_params.items():
         if key != "metadata_type":
-            if get_origin(metadata_fields[key]) is list:
+            if getattr(metadata_fields[key], "__origin__", None) is Literal:
+                metadata_filters[key] = value
+            elif get_origin(metadata_fields[key]) is list:
                 list_type = get_args(metadata_fields[key])[0].__name__
                 if list_type == "int" or list_type == "float":
                     numerical_values = value.split(",")
@@ -130,6 +132,12 @@ async def searchmetadata_results_view(
                     if max is not None:
                         metadata_filters[key] = metadata_filters.get(key, {})
                         metadata_filters[key]["$lte"] = max
+            elif (
+                get_origin(metadata_fields[key]) in {types.UnionType, Union}
+                and list[str] in get_args(metadata_fields[key])
+                and type(None) in get_args(metadata_fields[key])
+            ):
+                metadata_filters[key] = {"$in": [v.strip() for v in value.split(",")]}
             else:
                 metadata_filters[key] = {"$regex": value, "$options": "i"}
 
