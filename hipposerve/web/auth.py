@@ -124,7 +124,6 @@ async def get_current_user(
         if sub is None:
             raise credentials_exception
         token_data = WebTokenData.decode(sub)
-        print(token_data)
     except jwt.PyJWTError:
         raise credentials_exception
     except ValueError:
@@ -170,7 +169,6 @@ def create_access_token(
     encoded_jwt = jwt.encode(
         to_encode, SETTINGS.web_jwt_secret, algorithm=SETTINGS.web_jwt_algorithm
     )
-    print(to_encode)
     return f"Bearer {encoded_jwt}"
 
 
