@@ -41,45 +41,44 @@
                                         class="small d-inline-block m-1 p-2 border border-light rounded-2 bg-light"
                                     >
                                         <div class="fw-bold">{{field_name}}</div>
-                                        
-                                            <label
-                                                class="form-label small m-0"
-                                                for="{{ class_name }}-{{ field_name}}-min"
+                                        <label
+                                            class="form-label small m-0"
+                                            for="{{ class_name }}-{{ field_name}}-min"
+                                        >
+                                            Min
+                                            <input
+                                                id="{{ class_name }}-{{ field_name}}-min"
+                                                class="form-control small"
+                                                type="number"
+                                                data-key="{{ field_name }}"
+                                                data-minmax="min"
+                                                name="{{ field_name }}-min"
+                                                style="font-size: 1em; width: 20ch;"
+                                                step="{{ 1 if field_type == 'list[int]' else 'any' }}"
                                             >
-                                                Min
-                                                <input
-                                                    id="{{ class_name }}-{{ field_name}}-min"
-                                                    class="form-control small"
-                                                    type="number"
-                                                    data-key="{{ field_name }}"
-                                                    data-minmax="min"
-                                                    name="{{ field_name }}-min"
-                                                    style="font-size: 1em; width: 20ch;"
-                                                    step="{{ 1 if field_type == 'list[int]' else 'any' }}"
-                                                >
-                                            </label>
-                                            <label
-                                                class="form-label small m-0"
-                                                for="{{ class_name }}-{{ field_name}}-max"
+                                        </label>
+                                        <label
+                                            class="form-label small m-0"
+                                            for="{{ class_name }}-{{ field_name}}-max"
+                                        >
+                                            Max
+                                            <input
+                                                id="{{ class_name }}-{{ field_name}}-max"
+                                                class="form-control small"
+                                                type="number"
+                                                data-key="{{ field_name }}"
+                                                data-minmax="max"
+                                                name="{{ field_name }}-max"
+                                                style="font-size: 1em; width: 20ch;"
+                                                step="{{ 1 if field_type == 'list[int]' else 'any' }}"
                                             >
-                                                Max
-                                                <input
-                                                    id="{{ class_name }}-{{ field_name}}-max"
-                                                    class="form-control small"
-                                                    type="number"
-                                                    data-key="{{ field_name }}"
-                                                    data-minmax="max"
-                                                    name="{{ field_name }}-max"
-                                                    style="font-size: 1em; width: 20ch;"
-                                                    step="{{ 1 if field_type == 'list[int]' else 'any' }}"
-                                                >
-                                            </label>
-                                        
+                                        </label>
                                     </div>
                                 {% elif field_type is string and field_type.startswith('Literals:') %}
                                     <label
                                         class="form-label small m-1 fw-bold"
                                         for="{{ class_name }}-{{ field_name}}"
+                                        title="Type: Literal"
                                     >
                                         {{ field_name }}
                                         <select
@@ -99,6 +98,7 @@
                                     <label
                                         class="form-label small m-1 fw-bold"
                                         for="{{ class_name }}-{{ field_name}}"
+                                        title="Type: {{ field_type }}{{ '' if field_type != 'list[str]' else ' (comma-separated strings)'}}"
                                         >
                                         {{ field_name }}
                                         <input
@@ -106,7 +106,7 @@
                                             class="form-control small"
                                             type="text"
                                             name="{{ field_name }}"
-                                            placeholder="{{ field_type }}"
+                                            placeholder="{{ 'Enter text' if field_type != 'list[str]' else 'E.g., value1, value2'}}"
                                             style="font-size: 1em;"
                                         >
                                     </label>

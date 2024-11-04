@@ -6,7 +6,8 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
-from typing import Annotated, Literal, get_args, get_origin
+import types
+from typing import Annotated, Literal, Union, get_args, get_origin
 
 import httpx
 from beanie import PydanticObjectId
@@ -177,6 +178,12 @@ async def search_metadata_view(request: Request):
                             number_fields[field_key] = list_type_str
                         else:
                             other_fields[field_key] = list_type_str
+                    elif (
+                        get_origin(field_type) in {types.UnionType, Union}
+                        and list[str] in get_args(field_type)
+                        and type(None) in get_args(field_type)
+                    ):
+                        other_fields[field_key] = "list[str]"
                     else:
                         other_fields[field_key] = field_type
 
