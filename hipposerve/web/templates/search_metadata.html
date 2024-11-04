@@ -28,8 +28,8 @@
         {% for class_name, fields in metadata.items() %}
             <div
                 id="{{ class_name }}-fields"
-                class="justify-content-center metadata-fields input-group input-group-sm mt-3 p-3 border border-light"
-                style="display: none;"
+                class="flex-column align-items-center gap-3 metadata-fields input-group input-group-sm mt-3 p-3 border border-light"
+                style="display: none; max-width: 1200px;"
             >
                 {% if fields.items()|length > 1 %}
                     <fieldset>
@@ -95,7 +95,9 @@
                             {% endif %}
                         {% endfor %}
                     </fieldset>
-                    <button class="btn btn-dark btn-sm mt-2 rounded-1" type="submit">Search {{ class_name }}</button>
+                    <div>
+                        <button class="btn btn-dark btn-sm rounded-1" type="submit">Search {{ class_name }}</button>
+                    </div>
                 {% else %}
                     <span class="fs-6">No metadata fields</span>
                 {% endif %}
