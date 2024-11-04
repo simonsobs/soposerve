@@ -76,6 +76,25 @@
                                             </label>
                                         
                                     </div>
+                                {% elif field_type is string and field_type.startswith('Literals:') %}
+                                    <label
+                                        class="form-label small m-1 fw-bold"
+                                        for="{{ class_name }}-{{ field_name}}"
+                                    >
+                                        {{ field_name }}
+                                        <select
+                                            class="form-select form-select-sm"
+                                            id="{{ class_name }}-{{ field_name}}"
+                                            name="{{ field_name }}"
+                                            style="font-size: 1em;"
+                                        >
+                                            <option value="" selected>Choose a {{ field_name }}</option>
+                                            {% set literals = field_type[9:].split(',') %}
+                                            {% for literal in literals %}
+                                                <option value="{{ literal.strip() }}">{{ literal.strip() }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </label>
                                 {% else %}
                                     <label
                                         class="form-label small m-1 fw-bold"

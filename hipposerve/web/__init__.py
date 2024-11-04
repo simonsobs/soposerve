@@ -163,9 +163,12 @@ async def search_metadata_view(request: Request):
 
             for field_key, field_type in fields.items():
                 if get_origin(field_type) is not dict:
-                    if getattr(field_type, "__origin__", None) is Literal:
-                        literal_values = field_type.__args__
-                        other_fields[field_key] = " | ".join(literal_values)
+                    if (
+                        getattr(field_type, "__origin__", None) is Literal
+                        and field_key != "metadata_type"
+                    ):
+                        literals = ", ".join(map(str, get_args(field_type)))
+                        other_fields[field_key] = f"Literals: {literals}"
                     elif get_origin(field_type) is list:
                         list_type = get_args(field_type)[0]
                         list_type_str = f"list[{list_type.__name__}]"
