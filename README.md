@@ -42,3 +42,6 @@ data from the [NASA LAMBDA instance](https://lambda.gsfc.nasa.gov/product/act/ac
 
 You may need to copy `config.json` to `~/.hippo.conf` to correctly load the environment
 or export appropriate variables.
+
+Products can then be viewed through the web interface (served at `/web` from the
+server root), or through the use of the `henry` command-line tool.
