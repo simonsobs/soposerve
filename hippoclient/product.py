@@ -195,6 +195,41 @@ def read(client: Client, id: str) -> ProductMetadata:
     return model
 
 
+def update(
+    client: Client, id: str, name: str | None, description: str | None, level: int
+) -> bool:
+    """
+    Update a product in hippo.
+
+    Arguments
+    ----------
+    client: Client
+        The client to use for interacting with the hippo API.
+    id : str
+        The ID of the product to update.
+    name : str
+        The new name of the product.
+    description : str
+        The new description of the product.
+    """
+
+    response = client.post(
+        f"/product/{id}/update",
+        json={
+            "name": name,
+            "description": description,
+            "level": level,
+        },
+    )
+
+    response.raise_for_status()
+
+    if client.verbose:
+        console.print(f"Successfully updated product {id}.", style="bold green")
+
+    return
+
+
 def delete(client: Client, id: str) -> bool:
     """
     Delete a product from hippo.
