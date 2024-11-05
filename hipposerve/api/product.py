@@ -33,7 +33,7 @@ async def create_product(
     Create a new product, returning the pre-signed URLs for the sources.
     """
 
-    logger.info(f"Create product request: {model.name} from {calling_user.name}")
+    logger.info("Create product request: {} from {}", model.name, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.CREATE_PRODUCT)
 
@@ -52,8 +52,11 @@ async def create_product(
     )
 
     logger.info(
-        f"Successfully created {len(presigned)} pre-signed URL(s) for product "
-        f"upload {model.name} (id: {item.id}) from {calling_user.name}"
+        "Successfully created {} pre-signed URL(s) for product upload {} (id: {}) from {}",
+        len(presigned),
+        model.name,
+        item.id,
+        calling_user.name,
     )
 
     return CreateProductResponse(id=item.id, upload_urls=presigned)
@@ -69,7 +72,7 @@ async def read_product(
     Read a single product's metadata.
     """
 
-    logger.info(f"Read product request for {id} from {calling_user.name}")
+    logger.info("Read product request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
@@ -84,8 +87,10 @@ async def read_product(
         )
 
         logger.info(
-            f"Successfully read product {item.name} (id: {item.id}) "
-            f"requested by {calling_user.name}"
+            "Successfully read product {} (id: {}) requested by {}",
+            item.name,
+            item.id,
+            calling_user.name,
         )
 
         return response
@@ -103,7 +108,7 @@ async def read_tree(
     Read a single product's entire history.
     """
 
-    logger.info(f"Read product tree request for {id} from {calling_user.name}")
+    logger.info("Read product tree request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
@@ -126,8 +131,10 @@ async def read_tree(
         )
 
         logger.info(
-            f"Successfully read product tree for {requested_item.name} (id: {requested_item.id}) "
-            f"requested by {calling_user.name}"
+            "Successfully read product tree for {} (id: {}) requested by {}",
+            requested_item.name,
+            requested_item.id,
+            calling_user.name,
         )
 
         return response
@@ -145,7 +152,7 @@ async def read_files(
     Read a single product's including pre-signed URLs for downloads.
     """
 
-    logger.info(f"Read files request for {id} from {calling_user.name}")
+    logger.info("Read files request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
@@ -159,8 +166,11 @@ async def read_files(
     files = await product.read_files(product=item, storage=request.app.storage)
 
     logger.info(
-        f"Read {len(files)} pre-signed URLs for product {item.name} (id: {item.id}) "
-        f"requested by {calling_user.name}"
+        "Read {} pre-signed URLs for product {} (id: {}) requested by {}",
+        len(files),
+        item.name,
+        item.id,
+        calling_user.name,
     )
 
     return ReadFilesResponse(
@@ -180,7 +190,7 @@ async def update_product(
     Update a product's details.
     """
 
-    logger.info(f"Update product request for {id} from {calling_user.name}")
+    logger.info("Update product request for {} from {}", id, calling_user.name)
 
     # For now only privileged users can update products, and they can update everyone's.
     await check_user_for_privilege(calling_user, Privilege.UPDATE_PRODUCT)
@@ -216,9 +226,13 @@ async def update_product(
     )
 
     logger.info(
-        f"Successfully updated product {new_product.name} "
-        f"(new id: {new_product.id}; {new_product.version}; old id: {item.id}; {item.version}) "
-        f"from {calling_user.name}"
+        "Successfully updated product {} (new id: {}; {}; old id: {}; {}) from {}",
+        new_product.name,
+        new_product.id,
+        new_product.version,
+        item.id,
+        item.version,
+        calling_user.name,
     )
 
     return UpdateProductResponse(
@@ -236,7 +250,7 @@ async def confirm_product(
     Confirm a product's sources.
     """
 
-    logger.info(f"Confirm product request for {id} from {calling_user.name}")
+    logger.info("Confirm product request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.CONFIRM_PRODUCT)
 
@@ -257,7 +271,7 @@ async def confirm_product(
             detail="Not all sources were present.",
         )
 
-    logger.info(f"Successfully confirmed product {item.name} (id: {item.id})")
+    logger.info("Successfully confirmed product {} (id: {})", item.name, item.id)
 
 
 @product_router.delete("/{id}")
@@ -271,7 +285,7 @@ async def delete_product(
     Delete a product.
     """
 
-    logger.info(f"Delete (single) product request for {id} from {calling_user.name}")
+    logger.info("Delete (single) product request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
@@ -289,9 +303,11 @@ async def delete_product(
     )
 
     logger.info(
-        f"Successfully deleted product {item.name} (id: {item.id}) " "including data"
+        "Successfully deleted product {} (id: {}) including data"
         if data
-        else "excluding data"
+        else "Successfully deleted product {} (id: {}) excluding data",
+        item.name,
+        item.id,
     )
 
 
@@ -306,7 +322,7 @@ async def delete_tree(
     Delete a product.
     """
 
-    logger.info(f"Delete (tree) product request for {id} from {calling_user.name}")
+    logger.info("Delete (tree) product request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
@@ -324,10 +340,11 @@ async def delete_tree(
     )
 
     logger.info(
-        f"Successfully deleted product tree for {item.name} (id: {item.id}) "
-        "including data"
+        "Successfully deleted product tree for {} (id: {}) including data"
         if data
-        else "excluding data"
+        else "Successfully deleted product tree for {} (id: {}) excluding data",
+        item.name,
+        item.id,
     )
 
 
@@ -341,15 +358,17 @@ async def search(
     Search for a product by name.
     """
 
-    logger.info(f"Search for product {text} request from {calling_user.name}")
+    logger.info("Search for product {} request from {}", text, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     items = await product.search_by_name(name=text)
 
     logger.info(
-        f"Successfully found {len(items)} product(s) matching {text} "
-        f"requested by {calling_user.name}"
+        "Successfully found {} product(s) matching {} requested by {}",
+        len(items),
+        text,
+        calling_user.name,
     )
 
     return [item.to_metadata() for item in items]

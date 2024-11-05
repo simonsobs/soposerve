@@ -28,7 +28,7 @@ async def create_collection(
     Create a new collection with {name}.
     """
 
-    logger.info(f"Request to create collection: {name} from {calling_user.name}")
+    logger.info("Request to create collection: {} from {}", name, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.CREATE_COLLECTION)
 
@@ -36,7 +36,7 @@ async def create_collection(
     # TODO: Collections should have a 'manager' who can change their properties.
     coll = await collection.create(name=name, description=model.description)
 
-    logger.info(f"Collection {coll.id} ({name}) created for {calling_user.name}")
+    logger.info("Collection {} ({}) created for {}", coll.id, name, calling_user.name)
 
     return coll.id
 
@@ -51,7 +51,7 @@ async def read_collection(
     Read a collection's details.
     """
 
-    logger.info(f"Request to read collection: {id} from {calling_user.name}")
+    logger.info("Request to read collection: {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.READ_COLLECTION)
 
@@ -92,13 +92,15 @@ async def search_collection(
     fetched separately through the read_collection endpoint.
     """
 
-    logger.info(f"Request to search for collection: {name} from {calling_user.name}")
+    logger.info("Request to search for collection: {} from {}", name, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.READ_COLLECTION)
 
     results = await collection.search_by_name(name=name)
 
-    logger.info(f"Found {len(results)} collections for {name} from {calling_user.name}")
+    logger.info(
+        "Found {} collections for {} from {}", len(results), name, calling_user.name
+    )
 
     return [
         ReadCollectionResponse(
@@ -122,8 +124,10 @@ async def add_product_to_collection(
     """
 
     logger.info(
-        f"Request to add product {product_id} to collection {collection_id} "
-        f"from {calling_user.name}"
+        "Request to add product {} to collection {} from {}",
+        product_id,
+        collection_id,
+        calling_user.name,
     )
 
     await check_user_for_privilege(calling_user, Privilege.UPDATE_COLLECTION)
@@ -138,7 +142,7 @@ async def add_product_to_collection(
     try:
         item = await product.read_by_id(id=product_id)
         await product.add_collection(product=item, collection=coll)
-        logger.info(f"Successfully added {item.name} to collection {coll.name}")
+        logger.info("Successfully added {} to collection {}", item.name, coll.name)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -156,8 +160,10 @@ async def remove_product_from_collection(
     """
 
     logger.info(
-        f"Request to remove product {product_id} from collection {collection_id} "
-        f"from {calling_user.name}"
+        "Request to remove product {} from collection {} from {}",
+        product_id,
+        collection_id,
+        calling_user.name,
     )
 
     await check_user_for_privilege(calling_user, Privilege.UPDATE_COLLECTION)
@@ -172,7 +178,7 @@ async def remove_product_from_collection(
     try:
         item = await product.read_by_id(id=product_id)
         await product.remove_collection(product=item, collection=coll)
-        logger.info(f"Successfully removed {item.name} from collection {coll.name}")
+        logger.info("Successfully removed {} from collection {}", item.name, coll.name)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -188,13 +194,13 @@ async def delete_collection(
     Delete a collection.
     """
 
-    logger.info(f"Request to delete collection: {id} from {calling_user.name}")
+    logger.info("Request to delete collection: {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.DELETE_COLLECTION)
 
     try:
         await collection.delete(id=id)
-        logger.info(f"Successfully deleted collection {id} from {calling_user.name}")
+        logger.info("Successfully deleted collection {} from {}", id, calling_user.name)
     except collection.CollectionNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Collection not found."
@@ -212,8 +218,10 @@ async def add_child_product(
     """
 
     logger.info(
-        f"Request to add product {child_id} as child of {parent_id} "
-        f"from {calling_user.name}"
+        "Request to add product {} as child of {} from {}",
+        child_id,
+        parent_id,
+        calling_user.name,
     )
 
     await check_user_for_privilege(calling_user, Privilege.CREATE_RELATIONSHIP)
@@ -226,7 +234,9 @@ async def add_child_product(
             destination=destination,
             type="child",
         )
-        logger.info(f"Successfully added {destination.name} as child of {source.name}")
+        logger.info(
+            "Successfully added {} as child of {}", destination.name, source.name
+        )
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -244,8 +254,10 @@ async def remove_child_product(
     """
 
     logger.info(
-        f"Request to remove product {child_id} as child of {parent_id} "
-        f"from {calling_user.name}"
+        "Request to remove product {} as child of {} from {}",
+        child_id,
+        parent_id,
+        calling_user.name,
     )
 
     await check_user_for_privilege(calling_user, Privilege.DELETE_RELATIONSHIP)
@@ -259,7 +271,7 @@ async def remove_child_product(
             type="child",
         )
         logger.info(
-            f"Successfully removed {destination.name} as child of {source.name}"
+            "Successfully removed {} as child of {}", destination.name, source.name
         )
     except product.ProductNotFound:
         raise HTTPException(
