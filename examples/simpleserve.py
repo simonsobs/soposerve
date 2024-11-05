@@ -79,7 +79,10 @@ def main():
             )
             server = uvicorn.Server(config)
 
-            server.run()
+            try:
+                server.run()
+            except KeyboardInterrupt:
+                exit(0)
 
 
 if __name__ == "__main__":
