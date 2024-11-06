@@ -23,11 +23,12 @@ from hippometa.catalog import CatalogMetadata
 # from hippometa.map import MapMetadata
 from hippometa.mapset import MapSet
 from hippometa.mapset import MapSetMap as MapSetMap
+from hippometa.numeric import NumericMetadata
 from hippometa.simple import SimpleMetadata
 
 ALL_METADATA_TYPE = Annotated[
-    Union[MapSet, CatalogMetadata, SimpleMetadata, None],
+    Union[MapSet, CatalogMetadata, NumericMetadata, SimpleMetadata, None],
     Field(discriminator="metadata_type"),
 ]
 
-ALL_METADATA = [MapSet, CatalogMetadata, SimpleMetadata, None]
+ALL_METADATA = [MapSet, CatalogMetadata, NumericMetadata, SimpleMetadata, None]
