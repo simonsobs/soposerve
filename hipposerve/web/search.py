@@ -2,9 +2,6 @@
 Utilities for product search and rendering search results.
 """
 
-import types
-from typing import Literal, Union, get_args, get_origin
-
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
@@ -14,30 +11,6 @@ from hipposerve.service import collection, product
 from .router import templates
 
 router = APIRouter()
-
-
-def has_list(field_type):
-    """
-    A simple utility function to test if a type contains a list
-    """
-    if get_origin(field_type) is list:
-        return True
-    elif get_origin(field_type) in {types.UnionType, Union}:
-        args = get_args(field_type)
-        return any(get_origin(arg) is list for arg in args)
-    else:
-        return False
-
-
-# Grabs the list argument, but assumes we wouldn't have more than one
-# list in a union type
-def get_list_arg(field_type):
-    args = get_args(field_type)
-    if len(args) == 1:
-        return args[0].__name__
-    else:
-        list_arg = [arg for arg in args if get_origin(arg) is list]
-        return get_args(list_arg[0])[0].__name__
 
 
 # Query and render search results from the navigation bar's "search by name" option
@@ -64,6 +37,7 @@ async def searchmetadata_results_view(
     request: Request, q: str = None, filter: str = "products"
 ):
     query_params = dict(request.query_params)
+
     # Determine which metadata_class we're searching on so we can get the fields;
     # we will use the fields with the query_params to craft type-specific queries
     metadata_class = next(
@@ -73,42 +47,54 @@ async def searchmetadata_results_view(
             if cls.model_json_schema()["title"] == query_params["metadata_type"]
         )
     )
-    metadata_fields = metadata_class.__annotations__
+    metadata_fields = metadata_class.model_json_schema()["properties"]
 
-    # Will hold the queries as we craft them below
+    # Create a dict for the following pre-processing of metadata_fields
+    simplified_metadata_fields = {}
+
+    # Do some pre-processing of the metadata_fields to simplify query logic
+    for field_key, field_data in metadata_fields.items():
+        if field_key == "metadata_type" or "additionalProperties" in field_data:
+            continue
+
+        if "anyOf" in field_data:
+            true_type = [x for x in field_data["anyOf"] if x["type"] != "null"][0]
+            field_data = {**field_data, **true_type}
+            field_data.pop("anyOf")
+            simplified_metadata_fields[field_key] = field_data
+        else:
+            simplified_metadata_fields[field_key] = field_data
+
+    # Create a dict to hold the queries as we craft them below
     metadata_filters = {}
 
     for key, value in query_params.items():
         if key == "metadata_type":
             continue
 
-        # Literals don't need any regex or case insensitity
-        if getattr(metadata_fields[key], "__origin__", None) is Literal:
+        field = simplified_metadata_fields[key]
+        field_type = field.get("type", None)
+
+        # Query for enums; no query logic needed
+        if "enum" in field:
             metadata_filters[key] = value
-        elif has_list(metadata_fields[key]):
-            list_type_arg = get_list_arg(metadata_fields[key])
-            # Add some number-specific query logic to list[int] and list[float]
-            if list_type_arg == "int" or list_type_arg == "float":
-                numerical_values = value.split(",")
-                min = (
-                    numerical_values[0] if numerical_values[0] != "undefined" else None
-                )
-                max = (
-                    numerical_values[1] if numerical_values[1] != "undefined" else None
-                )
-                if min is not None:
-                    metadata_filters[key] = {"$gte": min}
-                if max is not None:
-                    metadata_filters[key] = metadata_filters.get(key, {})
-                    metadata_filters[key]["$lte"] = max
-            # Add query logic to list[str] types
-            elif list_type_arg == "str":
-                metadata_filters[key] = {"$in": [v.strip() for v in value.split(",")]}
-            else:
-                # Apply a default query as a fallback
-                metadata_filters[key] = {"$regex": value, "$options": "i"}
+        # Query for comma-separated lists of strings
+        elif field_type == "array" and field["items"]["type"] == "string":
+            metadata_filters[key] = {"$in": [v.strip() for v in value.split(",")]}
+        # Query for numbers of lists of numbers
+        elif field_type == "number" or (
+            field_type == "array" and field["items"]["type"] == "number"
+        ):
+            numerical_values = value.split(",")
+            min = numerical_values[0] if numerical_values[0] != "undefined" else None
+            max = numerical_values[1] if numerical_values[1] != "undefined" else None
+            if min is not None:
+                metadata_filters[key] = {"$gte": min}
+            if max is not None:
+                metadata_filters[key] = metadata_filters.get(key, {})
+                metadata_filters[key]["$lte"] = max
+        # Default query applies regex and case insensitivity
         else:
-            # Default queries include regex and case insensitivity
             metadata_filters[key] = {"$regex": value, "$options": "i"}
 
     results = await product.search_by_metadata(metadata_filters)
