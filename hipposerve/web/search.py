@@ -67,7 +67,11 @@ async def searchmetadata_results_view(
     # Determine which metadata_class we're searching on so we can get the fields;
     # we will use the fields with the query_params to craft type-specific queries
     metadata_class = next(
-        (cls for cls in ALL_METADATA if cls.__name__ == query_params["metadata_type"])
+        (
+            cls
+            for cls in ALL_METADATA
+            if cls.model_json_schema()["title"] == query_params["metadata_type"]
+        )
     )
     metadata_fields = metadata_class.__annotations__
 
@@ -130,41 +134,61 @@ async def search_metadata_view(request: Request):
         if metadata_class is None:
             continue
 
-        class_name = metadata_class.__name__
-        fields = metadata_class.__annotations__
+        class_schema = metadata_class.model_json_schema()
+        class_name = class_schema["title"]
+        class_fields = class_schema["properties"]
 
         # Separate number fields from other types so we can render the number
         # fields together in the metadata search page
         number_fields = {}
         other_fields = {}
 
-        for field_key, field_type in fields.items():
-            # Don't render metadata fields for dict type
-            if get_origin(field_type) is dict:
+        for field_key, field_data in class_fields.items():
+            if field_key == "metadata_type" or "additionalProperties" in field_data:
                 continue
 
-            # Let's format literals to make it easier to render as
-            # a select element in the template
-            if (
-                getattr(field_type, "__origin__", None) is Literal
-                and field_key != "metadata_type"
-            ):
-                literals = ", ".join(map(str, get_args(field_type)))
-                other_fields[field_key] = f"Literals: {literals}"
-            # Similarly, let's format list types for the template's
-            # conditional rendering for string lists and number ranges
-            # NOTE: Will ignore any other types in a union if has_list
-            # returns True
-            elif has_list(field_type):
-                list_type_arg = get_list_arg(field_type)
-                list_type_str = f"list[{list_type_arg}]"
-
-                if list_type_str in ["list[int]", "list[float]"]:
-                    number_fields[field_key] = list_type_str
-                else:
-                    other_fields[field_key] = list_type_str
-            else:
-                other_fields[field_key] = field_type
+            if "enum" in field_data:
+                other_fields[field_key] = {
+                    "type": "enum",
+                    "title": field_data["title"],
+                    "options": field_data["enum"],
+                }
+            elif "type" in field_data and field_data["type"] == "number":
+                number_fields[field_key] = {
+                    "type": "number",
+                    "title": field_data["title"],
+                    "min": field_data["min"],
+                    "max": field_data["max"],
+                }
+            elif "anyOf" in field_data:
+                unioned_field_types = field_data["anyOf"]
+                filtered_field_types = [
+                    x for x in unioned_field_types if x["type"] != "null"
+                ]
+                actual_field_type = filtered_field_types[0]["type"]
+                if actual_field_type == "array":
+                    other_fields[field_key] = {
+                        "type": "list",
+                        "list_arg": filtered_field_types[0]["items"]["type"],
+                        "title": field_data["title"],
+                    }
+                elif actual_field_type == "number":
+                    number_fields[field_key] = {
+                        "type": "number",
+                        "title": field_data["title"],
+                        "min": None,
+                        "max": None,
+                    }
+                elif actual_field_type == "string":
+                    other_fields[field_key] = {
+                        "type": "string",
+                        "title": field_data["title"],
+                    }
+            elif "type" in field_data:
+                other_fields[field_key] = {
+                    "type": field_data["type"],
+                    "title": field_data["title"],
+                }
 
         metadata_info[class_name] = {**number_fields, **other_fields}
 
