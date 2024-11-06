@@ -144,8 +144,18 @@ async def search_metadata_view(request: Request):
         other_fields = {}
 
         for field_key, field_data in class_fields.items():
+            # additionalProperties means the field is a dictionary with arbitrary keys
+            # we can't search on that.
             if field_key == "metadata_type" or "additionalProperties" in field_data:
                 continue
+
+            if "anyOf" in field_data:
+                # This occurs when we have x | None, extract x and stick it in the field_data
+                true_type = [x for x in field_data["anyOf"] if x["type"] != "null"][0]
+                field_data = {**field_data, **true_type}
+                field_data.pop("anyOf")
+
+            field_type = field_data.get("type", None)
 
             if "enum" in field_data:
                 other_fields[field_key] = {
@@ -153,40 +163,22 @@ async def search_metadata_view(request: Request):
                     "title": field_data["title"],
                     "options": field_data["enum"],
                 }
-            elif "type" in field_data and field_data["type"] == "number":
+            elif field_type == "array":
+                other_fields[field_key] = {
+                    "type": "array",
+                    "list_arg": field_data["items"]["type"],
+                    "title": field_data["title"],
+                }
+            elif field_type == "number":
                 number_fields[field_key] = {
                     "type": "number",
                     "title": field_data["title"],
-                    "min": field_data["min"],
-                    "max": field_data["max"],
+                    "min": field_data.get("min", None),
+                    "max": field_data.get("max", None),
                 }
-            elif "anyOf" in field_data:
-                unioned_field_types = field_data["anyOf"]
-                filtered_field_types = [
-                    x for x in unioned_field_types if x["type"] != "null"
-                ]
-                actual_field_type = filtered_field_types[0]["type"]
-                if actual_field_type == "array":
-                    other_fields[field_key] = {
-                        "type": "list",
-                        "list_arg": filtered_field_types[0]["items"]["type"],
-                        "title": field_data["title"],
-                    }
-                elif actual_field_type == "number":
-                    number_fields[field_key] = {
-                        "type": "number",
-                        "title": field_data["title"],
-                        "min": None,
-                        "max": None,
-                    }
-                elif actual_field_type == "string":
-                    other_fields[field_key] = {
-                        "type": "string",
-                        "title": field_data["title"],
-                    }
-            elif "type" in field_data:
+            else:
                 other_fields[field_key] = {
-                    "type": field_data["type"],
+                    "type": field_type,
                     "title": field_data["title"],
                 }
 
