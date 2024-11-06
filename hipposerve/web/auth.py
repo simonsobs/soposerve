@@ -11,7 +11,7 @@ from typing import Annotated
 import httpx
 import jwt
 from beanie import PydanticObjectId
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.openapi.models import OAuthFlows
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2, OAuth2PasswordRequestForm
@@ -22,7 +22,9 @@ from hipposerve.service import users as user_service
 from hipposerve.service import users as users_service
 from hipposerve.settings import SETTINGS
 
-from .router import templates, web_router
+from .router import templates
+
+router = APIRouter()
 
 
 class OAuth2PasswordBearerWithCookie(OAuth2):
@@ -161,7 +163,7 @@ PotentialLoggedInUser = Annotated[
 ]
 
 
-@web_router.get("/github")
+@router.get("/github")
 async def login_with_github_for_access_token(
     request: Request,
     code: str,
@@ -253,7 +255,7 @@ async def login_with_github_for_access_token(
     return new_response
 
 
-@web_router.post("/token")
+@router.post("/token")
 async def login_for_access_token(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -288,7 +290,7 @@ async def login_for_access_token(
     return new_response
 
 
-@web_router.get("/logout")
+@router.get("/logout")
 async def logout(request: Request) -> RedirectResponse:
     new_response = RedirectResponse(
         url=request.url.path.replace("/logout", ""), status_code=302
@@ -297,12 +299,12 @@ async def logout(request: Request) -> RedirectResponse:
     return new_response
 
 
-@web_router.get("/user")
+@router.get("/user")
 async def read_user(request: Request, user: LoggedInUser):
     return templates.TemplateResponse("user.html", {"request": request, "user": user})
 
 
-@web_router.get("/login")
+@router.get("/login")
 async def login(request: Request):
     return templates.TemplateResponse(
         "login.html",
