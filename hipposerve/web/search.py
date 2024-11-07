@@ -34,18 +34,16 @@ async def search_results_view(
 # Query and render search results for the more complex metadata request
 @router.get("/searchmetadata/results", response_class=HTMLResponse)
 async def searchmetadata_results_view(
-    request: Request, q: str = None, filter: str = "products"
+    request: Request, q: str = None, filter_on: str = "products"
 ):
     query_params = dict(request.query_params)
 
     # Determine which metadata_class we're searching on so we can get the fields;
     # we will use the fields with the query_params to craft type-specific queries
     metadata_class = next(
-        (
-            cls
-            for cls in ALL_METADATA
-            if cls.model_json_schema()["title"] == query_params["metadata_type"]
-        )
+        v
+        for v in ALL_METADATA.values()
+        if v.schema()["title"] == query_params["metadata_type"]
     )
     metadata_fields = metadata_class.model_json_schema()["properties"]
 
@@ -61,9 +59,8 @@ async def searchmetadata_results_view(
             true_type = [x for x in field_data["anyOf"] if x["type"] != "null"][0]
             field_data = {**field_data, **true_type}
             field_data.pop("anyOf")
-            simplified_metadata_fields[field_key] = field_data
-        else:
-            simplified_metadata_fields[field_key] = field_data
+
+        simplified_metadata_fields[field_key] = field_data
 
     # Create a dict to hold the queries as we craft them below
     metadata_filters = {}
@@ -104,7 +101,7 @@ async def searchmetadata_results_view(
         {
             "request": request,
             "query": q,
-            "filter": filter,
+            "filter": filter_on,
             "results": results,
             "metadata_filters": metadata_filters,
             "metadata_type": query_params["metadata_type"],
@@ -116,7 +113,7 @@ async def searchmetadata_results_view(
 async def search_metadata_view(request: Request):
     metadata_info = {}
 
-    for metadata_class in ALL_METADATA:
+    for metadata_class in ALL_METADATA.values():
         if metadata_class is None:
             continue
 

@@ -31,4 +31,7 @@ ALL_METADATA_TYPE = Annotated[
     Field(discriminator="metadata_type"),
 ]
 
-ALL_METADATA = [MapSet, CatalogMetadata, NumericMetadata, SimpleMetadata, None]
+ALL_METADATA = {
+    x.model_fields["metadata_type"].default: x
+    for x in [MapSet, CatalogMetadata, NumericMetadata, SimpleMetadata]
+}
