@@ -5,6 +5,7 @@ TODO: Authentication.
 """
 
 from fastapi import APIRouter, HTTPException, status
+from loguru import logger
 
 from hipposerve.api.auth import UserDependency, check_user_for_privilege
 from hipposerve.api.models.users import (
@@ -31,6 +32,8 @@ async def create_user(
     Create a new user.
     """
 
+    logger.info("Request to create user: {} from {}", name, calling_user.name)
+
     await check_user_for_privilege(calling_user, users.Privilege.CREATE_USER)
 
     try:
@@ -47,6 +50,8 @@ async def create_user(
             hasher=SETTINGS.hasher,
         )
 
+    logger.info("User {} created for {}", user.name, calling_user.name)
+
     return CreateUserResponse(api_key=user.api_key)
 
 
@@ -56,10 +61,14 @@ async def read_user(name: str, calling_user: UserDependency) -> ReadUserResponse
     Read a user's details, but not their API key.
     """
 
+    logger.info("Request to read user: {} from {}", name, calling_user.name)
+
     if name != calling_user.name:
         await check_user_for_privilege(calling_user, users.Privilege.READ_USER)
 
     user = await users.read(name=name)
+
+    logger.info("User {} read by {}", name, calling_user.name)
 
     return ReadUserResponse(
         name=user.name,
@@ -75,6 +84,8 @@ async def update_user(
     Update a user's details. At present, only admins can update users.
     """
 
+    logger.info("Request to update user: {} from {}", name, calling_user.name)
+
     await check_user_for_privilege(calling_user, users.Privilege.UPDATE_USER)
 
     user = await users.update(
@@ -83,6 +94,14 @@ async def update_user(
         refresh_key=request.refresh_key,
         password=request.password,
         hasher=SETTINGS.hasher,
+    )
+
+    logger.info(
+        "User {} updated by {} with new API key"
+        if request.refresh_key
+        else "User {} updated by {}",
+        name,
+        calling_user.name,
     )
 
     return UpdateUserResponse(api_key=user.api_key if request.refresh_key else None)
@@ -94,8 +113,12 @@ async def delete_user(name: str, calling_user: UserDependency) -> None:
     Delete a user.
     """
 
+    logger.info("Request to delete user: {} from {}", name, calling_user.name)
+
     await check_user_for_privilege(calling_user, users.Privilege.DELETE_USER)
 
     await users.delete(name=name)
+
+    logger.info("User {} deleted by {}", name, calling_user.name)
 
     return
