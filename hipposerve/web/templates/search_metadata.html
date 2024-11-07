@@ -36,7 +36,7 @@
                         <legend class="row fs-6 fw-bolder">Metadata Fields</legend>
                         <div class="row">
                             {% for field_key, field_data in fields.items() %}
-                                {% if field_data["type"] == "number" or (field_data["type"] == "array" and field_data["list_arg"] == "number") %}
+                                {% if field_data["type"] == "number" %}
                                     <div
                                         class="col-md-3 col-sm-4 small d-inline-block m-1 p-2 border border-light rounded-2 bg-light"
                                     >
@@ -81,11 +81,11 @@
                                             {% endfor %}
                                         </select>
                                     </label>
-                                {% elif field_data["type"] == "array" and field_data["list_arg"] == "string" %}
+                                {% elif field_data["type"] == "array" %}
                                     <label
                                         class="col-md-3 col-sm-4 form-label small m-1 fw-bold"
                                         for="{{ class_name }}-{{ field_key}}"
-                                        title="Type: list[str] (comma-separated list)"
+                                        title="Type: comma-separated list of {{ field_data['list_arg'] }}s"
                                         >
                                         {{ field_data["title"] }}
                                         <input
@@ -164,12 +164,10 @@
 
         // create a key:value object for the range inputs
         const rangeParams = {};
-
         formData.forEach((value, key) => {
             if (value) {
-                if (Number(value) && numberInputs.find(el => el.name === key)) {
-                    const numberInput = numberInputs.find(el => el.name === key);
-                    
+                const numberInput = numberInputs.find(el => el.name === key);
+                if (numberInput) {
                     // use the dataset.key HTML attribute that is the same as the
                     // input's name attribute but without the "-min" or "-max" suffix
                     const parentKey = numberInput.dataset.key;

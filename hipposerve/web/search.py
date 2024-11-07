@@ -75,19 +75,15 @@ async def searchmetadata_results_view(
         # Query for enums; no query logic needed
         if "enum" in field:
             metadata_filters[key] = value
-        # Query for comma-separated lists of strings
-        elif field_type == "array" and field["items"]["type"] == "string":
+        # Query for comma-separated lists
+        elif field_type == "array":
             metadata_filters[key] = {"$in": [v.strip() for v in value.split(",")]}
-        # Query for numbers of lists of numbers
-        elif field_type == "number" or (
-            field_type == "array" and field["items"]["type"] == "number"
-        ):
-            numerical_values = value.split(",")
-            min = numerical_values[0] if numerical_values[0] != "undefined" else None
-            max = numerical_values[1] if numerical_values[1] != "undefined" else None
-            if min is not None:
+        # Query for number ranges
+        elif field_type == "number" and "," in value:
+            min, max = value.split(",")
+            if min != "undefined":
                 metadata_filters[key] = {"$gte": min}
-            if max is not None:
+            if max != "undefined":
                 metadata_filters[key] = metadata_filters.get(key, {})
                 metadata_filters[key]["$lte"] = max
         # Default query applies regex and case insensitivity
