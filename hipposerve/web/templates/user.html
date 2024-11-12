@@ -2,6 +2,7 @@
 {% block content %}
 <div class="container-fluid">
     <form class="d-none" method="get" action="/web/logout" id="logout"></form>
+    <form class="d-none" method="get" action="/web/user/apikey" id="newApiKey"></form>
     <div class="d-flex align-items-start mt-4 h-100">
         <div class="nav flex-column nav-pills me-3 gap-2 pe-3 border-end border-light-subtle" id="v-pills-tab" role="tablist" aria-orientation="vertical">
           <button class="nav-link active" id="v-pills-profile-tab" data-bs-toggle="pill" data-bs-target="#v-pills-profile" type="button" role="tab" aria-controls="v-pills-profile" aria-selected="true">Account information</button>
@@ -35,7 +36,14 @@
                 </li>
                 <li class="list-group-item">
                     <h5>API key</h5>
-                    <button class="btn btn-danger btn-sm">Request new API key</button>
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#confirmNewApiModal"
+                    >
+                        Request new API key
+                    </button>
                 </li>
             </ul>
           </div>
@@ -57,4 +65,32 @@
         </div>
     </div>      
 </div>
+<!-- Confirm new API request Modal -->
+<div class="modal fade" id="confirmNewApiModal" tabindex="-1" aria-labelledby="confirmNewApiModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h1 class="modal-title fs-5" id="confirmNewApiModalLabel">Confirm API Key Request</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h4 class="text-danger">Warning</h4>
+        <p>
+            Requesting a new API key will invalidate your current API key.
+        </p>
+        <p>
+            Would you like to continue?
+        </p>
+      </div>
+      <div class="modal-footer gap-4">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, cancel request</button>
+        <button form="newApiKey" type="submit" class="btn btn-outline-danger">Yes, get a new API key</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
+
+
+  
+  

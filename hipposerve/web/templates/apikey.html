@@ -1,0 +1,37 @@
+{% extends "core.html" %}
+{% block content %}
+<div class="container-fluid">
+    {% if user %}
+        <h4>
+            <label for="new-api-key">
+                New API Key
+            </label>
+        </h4>
+        <div class="input-group">
+            <textarea
+                style="max-width: 600px;"
+                readonly
+                id="new-api-key"
+                class="form-control"
+                rows="4"
+            >{{user.api_key}}</textarea>
+            <button class="btn btn-primary" onclick="copyApiKey()">
+                Copy API Key
+            </button>
+        </div>
+    {% else %}
+        <h1>no user</h1>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        function copyApiKey() {
+            const textarea = document.getElementById("new-api-key");
+
+            // Copy the text inside the textarea
+            navigator.clipboard.writeText(textarea.value.trim());
+        }
+    </script>
+{% endblock %}
