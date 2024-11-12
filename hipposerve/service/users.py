@@ -32,7 +32,13 @@ class AuthenticationError(Exception):
 
 
 async def create(
-    name: str, password: str | None, privileges: list[Privilege], hasher: PasswordHash
+    name: str,
+    password: str | None,
+    email: str | None,
+    avatar_url: str | None,
+    gh_profile_url: str | None,
+    privileges: list[Privilege],
+    hasher: PasswordHash,
 ) -> User:
     if password is None:
         # When using GitHub auth we don't have a password.
@@ -43,6 +49,9 @@ async def create(
     user = User(
         name=name,
         hashed_password=hashed_password,
+        email=email,
+        avatar_url=avatar_url,
+        gh_profile_url=gh_profile_url,
         api_key=API_KEY(),
         privileges=privileges,
         # TODO: Compliance

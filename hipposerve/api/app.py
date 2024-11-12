@@ -38,6 +38,9 @@ async def lifespan(app: FastAPI):
             user = await users.create(
                 name="admin",
                 password=SETTINGS.test_user_password,
+                email=None,
+                avatar_url=None,
+                gh_profile_url=None,
                 privileges=list(users.Privilege),
                 hasher=SETTINGS.hasher,
             )

@@ -43,6 +43,9 @@ async def create_user(
         user = await users.create(
             name=name,
             password=request.password,
+            email=None,
+            avatar_url=None,
+            gh_profile_url=None,
             privileges=request.privileges,
             hasher=SETTINGS.hasher,
         )
