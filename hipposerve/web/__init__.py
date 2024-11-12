@@ -23,7 +23,7 @@ from hipposerve.service import collection, product
 from hipposerve.service import users as user_service
 from hipposerve.settings import SETTINGS
 
-from .auth import LoggedInUser, create_access_token
+from .auth import PotentialLoggedInUser, create_access_token
 
 # TODO: Static file moutning.
 
@@ -42,13 +42,18 @@ static_files = {
 
 
 @web_router.get("/")
-async def index(request: Request):
+async def index(request: Request, user: PotentialLoggedInUser):
     products = await product.read_most_recent(fetch_links=True, maximum=16)
     collections = await collection.read_most_recent(fetch_links=True, maximum=16)
 
     return templates.TemplateResponse(
         "index.html",
-        {"request": request, "products": products, "collections": collections},
+        {
+            "request": request,
+            "products": products,
+            "collections": collections,
+            "user": user,
+        },
     )
 
 
@@ -239,6 +244,9 @@ async def login_with_github_for_access_token(
             name=user_info["login"],
             # TODO: MAKE PASSWORDS OPTIONAL
             password="GitHub",
+            email=user_info["email"],
+            avatar_url=user_info["avatar_url"],
+            gh_profile_url=user_info["html_url"],
             privileges=list(user_service.Privilege),
             hasher=SETTINGS.hasher,
         )
@@ -300,7 +308,12 @@ async def logout(request: Request) -> RedirectResponse:
 
 
 @web_router.get("/user")
-async def read_user(request: Request, user: LoggedInUser):
+async def read_user(request: Request, user: PotentialLoggedInUser):
+    if user is None:
+        new_response = RedirectResponse(
+            url=request.url.path.replace("/user", "/login"), status_code=302
+        )
+        return new_response
     return templates.TemplateResponse("user.html", {"request": request, "user": user})
 
 
