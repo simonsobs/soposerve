@@ -15,11 +15,9 @@
         </form>
     {% endif %}
     {% if allow_github_login %}
-        <p class="nav fs-5">
-            <a class="nav-link" href="https://github.com/login/oauth/authorize?client_id={{ github_client_id }}">
-                Sign in with GitHub
-            </a>
-        </p>
+        <a class="mt-2 btn btn-primary" role="button" href="https://github.com/login/oauth/authorize?client_id={{ github_client_id }}">
+            Sign in with GitHub
+        </a>
     {% endif %}
 </div>
 {% endblock %}
