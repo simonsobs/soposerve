@@ -331,6 +331,13 @@ async def read_apikey(request: Request, user: PotentialLoggedInUser):
             url=request.url.path.replace("/user/apikey", "/login"), status_code=302
         )
         return new_response
+    user = await user_service.update(
+        name=user.name,
+        hasher=SETTINGS.hasher,
+        password=None,
+        privileges=user.privileges,
+        refresh_key=True,
+    )
     return templates.TemplateResponse("apikey.html", {"request": request, "user": user})
 
 
