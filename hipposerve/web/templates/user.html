@@ -5,12 +5,6 @@
     <form class="d-none" method="get" action="/web/logout" id="logout"></form>
     <form class="d-none" method="get" action="/web/user/apikey" id="newApiKey"></form>
     <span id="compliance-check" class="d-none">{{ user.compliance }}</span>
-    <button
-        id="openComplianceModal"
-        class="d-none"
-        data-bs-toggle="modal"
-        data-bs-target="#provideComplianceInfo"
-    ></button>
     <!-- End hidden elements -->
     <div class="d-flex align-items-start mt-4 h-100">
         <div class="nav flex-column nav-pills me-3 gap-2 pe-3 border-end border-light-subtle" id="v-pills-tab" role="tablist" aria-orientation="vertical">
@@ -76,9 +70,14 @@
                             <span class="form-label small fw-bold d-block mb-1 mt-2">
                                 NERSC user name
                             </span>
-                            <span class="m-0">{{ user.compliance }}</span>
+                            <span class="m-0">{{ user.compliance["nersc_username"] }}</span>
                         {% else %}
-                            {% include "compliance_form.html" %}
+                            <button
+                                class="btn btn-outline-primary btn-sm mt-2 p-2"
+                                id="openComplianceModal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#provideComplianceInfo"
+                            >Open form to submit user name</button>
                         {% endif %}
                     </li>
                 </ul>
@@ -121,7 +120,24 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          {% include "compliance_form.html" %}
+            <p>
+                In order to upload products, please provide your NERSC user name.
+              </p>
+             <form method="post" action="/web/user/update" id="compliance-info">
+                <label class="form-label small fw-bold" style="width: 300px">
+                    NERSC user name
+                    <input
+                      class="form-control small"
+                      style="font-size: 1em;"
+                      type="text"
+                      name="nersc_user_name"
+                      placeholder="Enter user name"
+                    />
+                </label>
+             </form>
+        </div>
+        <div class="modal-footer justify-content-center">
+            <button form="compliance-info" type="submit" class="btn btn-outline-primary">Submit</button>
         </div>
       </div>
     </div>
