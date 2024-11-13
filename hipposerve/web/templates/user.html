@@ -1,8 +1,17 @@
 {% extends "core.html" %}
 {% block content %}
 <div class="container-fluid">
+    <!-- Hidden elements for logout, requesting new API key, and providing compliance info -->
     <form class="d-none" method="get" action="/web/logout" id="logout"></form>
     <form class="d-none" method="get" action="/web/user/apikey" id="newApiKey"></form>
+    <span id="compliance-check" class="d-none">{{ user.compliance }}</span>
+    <button
+        id="openComplianceModal"
+        class="d-none"
+        data-bs-toggle="modal"
+        data-bs-target="#provideComplianceInfo"
+    ></button>
+    <!-- End hidden elements -->
     <div class="d-flex align-items-start mt-4 h-100">
         <div class="nav flex-column nav-pills me-3 gap-2 pe-3 border-end border-light-subtle" id="v-pills-tab" role="tablist" aria-orientation="vertical">
           <button class="nav-link active" id="v-pills-profile-tab" data-bs-toggle="pill" data-bs-target="#v-pills-profile" type="button" role="tab" aria-controls="v-pills-profile" aria-selected="true">Account information</button>
@@ -60,11 +69,24 @@
             {% endif %}
           </div>
           <div class="tab-pane fade" id="v-pills-compliance" role="tabpanel" aria-labelledby="v-pills-compliance-tab" tabindex="0">
-            {{ user.compliance }}
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <h5>Compliance information</h5>
+                        {% if user.compliance is not none %}
+                            <span class="form-label small fw-bold d-block mb-1 mt-2">
+                                NERSC user name
+                            </span>
+                            <span class="m-0">{{ user.compliance }}</span>
+                        {% else %}
+                            {% include "compliance_form.html" %}
+                        {% endif %}
+                    </li>
+                </ul>
           </div>
         </div>
     </div>      
 </div>
+
 <!-- Confirm new API request Modal -->
 <div class="modal fade" id="confirmNewApiModal" tabindex="-1" aria-labelledby="confirmNewApiModalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -89,8 +111,34 @@
     </div>
   </div>
 </div>
+
+<!-- Provide compliance info -->
+<div class="modal fade" id="provideComplianceInfo" tabindex="-1" aria-labelledby="provideComplianceInfoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h1 class="modal-title fs-5" id="provideComplianceInfoLabel">Compliance Information Needed</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          {% include "compliance_form.html" %}
+        </div>
+      </div>
+    </div>
+</div>
 {% endblock %}
 
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const complianceCheck = document.getElementById('compliance-check');
+        if (complianceCheck.innerText === "None") {
+            const complianceModalBtn = document.getElementById('openComplianceModal');
+            complianceModalBtn.click();
+        }
+    })
+</script>
+{% endblock %}
 
   
   
