@@ -54,7 +54,6 @@ async def create(
         gh_profile_url=gh_profile_url,
         api_key=API_KEY(),
         privileges=privileges,
-        # TODO: Compliance
         compliance=None,
     )
 
@@ -86,6 +85,7 @@ async def update(
     hasher: PasswordHash,
     password: str | None,
     privileges: list[Privilege] | None,
+    compliance: str | None,
     refresh_key: bool = False,
 ) -> User:
     user = await read(name=name)
@@ -99,6 +99,9 @@ async def update(
     if password is not None:
         hashed_password = hasher.hash(password)
         await user.set({User.hashed_password: hashed_password})
+
+    if compliance is not None:
+        await user.set({User.compliance: {"nersc_username": compliance}})
 
     return user
 

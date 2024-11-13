@@ -25,7 +25,7 @@ async def create_user(
     name: str,
     request: CreateUserRequest,
     calling_user: UserDependency,
-    # TODO: Compliance
+    compliance: str | None,
 ) -> CreateUserResponse:
     """
     Create a new user.
@@ -48,6 +48,7 @@ async def create_user(
             gh_profile_url=None,
             privileges=request.privileges,
             hasher=SETTINGS.hasher,
+            compliance=compliance,
         )
 
     return CreateUserResponse(api_key=user.api_key)
@@ -67,6 +68,7 @@ async def read_user(name: str, calling_user: UserDependency) -> ReadUserResponse
     return ReadUserResponse(
         name=user.name,
         privileges=user.privileges,
+        compliance=user.compliance,
     )
 
 
@@ -86,9 +88,13 @@ async def update_user(
         refresh_key=request.refresh_key,
         password=request.password,
         hasher=SETTINGS.hasher,
+        compliance=request.compliance,
     )
 
-    return UpdateUserResponse(api_key=user.api_key if request.refresh_key else None)
+    return UpdateUserResponse(
+        api_key=user.api_key if request.refresh_key else None,
+        compliance=user.compliance,
+    )
 
 
 @users_router.delete("/{name}")

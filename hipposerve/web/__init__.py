@@ -331,14 +331,40 @@ async def read_apikey(request: Request, user: PotentialLoggedInUser):
             url=request.url.path.replace("/user/apikey", "/login"), status_code=302
         )
         return new_response
-    user = await user_service.update(
+    updated_user = await user_service.update(
         name=user.name,
         hasher=SETTINGS.hasher,
         password=None,
         privileges=user.privileges,
+        compliance=None,
         refresh_key=True,
     )
-    return templates.TemplateResponse("apikey.html", {"request": request, "user": user})
+    return templates.TemplateResponse(
+        "apikey.html", {"request": request, "user": updated_user}
+    )
+
+
+@web_router.post("/user/update")
+async def update_compliance(request: Request, user: PotentialLoggedInUser):
+    if user is None:
+        new_response = RedirectResponse(
+            url=request.url.path.replace("/user/update", "/login"), status_code=302
+        )
+        return new_response
+    form_data = await request.form()
+    compliance_info = form_data.get("nersc_user_name")
+    await user_service.update(
+        name=user.name,
+        hasher=SETTINGS.hasher,
+        password=None,
+        privileges=user.privileges,
+        compliance=compliance_info,
+        refresh_key=False,
+    )
+    new_response = RedirectResponse(
+        url=request.url.path.replace("/user/update", "/user"), status_code=302
+    )
+    return new_response
 
 
 @web_router.get("/user")
