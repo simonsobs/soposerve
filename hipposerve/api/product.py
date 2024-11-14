@@ -4,6 +4,7 @@ Routes for the product service.
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, Request, status
+from loguru import logger
 
 from hipposerve.api.auth import UserDependency, check_user_for_privilege
 from hipposerve.api.models.product import (
@@ -32,6 +33,8 @@ async def create_product(
     Create a new product, returning the pre-signed URLs for the sources.
     """
 
+    logger.info("Create product request: {} from {}", model.name, calling_user.name)
+
     await check_user_for_privilege(calling_user, Privilege.CREATE_PRODUCT)
 
     if await product.exists(name=model.name):
@@ -48,6 +51,14 @@ async def create_product(
         storage=request.app.storage,
     )
 
+    logger.info(
+        "Successfully created {} pre-signed URL(s) for product upload {} (id: {}) from {}",
+        len(presigned),
+        model.name,
+        item.id,
+        calling_user.name,
+    )
+
     return CreateProductResponse(id=item.id, upload_urls=presigned)
 
 
@@ -61,6 +72,8 @@ async def read_product(
     Read a single product's metadata.
     """
 
+    logger.info("Read product request for {} from {}", id, calling_user.name)
+
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
@@ -71,6 +84,13 @@ async def read_product(
             current=item.version if item.current else None,
             requested=item.version,
             versions={item.version: item},
+        )
+
+        logger.info(
+            "Successfully read product {} (id: {}) requested by {}",
+            item.name,
+            item.id,
+            calling_user.name,
         )
 
         return response
@@ -87,6 +107,8 @@ async def read_tree(
     """
     Read a single product's entire history.
     """
+
+    logger.info("Read product tree request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
@@ -108,6 +130,13 @@ async def read_tree(
             versions=history,
         )
 
+        logger.info(
+            "Successfully read product tree for {} (id: {}) requested by {}",
+            requested_item.name,
+            requested_item.id,
+            calling_user.name,
+        )
+
         return response
     except product.ProductNotFound:
         raise HTTPException(
@@ -119,6 +148,12 @@ async def read_tree(
 async def read_files(
     id: PydanticObjectId, request: Request, calling_user: UserDependency
 ) -> ReadFilesResponse:
+    """
+    Read a single product's including pre-signed URLs for downloads.
+    """
+
+    logger.info("Read files request for {} from {}", id, calling_user.name)
+
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
@@ -129,6 +164,14 @@ async def read_files(
         )
 
     files = await product.read_files(product=item, storage=request.app.storage)
+
+    logger.info(
+        "Read {} pre-signed URLs for product {} (id: {}) requested by {}",
+        len(files),
+        item.name,
+        item.id,
+        calling_user.name,
+    )
 
     return ReadFilesResponse(
         product=item.to_metadata(),
@@ -146,6 +189,8 @@ async def update_product(
     """
     Update a product's details.
     """
+
+    logger.info("Update product request for {} from {}", id, calling_user.name)
 
     # For now only privileged users can update products, and they can update everyone's.
     await check_user_for_privilege(calling_user, Privilege.UPDATE_PRODUCT)
@@ -180,6 +225,16 @@ async def update_product(
         level=model.level,
     )
 
+    logger.info(
+        "Successfully updated product {} (new id: {}; {}; old id: {}; {}) from {}",
+        new_product.name,
+        new_product.id,
+        new_product.version,
+        item.id,
+        item.version,
+        calling_user.name,
+    )
+
     return UpdateProductResponse(
         version=new_product.version,
         id=new_product.id,
@@ -194,6 +249,8 @@ async def confirm_product(
     """
     Confirm a product's sources.
     """
+
+    logger.info("Confirm product request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.CONFIRM_PRODUCT)
 
@@ -214,6 +271,8 @@ async def confirm_product(
             detail="Not all sources were present.",
         )
 
+    logger.info("Successfully confirmed product {} (id: {})", item.name, item.id)
+
 
 @product_router.delete("/{id}")
 async def delete_product(
@@ -225,6 +284,8 @@ async def delete_product(
     """
     Delete a product.
     """
+
+    logger.info("Delete (single) product request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
@@ -241,6 +302,14 @@ async def delete_product(
         data=data,
     )
 
+    logger.info(
+        "Successfully deleted product {} (id: {}) including data"
+        if data
+        else "Successfully deleted product {} (id: {}) excluding data",
+        item.name,
+        item.id,
+    )
+
 
 @product_router.delete("/{id}/tree")
 async def delete_tree(
@@ -252,6 +321,8 @@ async def delete_tree(
     """
     Delete a product.
     """
+
+    logger.info("Delete (tree) product request for {} from {}", id, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
@@ -268,6 +339,14 @@ async def delete_tree(
         data=data,
     )
 
+    logger.info(
+        "Successfully deleted product tree for {} (id: {}) including data"
+        if data
+        else "Successfully deleted product tree for {} (id: {}) excluding data",
+        item.name,
+        item.id,
+    )
+
 
 @product_router.get("/search/{text}")
 async def search(
@@ -279,8 +358,17 @@ async def search(
     Search for a product by name.
     """
 
+    logger.info("Search for product {} request from {}", text, calling_user.name)
+
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     items = await product.search_by_name(name=text)
+
+    logger.info(
+        "Successfully found {} product(s) matching {} requested by {}",
+        len(items),
+        text,
+        calling_user.name,
+    )
 
     return [item.to_metadata() for item in items]

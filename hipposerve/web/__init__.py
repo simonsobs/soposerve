@@ -244,7 +244,9 @@ async def login_with_github_for_access_token(
         )
 
     access_token = create_access_token(
-        user=user, expires_delta=SETTINGS.web_jwt_expires
+        user=user,
+        expires_delta=SETTINGS.web_jwt_expires,
+        origin=request.headers.get("Origin"),
     )
 
     new_response = RedirectResponse(
@@ -260,7 +262,7 @@ async def login_for_access_token(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> RedirectResponse:
-    if not SETTINGS.web_only_allow_github_login:
+    if SETTINGS.web_only_allow_github_login:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="GitHub login is the only login method enabled",
@@ -280,7 +282,9 @@ async def login_for_access_token(
         )
 
     access_token = create_access_token(
-        user=user, expires_delta=SETTINGS.web_jwt_expires
+        user=user,
+        expires_delta=SETTINGS.web_jwt_expires,
+        origin=request.headers.get("Origin"),
     )
 
     new_response = RedirectResponse(

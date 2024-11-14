@@ -29,6 +29,7 @@ dependencies = [
     "pyjwt",
     "pwdlib[argon2]",
     "python-multipart",
+    "loguru",
 ]
 
 [project.optional-dependencies]

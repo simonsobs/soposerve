@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     test_user_password: str = "TEST_PASSWORD"
     "Password for the test user."
     test_user_api_key: str = "TEST_API_KEY"
+    "API key for the test user."
 
     web: bool = False
     "Serve the web frontend."
@@ -39,6 +40,8 @@ class Settings(BaseSettings):
     "Algorithm for JWT"
     web_jwt_expires: timedelta = timedelta(hours=1)
     "Expiration time for JWT"
+    web_jwt_check_origin: bool = True
+    "Check the origin header against the HTTP request for cookie JWT tokens. Heps depend against CSRF attacks."
 
     web_allow_github_login: bool = False
     "Allow login with GitHub"
