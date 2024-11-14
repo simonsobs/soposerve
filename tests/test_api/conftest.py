@@ -41,11 +41,11 @@ def test_api_client(test_api_server):
 @pytest.fixture(scope="module")
 def test_api_user(test_api_client: TestClient):
     TEST_USER_NAME = "default_user"
-    TEST_USER_PRIVALEGES = [x.value for x in Privilege]
+    TEST_USER_PRIVILEGES = [x.value for x in Privilege]
 
     response = test_api_client.put(
         f"/users/{TEST_USER_NAME}",
-        json={"privileges": TEST_USER_PRIVALEGES, "password": "password"},
+        json={"privileges": TEST_USER_PRIVILEGES, "password": "password"},
     )
 
     assert response.status_code == 200
