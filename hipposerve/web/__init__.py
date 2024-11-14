@@ -6,10 +6,6 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
-import types
-from typing import Annotated, Literal, Union, get_args, get_origin
-
-import httpx
 from beanie import PydanticObjectId
 from fastapi import Request
 
