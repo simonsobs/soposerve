@@ -1,6 +1,9 @@
 {% extends "core.html" %}
 {% block content %}
 <div class="container-fluid">
+    {% if unauthorized_details %}
+        <p class="fs-6 text-danger mb-1">{{ unauthorized_details }}. Please log in.</p>
+    {% endif %}
     {% if not only_allow_github_login %}
         <form class="container mt-3" action="./token" method="post">
             <div class="mb-3">

@@ -87,10 +87,8 @@ class OAuth2PasswordBearerWithCookie(OAuth2):
         scheme, param = get_authorization_scheme_param(authorization)
         if not authorization or scheme.lower() != "bearer":
             if self.auto_error:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
+                raise UnauthorizedException(
                     detail="Not authenticated",
-                    headers={"WWW-Authenticate": "Bearer"},
                 )
             else:
                 return None
@@ -115,27 +113,31 @@ class WebTokenData(BaseModel):
         return cls(username=username, user_id=PydanticObjectId(user_id), origin=origin)
 
 
+class UnauthorizedException(HTTPException):
+    def __init__(self, detail: str | None = "Could not validate credentials"):
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=detail,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], request: Request
 ):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(
             token, SETTINGS.web_jwt_secret, algorithms=[SETTINGS.web_jwt_algorithm]
         )
         sub = payload.get("sub")
         if sub is None:
-            raise credentials_exception
+            raise UnauthorizedException()
         token_data = WebTokenData.decode(sub)
     except jwt.PyJWTError:
-        raise credentials_exception
+        raise UnauthorizedException()
     except ValueError:
         # Unable to split
-        raise credentials_exception
+        raise UnauthorizedException()
 
     if SETTINGS.web_jwt_check_origin:
         # Don't use the Origin header as it's often not set (e.g. it is never set
@@ -143,12 +145,12 @@ async def get_current_user(
         # Sec-Fetch-Site header instead.
         potential_origin = request.headers.get("Sec-Fetch-Site")
         if potential_origin == "cross-origin":
-            raise credentials_exception
+            raise UnauthorizedException()
 
     try:
         user = await users_service.read_by_id(id=token_data.user_id)
     except users_service.UserNotFound:
-        raise credentials_exception
+        raise UnauthorizedException()
 
     return user
 
@@ -329,12 +331,7 @@ async def logout(request: Request) -> RedirectResponse:
 
 
 @router.get("/user/apikey")
-async def read_apikey(request: Request, user: PotentialLoggedInUser):
-    if user is None:
-        new_response = RedirectResponse(
-            url=request.url.path.replace("/user/apikey", "/login"), status_code=302
-        )
-        return new_response
+async def read_apikey(request: Request, user: LoggedInUser):
     updated_user = await user_service.update(
         name=user.name,
         hasher=SETTINGS.hasher,
@@ -349,12 +346,7 @@ async def read_apikey(request: Request, user: PotentialLoggedInUser):
 
 
 @router.post("/user/update")
-async def update_compliance(request: Request, user: PotentialLoggedInUser):
-    if user is None:
-        new_response = RedirectResponse(
-            url=request.url.path.replace("/user/update", "/login"), status_code=302
-        )
-        return new_response
+async def update_compliance(request: Request, user: LoggedInUser):
     form_data = await request.form()
     compliance_info = form_data.get("nersc_user_name")
     await user_service.update(
@@ -372,17 +364,14 @@ async def update_compliance(request: Request, user: PotentialLoggedInUser):
 
 
 @router.get("/user")
-async def read_user(request: Request, user: PotentialLoggedInUser):
-    if user is None:
-        new_response = RedirectResponse(
-            url=request.url.path.replace("/user", "/login"), status_code=302
-        )
-        return new_response
+async def read_user(request: Request, user: LoggedInUser):
     return templates.TemplateResponse("user.html", {"request": request, "user": user})
 
 
-@router.get("/login")
+@router.get("/login", name="login")
 async def login(request: Request):
+    query_params = dict(request.query_params)
+    unauthorized_details = query_params.get("detail", None)
     return templates.TemplateResponse(
         "login.html",
         {
@@ -390,5 +379,6 @@ async def login(request: Request):
             "github_client_id": SETTINGS.web_github_client_id,
             "only_allow_github_login": SETTINGS.web_only_allow_github_login,
             "allow_github_login": SETTINGS.web_allow_github_login,
+            "unauthorized_details": unauthorized_details,
         },
     )
