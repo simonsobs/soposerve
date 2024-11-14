@@ -11,12 +11,12 @@
                 <label for="password" class="form-label">Password</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
-            <button type="submit" class="btn btn-primary"> Sign in</button>
+            <button type="submit" class="btn btn-primary"> Log in</button>
         </form>
     {% endif %}
     {% if allow_github_login %}
         <a class="mt-2 btn btn-primary" role="button" href="https://github.com/login/oauth/authorize?client_id={{ github_client_id }}">
-            Sign in with GitHub
+            Log in with GitHub
         </a>
     {% endif %}
 </div>
