@@ -150,7 +150,7 @@ async def get_potential_current_user(request: Request):
     try:
         token = await oauth2_scheme(request=request)
         if token:
-            return await get_current_user(token)
+            return await get_current_user(token, request)
     except HTTPException:
         return None
 
