@@ -87,10 +87,8 @@ class OAuth2PasswordBearerWithCookie(OAuth2):
         scheme, param = get_authorization_scheme_param(authorization)
         if not authorization or scheme.lower() != "bearer":
             if self.auto_error:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
+                raise UnauthorizedException(
                     detail="Not authenticated",
-                    headers={"WWW-Authenticate": "Bearer"},
                 )
             else:
                 return None
@@ -115,27 +113,31 @@ class WebTokenData(BaseModel):
         return cls(username=username, user_id=PydanticObjectId(user_id), origin=origin)
 
 
+class UnauthorizedException(HTTPException):
+    def __init__(self, detail: str | None = "Could not validate credentials"):
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=detail,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], request: Request
 ):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(
             token, SETTINGS.web_jwt_secret, algorithms=[SETTINGS.web_jwt_algorithm]
         )
         sub = payload.get("sub")
         if sub is None:
-            raise credentials_exception
+            raise UnauthorizedException()
         token_data = WebTokenData.decode(sub)
     except jwt.PyJWTError:
-        raise credentials_exception
+        raise UnauthorizedException()
     except ValueError:
         # Unable to split
-        raise credentials_exception
+        raise UnauthorizedException()
 
     if SETTINGS.web_jwt_check_origin:
         # Don't use the Origin header as it's often not set (e.g. it is never set
@@ -143,12 +145,12 @@ async def get_current_user(
         # Sec-Fetch-Site header instead.
         potential_origin = request.headers.get("Sec-Fetch-Site")
         if potential_origin == "cross-origin":
-            raise credentials_exception
+            raise UnauthorizedException()
 
     try:
         user = await users_service.read_by_id(id=token_data.user_id)
     except users_service.UserNotFound:
-        raise credentials_exception
+        raise UnauthorizedException()
 
     return user
 
@@ -157,7 +159,7 @@ async def get_potential_current_user(request: Request):
     try:
         token = await oauth2_scheme(request=request)
         if token:
-            return await get_current_user(token)
+            return await get_current_user(token, request)
     except HTTPException:
         return None
 
@@ -261,12 +263,18 @@ async def login_with_github_for_access_token(
             name=user_info["login"],
             # TODO: MAKE PASSWORDS OPTIONAL
             password="GitHub",
+            email=user_info["email"],
+            avatar_url=user_info["avatar_url"],
+            gh_profile_url=user_info["html_url"],
             privileges=list(user_service.Privilege),
             hasher=SETTINGS.hasher,
+            compliance=None,
         )
 
     access_token = create_access_token(
-        user=user, expires_delta=SETTINGS.web_jwt_expires
+        user=user,
+        expires_delta=SETTINGS.web_jwt_expires,
+        origin=request.headers.get("Origin"),
     )
 
     new_response = RedirectResponse(
@@ -282,7 +290,7 @@ async def login_for_access_token(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> RedirectResponse:
-    if not SETTINGS.web_only_allow_github_login:
+    if SETTINGS.web_only_allow_github_login:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="GitHub login is the only login method enabled",
@@ -302,7 +310,9 @@ async def login_for_access_token(
         )
 
     access_token = create_access_token(
-        user=user, expires_delta=SETTINGS.web_jwt_expires
+        user=user,
+        expires_delta=SETTINGS.web_jwt_expires,
+        origin=request.headers.get("Origin"),
     )
 
     new_response = RedirectResponse(
@@ -321,13 +331,48 @@ async def logout(request: Request) -> RedirectResponse:
     return new_response
 
 
+@router.get("/user/apikey")
+async def read_apikey(request: Request, user: LoggedInUser):
+    updated_user = await user_service.update(
+        name=user.name,
+        hasher=SETTINGS.hasher,
+        password=None,
+        privileges=user.privileges,
+        compliance=None,
+        refresh_key=True,
+    )
+    return templates.TemplateResponse(
+        "apikey.html", {"request": request, "user": updated_user}
+    )
+
+
+@router.post("/user/update")
+async def update_compliance(request: Request, user: LoggedInUser):
+    form_data = await request.form()
+    compliance_info = form_data.get("nersc_user_name")
+    await user_service.update(
+        name=user.name,
+        hasher=SETTINGS.hasher,
+        password=None,
+        privileges=user.privileges,
+        compliance={"nersc_username": compliance_info},
+        refresh_key=False,
+    )
+    new_response = RedirectResponse(
+        url=request.url.path.replace("/user/update", "/user"), status_code=302
+    )
+    return new_response
+
+
 @router.get("/user")
 async def read_user(request: Request, user: LoggedInUser):
     return templates.TemplateResponse("user.html", {"request": request, "user": user})
 
 
-@router.get("/login")
+@router.get("/login", name="login")
 async def login(request: Request):
+    query_params = dict(request.query_params)
+    unauthorized_details = query_params.get("detail", None)
     return templates.TemplateResponse(
         "login.html",
         {
@@ -335,5 +380,6 @@ async def login(request: Request):
             "github_client_id": SETTINGS.web_github_client_id,
             "only_allow_github_login": SETTINGS.web_only_allow_github_login,
             "allow_github_login": SETTINGS.web_allow_github_login,
+            "unauthorized_details": unauthorized_details,
         },
     )

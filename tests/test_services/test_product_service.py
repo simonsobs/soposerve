@@ -118,6 +118,10 @@ async def test_update_metadata(created_full_product, database, storage):
         privileges=[users.Privilege.LIST_PRODUCT],
         password="password",
         hasher=PasswordHash([Argon2Hasher()]),
+        email=None,
+        avatar_url=None,
+        gh_profile_url=None,
+        compliance=None,
     )
 
     existing_version = created_full_product.version

@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse
 from hippometa import ALL_METADATA
 from hipposerve.service import collection, product
 
+from .auth import PotentialLoggedInUser
 from .router import templates
 
 router = APIRouter()
@@ -16,7 +17,10 @@ router = APIRouter()
 # Query and render search results from the navigation bar's "search by name" option
 @router.get("/search/results", response_class=HTMLResponse)
 async def search_results_view(
-    request: Request, q: str = None, filter: str = "products"
+    request: Request,
+    user: PotentialLoggedInUser,
+    q: str = None,
+    filter: str = "products",
 ):
     if filter == "products":
         results = await product.search_by_name(q)
@@ -27,14 +31,23 @@ async def search_results_view(
 
     return templates.TemplateResponse(
         "search_results.html",
-        {"request": request, "query": q, "filter": filter, "results": results},
+        {
+            "request": request,
+            "query": q,
+            "filter": filter,
+            "results": results,
+            "user": user,
+        },
     )
 
 
 # Query and render search results for the more complex metadata request
 @router.get("/searchmetadata/results", response_class=HTMLResponse)
 async def searchmetadata_results_view(
-    request: Request, q: str = None, filter_on: str = "products"
+    request: Request,
+    user: PotentialLoggedInUser,
+    q: str = None,
+    filter_on: str = "products",
 ):
     query_params = dict(request.query_params)
 
@@ -101,12 +114,16 @@ async def searchmetadata_results_view(
             "results": results,
             "metadata_filters": metadata_filters,
             "metadata_type": query_params["metadata_type"],
+            "user": user,
         },
     )
 
 
 @router.get("/searchmetadata", response_class=HTMLResponse)
-async def search_metadata_view(request: Request):
+async def search_metadata_view(
+    request: Request,
+    user: PotentialLoggedInUser,
+):
     metadata_info = {}
 
     for metadata_class in ALL_METADATA.values():
@@ -165,5 +182,5 @@ async def search_metadata_view(request: Request):
 
     return templates.TemplateResponse(
         "search_metadata.html",
-        {"request": request, "metadata": metadata_info},
+        {"request": request, "metadata": metadata_info, "user": user},
     )

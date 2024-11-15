@@ -7,7 +7,7 @@ import secrets
 from beanie import PydanticObjectId
 from pwdlib import PasswordHash
 
-from hipposerve.database import Privilege, User
+from hipposerve.database import ComplianceInformation, Privilege, User
 
 # TODO: Settings
 API_KEY_BYTES = 128
@@ -32,7 +32,14 @@ class AuthenticationError(Exception):
 
 
 async def create(
-    name: str, password: str | None, privileges: list[Privilege], hasher: PasswordHash
+    name: str,
+    password: str | None,
+    email: str | None,
+    avatar_url: str | None,
+    gh_profile_url: str | None,
+    privileges: list[Privilege],
+    hasher: PasswordHash,
+    compliance: ComplianceInformation | None,
 ) -> User:
     if password is None:
         # When using GitHub auth we don't have a password.
@@ -43,10 +50,12 @@ async def create(
     user = User(
         name=name,
         hashed_password=hashed_password,
+        email=email,
+        avatar_url=avatar_url,
+        gh_profile_url=gh_profile_url,
         api_key=API_KEY(),
         privileges=privileges,
-        # TODO: Compliance
-        compliance=None,
+        compliance=compliance,
     )
 
     await user.create()
@@ -77,6 +86,7 @@ async def update(
     hasher: PasswordHash,
     password: str | None,
     privileges: list[Privilege] | None,
+    compliance: ComplianceInformation | None,
     refresh_key: bool = False,
 ) -> User:
     user = await read(name=name)
@@ -90,6 +100,9 @@ async def update(
     if password is not None:
         hashed_password = hasher.hash(password)
         await user.set({User.hashed_password: hashed_password})
+
+    if compliance is not None:
+        await user.set({User.compliance: compliance})
 
     return user
 
