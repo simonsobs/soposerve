@@ -26,6 +26,7 @@ async def test_update_user(created_user):
         password=None,
         hasher=PasswordHash([Argon2Hasher()]),
         refresh_key=True,
+        compliance=None,
     )
 
     assert this_user.name == created_user.name
@@ -37,6 +38,7 @@ async def test_update_user(created_user):
         password=None,
         hasher=PasswordHash([Argon2Hasher()]),
         refresh_key=False,
+        compliance=None,
     )
 
     assert this_user.name == created_user.name
@@ -62,6 +64,10 @@ async def test_update_password():
         privileges=[users.Privilege.CREATE_PRODUCT],
         password="password",
         hasher=PasswordHash([Argon2Hasher()]),
+        email=None,
+        avatar_url=None,
+        gh_profile_url=None,
+        compliance=None,
     )
 
     user = await users.update(
@@ -70,6 +76,7 @@ async def test_update_password():
         password="new_password",
         hasher=PasswordHash([Argon2Hasher()]),
         refresh_key=False,
+        compliance=None,
     )
 
     # Check we can validate

@@ -45,7 +45,14 @@ def test_api_user(test_api_client: TestClient):
 
     response = test_api_client.put(
         f"/users/{TEST_USER_NAME}",
-        json={"privileges": TEST_USER_PRIVILEGES, "password": "password"},
+        json={
+            "privileges": TEST_USER_PRIVILEGES,
+            "password": "password",
+            "compliance": None,
+            "email": None,
+            "avatar_url": None,
+            "gh_profile_url": None,
+        },
     )
 
     assert response.status_code == 200

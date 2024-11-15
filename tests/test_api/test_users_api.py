@@ -21,6 +21,10 @@ def test_create_user_that_exists(test_api_client: TestClient, test_api_user: str
                 Privilege.LIST_PRODUCT.value,
             ],
             "password": "password",
+            "compliance": None,
+            "email": None,
+            "avatar_url": None,
+            "gh_profile_url": None,
         },
     )
 
