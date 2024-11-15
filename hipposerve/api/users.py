@@ -26,7 +26,6 @@ async def create_user(
     name: str,
     request: CreateUserRequest,
     calling_user: UserDependency,
-    compliance: str | None,
 ) -> CreateUserResponse:
     """
     Create a new user.
@@ -46,12 +45,12 @@ async def create_user(
         user = await users.create(
             name=name,
             password=request.password,
-            email=None,
-            avatar_url=None,
-            gh_profile_url=None,
+            email=request.email,
+            avatar_url=request.avatar_url,
+            gh_profile_url=request.gh_profile_url,
             privileges=request.privileges,
             hasher=SETTINGS.hasher,
-            compliance=compliance,
+            compliance=request.compliance,
         )
 
     logger.info("User {} created for {}", user.name, calling_user.name)

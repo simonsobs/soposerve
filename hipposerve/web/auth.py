@@ -268,6 +268,7 @@ async def login_with_github_for_access_token(
             gh_profile_url=user_info["html_url"],
             privileges=list(user_service.Privilege),
             hasher=SETTINGS.hasher,
+            compliance=None,
         )
 
     access_token = create_access_token(
@@ -354,7 +355,7 @@ async def update_compliance(request: Request, user: LoggedInUser):
         hasher=SETTINGS.hasher,
         password=None,
         privileges=user.privileges,
-        compliance=compliance_info,
+        compliance={"nersc_username": compliance_info},
         refresh_key=False,
     )
     new_response = RedirectResponse(
