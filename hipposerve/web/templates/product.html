@@ -2,6 +2,7 @@
 {% block content %}
 <div class="container-fluid">
     <h1>{{ product.name }}</h1>
+    <span class="badge text-bg-success p-2">Version: {{ product.version }}</span>
     <span class="badge text-bg-secondary p-2">ID: {{ product.id }}</span>
     <span class="badge text-bg-secondary p-2">Uploaded: {{ product.uploaded.strftime('%Y-%m-%d %H:%M:%S') }}</span>
     <span class="badge text-bg-secondary p-2">Modified: {{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</span>
@@ -124,7 +125,14 @@
                         </tr>
                         {% for version, metadata in versions.items() %}
                         <tr>
-                            <td><a href='{{ metadata.id | e }}'>{{ version }}</a></td>
+                            <td class="d-flex align-items-center gap-2" title='{{ "You are currently viewing this product version" if version == product.version else "" }}'>
+                                <div class='{{ "rounded-circle bg-success" if version == product.version else "" }}' style="width: 0.75em; height: 0.75em;"></div>
+                                {% if version != product.version %}
+                                    <a href='{{ metadata.id | e }}'>{{ version }}</a>
+                                {% else %}
+                                    <span>{{ version }}</span>
+                                {% endif %}
+                            </td>
                             <td>{{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                         </tr>
                         {% endfor %}
