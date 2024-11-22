@@ -2,27 +2,35 @@
 {% block content %}
 <div class="container-fluid fs-base">
     <h2>
-        Showing {{ results | length }} results for 
-        {% if metadata_type %}
-            the metadata search
-            <pre style="font-size: 12px;" class="ms-4 mt-1">{{ metadata_filters | tojson(indent=2) }}</pre>
-        {% else %}
-            <span class="fw-bolder fst-italic">{{ filter }}</span> and <span class="fw-bolder fst-italic">{{ "' '" if query is none or query == '' else query }}</span>
+        Showing {{ results | length }} {{ "result" if results | length == 1 else "results" }}
+        {% if metadata_type is not defined %}
+            for <span class="fw-bolder fst-italic">{{ filter }}</span> and <span class="fw-bolder fst-italic">{{ "' '" if query is none or query == '' else query }}</span>
+
         {% endif %}
     </h2>
     {% if results | length > 0 %}
-        <table class="table small">
-            <tr>
-                <th>Name</th>
-                <th>Description</th>
-            </tr>
-        {% for result in results %}
-            <tr>
-                <td><a href='./{{ filter }}/{{ result.id | e}}'>{{ result.name }}</td>
-                <td>{{ result.description | truncate }}</td>
-            </tr>
-        {% endfor %}
+        <table class="table small border border-secondary-subtle shadow-sm">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                    <tr>
+                        <td><a href='./{{ filter }}/{{ result.id | e}}'>{{ result.name }}</td>
+                        <td>{{ result.description | truncate }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
         </table>
+    {% endif %}
+    {% if metadata_filters %}
+        <details class="fs-6">
+            <summary>View metadata search details</summary>
+            <pre style="font-size: 12px;" class="ms-4 mt-1">{{ metadata_filters | tojson(indent=2) }}</pre>
+        </details>
     {% endif %}
 </div>
 {% endblock %}

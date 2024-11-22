@@ -14,30 +14,34 @@
     {% endmarkdown %}
 
     <h3>Sources</h3>
-    <table class="table small">
-        <tr>
-            <th>Link</th>
-            <th>Size</th>
-        </tr>
-        {% for source in sources %}
-        <tr>
-            <td><a href='{{ source.url }}'>{{ source.name }}</a></td>
-            <td class="text-nowrap">{{ source.size }} B</td>
-        </tr>
-        {% endfor %}
+    <table class="table table-sm small border border-secondary-subtle shadow-sm" style="max-width: 600px;">
+        <thead>
+            <tr class="table-secondary">
+                <th>Link</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for source in sources %}
+            <tr>
+                <td><a href='{{ source.url }}'>{{ source.name }}</a></td>
+                <td class="text-nowrap">{{ source.size }} B</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 
     <div class="row">
         <div class="col">
             {% if product.metadata %}
-                <h3 class="mt-2">Metadata</h3>
+                <h3 class="mt-2 mb-0">Metadata</h3>
                 {% for key, value in product.metadata.model_dump().items() %}
                     {% if key != 'metadata_type' %}
                         <ul class="list-group d-inline-flex p-2 font-monospace small ps-0">
                             <li class="list-group-item list-group-item-primary">{{ key }}</li>
                             {% if value is mapping %}
                                 <li class="list-group-item">
-                                    <table class="table small">
+                                    <table class="table table-sm small">
                                         {% for keysub1, valuesub1 in value.items() %}
                                             {# Two possible cases: valuesub1 can be iterable OR it can just be a value #}
                                             {% if valuesub1 is iterable and valuesub1 is not string %}
@@ -101,7 +105,7 @@
             {% if product.collections %}
             <div class="row">
                 <div class="container">
-                    <h3 class="mt-2">Collections</h3>
+                    <h3 class="mt-2 mb-0">Collections</h3>
                     <ul class="list-group d-inline-flex p-2 small ps-0">
                         {% for collection in product.collections %}
                         <li class="list-group-item">
@@ -118,24 +122,30 @@
             <div class="row">
                 <div class="container">
                     <h3 class="mt-2">Version History</h3>
-                    <table class="table small">
-                        <tr>
-                            <th>Version</th>
-                            <th>Updated</th>
-                        </tr>
-                        {% for version, metadata in versions.items() %}
-                        <tr>
-                            <td class="d-flex align-items-center gap-2" title='{{ "You are currently viewing this product version" if version == product.version else "" }}'>
-                                <div class='{{ "rounded-circle bg-success" if version == product.version else "" }}' style="width: 0.75em; height: 0.75em;"></div>
-                                {% if version != product.version %}
-                                    <a href='{{ metadata.id | e }}'>{{ version }}</a>
-                                {% else %}
-                                    <span>{{ version }}</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                        </tr>
-                        {% endfor %}
+                    <table class="table table-sm small border border-secondary-subtle" style="max-width: 250px;">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Version</th>
+                                <th>Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for version, metadata in versions.items() %}
+                            <tr>
+                                <td title='{{ "You are currently viewing this product version" if version == product.version else "" }}'>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class='{{ "rounded-circle bg-success" if version == product.version else "" }}' style="width: 0.75em; height: 0.75em;"></div>
+                                        {% if version != product.version %}
+                                            <a href='{{ metadata.id | e }}'>{{ version }}</a>
+                                        {% else %}
+                                            <span>{{ version }}</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ product.updated.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
                     </table>
                 </div>
             </div>

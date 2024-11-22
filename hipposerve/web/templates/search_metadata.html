@@ -28,7 +28,7 @@
         {% for class_name, fields in metadata.items() %}
             <div
                 id="{{ class_name }}-fields"
-                class="container flex-column align-items-center gap-3 metadata-fields input-group input-group-sm mt-3 p-3 border border-light"
+                class="container flex-column align-items-center gap-3 metadata-fields input-group input-group-sm mt-3 p-3 border border rounded shadow-sm"
                 style="display: none;"
             >
                 {% if fields.items()|length >= 1 %}
@@ -118,7 +118,7 @@
                         </div>
                     </fieldset>
                     <div>
-                        <button class="btn btn-dark btn-sm rounded-1" type="submit">Search {{ class_name }}</button>
+                        <button class="btn btn-dark btn-sm rounded-1 shadow-sm" type="submit">Search {{ class_name }}</button>
                     </div>
                 {% else %}
                     <span class="fs-6">No metadata fields</span>

@@ -1,26 +1,28 @@
 {% extends "core.html" %}
 {% block content %}
 <div class="container-fluid">
-    {% if unauthorized_details %}
-        <p class="fs-6 text-danger mb-1">{{ unauthorized_details }}. Please log in.</p>
-    {% endif %}
-    {% if not only_allow_github_login %}
-        <form class="container mt-3" action="./token" method="post">
-            <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" name="username" required>
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" name="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary"> Log in</button>
-        </form>
-    {% endif %}
-    {% if allow_github_login %}
-        <a class="mt-2 btn btn-primary" role="button" href="https://github.com/login/oauth/authorize?client_id={{ github_client_id }}">
-            Log in with GitHub
-        </a>
-    {% endif %}
+    <div class="container border rounded p-4 shadow-sm mt-4">
+        {% if unauthorized_details %}
+            <p class="fs-6 text-danger mb-1">{{ unauthorized_details }}. Please log in.</p>
+        {% endif %}
+        {% if not only_allow_github_login %}
+            <form action="./token" method="post">
+                <div class="mb-3">
+                    <label for="username" class="form-label">User name</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary"> Log in</button>
+            </form>
+        {% endif %}
+        {% if allow_github_login %}
+            <a class="mt-2 btn btn-primary" role="button" href="https://github.com/login/oauth/authorize?client_id={{ github_client_id }}">
+                Log in with GitHub
+            </a>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
