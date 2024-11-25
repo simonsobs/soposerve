@@ -59,9 +59,9 @@
         </div>
       </form>
     </div>
-    <ul class="nav gap-4 align-items-center full-menu">
+    <ul class="nav gap-4 align-items-center full-menu flex-nowrap">
       <li class="nav-item">
-        <a class="btn btn-outline-dark btn-sm d-flex align-items-center shadow-sm" style="height: 40px;" href="/web/searchmetadata">Search by metadata</a>
+        <a class="btn btn-outline-dark btn-sm d-flex align-items-center shadow-sm text-nowrap" style="height: 40px;" href="/web/searchmetadata">Search by metadata</a>
       </li>
       <li class="nav-item">
         {% if user %}
@@ -75,7 +75,7 @@
             </a>
           {% endif %}
         {% else %}
-          <a class="btn btn-primary btn-sm d-flex align-items-center shadow-sm" style="height: 40px;" href="/web/login">
+          <a class="btn btn-primary btn-sm d-flex align-items-center shadow-sm text-nowrap" style="height: 40px;" href="/web/login">
             Log in
           </a>
         {% endif %}
