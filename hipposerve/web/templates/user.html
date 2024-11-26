@@ -7,7 +7,7 @@
     <span id="compliance-check" class="d-none">{{ user.compliance }}</span>
     <!-- End hidden elements -->
     <div class="d-flex align-items-start mt-4 h-100">
-        <div class="nav flex-column nav-pills me-3 gap-2 pe-3 border-end border-light-subtle" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+        <div class="nav flex-column nav-pills me-3 gap-2 pe-3 border-end border-secondary-subtle" id="v-pills-tab" role="tablist" aria-orientation="vertical">
           <button class="nav-link active" id="v-pills-profile-tab" data-bs-toggle="pill" data-bs-target="#v-pills-profile" type="button" role="tab" aria-controls="v-pills-profile" aria-selected="true">Account information</button>
           <button class="nav-link" id="v-pills-products-tab" data-bs-toggle="pill" data-bs-target="#v-pills-products" type="button" role="tab" aria-controls="v-pills-products" aria-selected="false">Products</button>
           <button class="nav-link" id="v-pills-privileges-tab" data-bs-toggle="pill" data-bs-target="#v-pills-privileges" type="button" role="tab" aria-controls="v-pills-privileges" aria-selected="false">Privileges</button>
@@ -16,7 +16,7 @@
         </div>
         <div class="tab-content" id="v-pills-tabContent">
           <div class="tab-pane fade show active" id="v-pills-profile" role="tabpanel" aria-labelledby="v-pills-profile-tab" tabindex="0">
-            <ul class="list-group">
+            <ul class="list-group shadow-sm" style="min-width: 300px;">
                 <li class="list-group-item">
                     <h5>User name</h5>
                     <p class="m-0">{{ user.name }}</p>
@@ -24,18 +24,32 @@
                 <li class="list-group-item">
                     <h5>GitHub profile</h5>
                     <p class="m-0">
-                        <a href="{{ user.gh_profile_url }}">{{ user.gh_profile_url }}</a>
+                        {% if user.gh_profile_url %}
+                            <a href="{{ user.gh_profile_url }}">{{ user.gh_profile_url }}</a>
+                        {% else %}
+                            <span class="fst-italic">None</span>
+                        {% endif %}
                     </p>
                 </li>
                 <li class="list-group-item">
                     <h5>Avatar URL</h5>
                     <p class="m-0">
-                        <a href="{{ user.avatar_url }}">{{ user.avatar_url }}</a>
+                        {% if user.avatar_url %}
+                            <a href="{{ user.avatar_url }}">{{ user.avatar_url }}</a>
+                        {% else %}
+                            <span class="fst-italic">None</span>
+                        {% endif %}
                     </p>
                 </li>
                 <li class="list-group-item">
                     <h5>Email</h5>
-                    <p class="m-0">{{ user.email }}</p>
+                    <p class="m-0">
+                    {% if user.email %}
+                        <a href="mailto:{{user.email}}">{{user.email}}</a>
+                    {% else %}
+                        <span class="fst-italic">None</span>
+                    {% endif %}
+                    </p>
                 </li>
                 <li class="list-group-item">
                     <h5>API key</h5>
@@ -53,9 +67,9 @@
           <div class="tab-pane fade" id="v-pills-products" role="tabpanel" aria-labelledby="v-pills-products-tab" tabindex="0">TODO: fetch user's products</div>
           <div class="tab-pane fade" id="v-pills-privileges" role="tabpanel" aria-labelledby="v-pills-privileges-tab" tabindex="0">
             {% if user.privileges | length > 0 %}
-                <ul class="list-group list-group-flush">
+                <ul class="list-group shadow-sm">
                     {% for priv in user.privileges %}
-                    <li class="list-group-item small p-1">{{ priv }}</li>
+                    <li class="list-group-item small py-1">{{ priv }}</li>
                     {% endfor %}
                 </ul>
             {% else %}
@@ -63,7 +77,7 @@
             {% endif %}
           </div>
           <div class="tab-pane fade" id="v-pills-compliance" role="tabpanel" aria-labelledby="v-pills-compliance-tab" tabindex="0">
-                <ul class="list-group">
+                <ul class="list-group shadow-sm">
                     <li class="list-group-item">
                         <h5>Compliance information</h5>
                         {% if user.compliance is not none %}
@@ -73,7 +87,7 @@
                             <span class="m-0">{{ user.compliance["nersc_username"] }}</span>
                         {% else %}
                             <button
-                                class="btn btn-outline-primary btn-sm mt-2 p-2"
+                                class="btn btn-link btn-sm mt-2 p-0"
                                 id="openComplianceModal"
                                 data-bs-toggle="modal"
                                 data-bs-target="#provideComplianceInfo"
