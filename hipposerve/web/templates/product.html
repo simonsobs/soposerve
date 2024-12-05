@@ -21,6 +21,7 @@
             <thead>
                 <tr class="table-secondary">
                     <th>Link</th>
+                    <th>Description</th>
                     <th>Size</th>
                 </tr>
             </thead>
@@ -28,6 +29,7 @@
                 {% for source in sources %}
                 <tr>
                     <td><a href='{{ source.url }}'>{{ source.name }}</a></td>
+                    <td>{{ source.description }}</td>
                     <td class="text-nowrap">{{ source.size }} B</td>
                 </tr>
                 {% endfor %}
