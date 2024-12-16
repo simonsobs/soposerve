@@ -10,7 +10,7 @@ from hippometa import ALL_METADATA_TYPE
 from hippometa.simple import SimpleMetadata
 from hipposerve.api.models.product import ReadProductResponse
 from hipposerve.database import ProductMetadata
-from hipposerve.service.product import PostUploadFile
+from hipposerve.service.product import PostUploadFile, PreUploadFile
 
 from .core import Client, MultiCache, console
 
@@ -196,7 +196,15 @@ def read(client: Client, id: str) -> ProductMetadata:
 
 
 def update(
-    client: Client, id: str, name: str | None, description: str | None, level: int
+    client: Client,
+    id: str,
+    name: str | None,
+    description: str | None,
+    level: int,
+    metadata: ALL_METADATA_TYPE | None,
+    new_sources: list[PreUploadFile] = [],
+    replace_sources: list[PreUploadFile] = [],
+    drop_sources: list[str] = [],
 ) -> bool:
     """
     Update a product in hippo.
@@ -219,6 +227,10 @@ def update(
             "name": name,
             "description": description,
             "level": level,
+            "metadata": metadata,
+            "new_sources": new_sources,
+            "replace_sources": replace_sources,
+            "drop_sources": drop_sources,
         },
     )
 
