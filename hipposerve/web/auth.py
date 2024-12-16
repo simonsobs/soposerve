@@ -8,16 +8,23 @@ Authentication layer for the Web UI. Provides two core dependencies:
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
+import httpx
 import jwt
 from beanie import PydanticObjectId
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.openapi.models import OAuthFlows
-from fastapi.security import OAuth2
+from fastapi.responses import RedirectResponse
+from fastapi.security import OAuth2, OAuth2PasswordRequestForm
 from fastapi.security.utils import get_authorization_scheme_param
 from pydantic import BaseModel
 
+from hipposerve.service import users as user_service
 from hipposerve.service import users as users_service
 from hipposerve.settings import SETTINGS
+
+from .router import templates
+
+router = APIRouter()
 
 
 class OAuth2PasswordBearerWithCookie(OAuth2):
@@ -80,10 +87,8 @@ class OAuth2PasswordBearerWithCookie(OAuth2):
         scheme, param = get_authorization_scheme_param(authorization)
         if not authorization or scheme.lower() != "bearer":
             if self.auto_error:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
+                raise UnauthorizedException(
                     detail="Not authenticated",
-                    headers={"WWW-Authenticate": "Bearer"},
                 )
             else:
                 return None
@@ -108,27 +113,31 @@ class WebTokenData(BaseModel):
         return cls(username=username, user_id=PydanticObjectId(user_id), origin=origin)
 
 
+class UnauthorizedException(HTTPException):
+    def __init__(self, detail: str | None = "Could not validate credentials"):
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=detail,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], request: Request
 ):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(
             token, SETTINGS.web_jwt_secret, algorithms=[SETTINGS.web_jwt_algorithm]
         )
         sub = payload.get("sub")
         if sub is None:
-            raise credentials_exception
+            raise UnauthorizedException()
         token_data = WebTokenData.decode(sub)
     except jwt.PyJWTError:
-        raise credentials_exception
+        raise UnauthorizedException()
     except ValueError:
         # Unable to split
-        raise credentials_exception
+        raise UnauthorizedException()
 
     if SETTINGS.web_jwt_check_origin:
         # Don't use the Origin header as it's often not set (e.g. it is never set
@@ -136,12 +145,20 @@ async def get_current_user(
         # Sec-Fetch-Site header instead.
         potential_origin = request.headers.get("Sec-Fetch-Site")
         if potential_origin == "cross-origin":
-            raise credentials_exception
+            raise UnauthorizedException()
+
+    if SETTINGS.web_jwt_check_origin:
+        # Don't use the Origin header as it's often not set (e.g. it is never set
+        # on GET requests as the browser already checked that). Let's just use the
+        # Sec-Fetch-Site header instead.
+        potential_origin = request.headers.get("Sec-Fetch-Site")
+        if potential_origin == "cross-origin":
+            raise UnauthorizedException()
 
     try:
         user = await users_service.read_by_id(id=token_data.user_id)
     except users_service.UserNotFound:
-        raise credentials_exception
+        raise UnauthorizedException()
 
     return user
 
@@ -150,7 +167,7 @@ async def get_potential_current_user(request: Request):
     try:
         token = await oauth2_scheme(request=request)
         if token:
-            return await get_current_user(token)
+            return await get_current_user(token, request)
     except HTTPException:
         return None
 
@@ -176,3 +193,201 @@ LoggedInUser = Annotated[users_service.User, Depends(get_current_user)]
 PotentialLoggedInUser = Annotated[
     users_service.User | None, Depends(get_potential_current_user)
 ]
+
+
+@router.get("/github")
+async def login_with_github_for_access_token(
+    request: Request,
+    code: str,
+) -> RedirectResponse:
+    if not SETTINGS.web_allow_github_login:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="GitHub login is not enabled.",
+        )
+
+    # See if we can exchange the code for a token.
+
+    unauthorized = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not authenticate with GitHub.",
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://github.com/login/oauth/access_token",
+            data={
+                "client_id": SETTINGS.web_github_client_id,
+                "client_secret": SETTINGS.web_github_client_secret,
+                "code": code,
+            },
+            headers={"Accept": "application/json"},
+        )
+
+    if response.status_code != 200:
+        raise unauthorized
+
+    access_token = response.json().get("access_token")
+
+    if access_token is None:
+        raise unauthorized
+
+    async with httpx.AsyncClient() as client:
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/json",
+        }
+        response = await client.get("https://api.github.com/user", headers=headers)
+
+        if response.status_code != 200:
+            raise unauthorized
+
+        user_info = response.json()
+
+        if SETTINGS.web_github_required_organisation_membership is not None:
+            response = await client.get(user_info["organizations_url"], headers=headers)
+
+            if response.status_code != 200:
+                raise unauthorized
+
+            orgs = response.json()
+
+            if not any(
+                org["login"] == SETTINGS.web_github_required_organisation_membership
+                for org in orgs
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You are not a member of the required organisation.",
+                )
+
+    # At this point we are authenticated and have the user information.
+    # Try to match this against a user in the database.
+    try:
+        user = await user_service.read(name=user_info["login"])
+    except user_service.UserNotFound:
+        # Need to create one!
+        user = await user_service.create(
+            name=user_info["login"],
+            # TODO: MAKE PASSWORDS OPTIONAL
+            password="GitHub",
+            email=user_info["email"],
+            avatar_url=user_info["avatar_url"],
+            gh_profile_url=user_info["html_url"],
+            privileges=list(user_service.Privilege),
+            hasher=SETTINGS.hasher,
+            compliance=None,
+        )
+
+    access_token = create_access_token(
+        user=user,
+        expires_delta=SETTINGS.web_jwt_expires,
+        origin=request.headers.get("Origin"),
+    )
+
+    new_response = RedirectResponse(
+        url=request.url.path.replace("/github", "/user"), status_code=302
+    )
+
+    new_response.set_cookie(key="access_token", value=access_token, httponly=True)
+    return new_response
+
+
+@router.post("/token")
+async def login_for_access_token(
+    request: Request,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+) -> RedirectResponse:
+    if SETTINGS.web_only_allow_github_login:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="GitHub login is the only login method enabled",
+        )
+
+    try:
+        user = await user_service.read_with_password_verification(
+            name=form_data.username,
+            password=form_data.password,
+            hasher=SETTINGS.hasher,
+        )
+    except user_service.UserNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = create_access_token(
+        user=user,
+        expires_delta=SETTINGS.web_jwt_expires,
+        origin=request.headers.get("Origin"),
+    )
+
+    new_response = RedirectResponse(
+        url=request.url.path.replace("/token", "/user"), status_code=302
+    )
+    new_response.set_cookie(key="access_token", value=access_token, httponly=True)
+    return new_response
+
+
+@router.get("/logout")
+async def logout(request: Request) -> RedirectResponse:
+    new_response = RedirectResponse(
+        url=request.url.path.replace("/logout", ""), status_code=302
+    )
+    new_response.delete_cookie(key="access_token")
+    return new_response
+
+
+@router.get("/user/apikey")
+async def read_apikey(request: Request, user: LoggedInUser):
+    updated_user = await user_service.update(
+        name=user.name,
+        hasher=SETTINGS.hasher,
+        password=None,
+        privileges=user.privileges,
+        compliance=None,
+        refresh_key=True,
+    )
+    return templates.TemplateResponse(
+        "apikey.html", {"request": request, "user": updated_user}
+    )
+
+
+@router.post("/user/update")
+async def update_compliance(request: Request, user: LoggedInUser):
+    form_data = await request.form()
+    compliance_info = form_data.get("nersc_user_name")
+    await user_service.update(
+        name=user.name,
+        hasher=SETTINGS.hasher,
+        password=None,
+        privileges=user.privileges,
+        compliance={"nersc_username": compliance_info},
+        refresh_key=False,
+    )
+    new_response = RedirectResponse(
+        url=request.url.path.replace("/user/update", "/user"), status_code=302
+    )
+    return new_response
+
+
+@router.get("/user")
+async def read_user(request: Request, user: LoggedInUser):
+    return templates.TemplateResponse("user.html", {"request": request, "user": user})
+
+
+@router.get("/login", name="login")
+async def login(request: Request):
+    query_params = dict(request.query_params)
+    unauthorized_details = query_params.get("detail", None)
+    return templates.TemplateResponse(
+        "login.html",
+        {
+            "request": request,
+            "github_client_id": SETTINGS.web_github_client_id,
+            "only_allow_github_login": SETTINGS.web_only_allow_github_login,
+            "allow_github_login": SETTINGS.web_allow_github_login,
+            "unauthorized_details": unauthorized_details,
+        },
+    )

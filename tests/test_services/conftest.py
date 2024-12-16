@@ -41,6 +41,10 @@ async def created_user(database):
         privileges=list(users.Privilege),
         password="password",
         hasher=PasswordHash([Argon2Hasher()]),
+        email=None,
+        avatar_url=None,
+        gh_profile_url=None,
+        compliance=None,
     )
 
     yield user

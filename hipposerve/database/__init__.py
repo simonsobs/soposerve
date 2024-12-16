@@ -62,6 +62,9 @@ class ComplianceInformation(BaseModel):
 class User(Document):
     name: Indexed(str, unique=True)
     hashed_password: str
+    email: str | None
+    avatar_url: str | None
+    gh_profile_url: str | None
     api_key: str
     privileges: list[Privilege]
 
