@@ -12,6 +12,12 @@ from pydantic import BaseModel, Field
 from hippometa import ALL_METADATA_TYPE
 
 
+class Visibility(Enum):
+    PUBLIC = "public"  # Accessible to everyone
+    COLLABORATION = "collaboration"  # Accessible to logged-in users
+    PRIVATE = "private"  # Accessible only to the owner and admin
+
+
 class Privilege(Enum):
     # Product management. Note that _for now_ users can update any other
     # user's products.
@@ -129,6 +135,8 @@ class ProductMetadata(BaseModel):
 
     collections: list[PydanticObjectId]
 
+    visibility: Visibility = Visibility.COLLABORATION
+
 
 class Product(Document, ProductMetadata):
     name: Indexed(str, pymongo.TEXT)
@@ -162,6 +170,7 @@ class Product(Document, ProductMetadata):
             child_of=[x.id for x in self.child_of],
             parent_of=[x.id for x in self.parent_of],
             collections=[x.id for x in self.collections],
+            visibility=self.visibility,
         )
 
 

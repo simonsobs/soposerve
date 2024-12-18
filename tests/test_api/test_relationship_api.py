@@ -31,6 +31,7 @@ def test_api_products_for_use(test_api_client: TestClient, test_api_user: str):
                 "description": "test_description",
                 "metadata": {"metadata_type": "simple"},
                 "sources": [],
+                "visibility": "collaboration",
             },
         )
         assert response.status_code == 200

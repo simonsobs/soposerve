@@ -58,6 +58,20 @@ def product_read(id: str):
         CONSOLE.print("Parents: " + ", ".join(product_extracted_version.child_of))
 
 
+@product_app.command("set-visibility")
+def product_set_visibility(id: str, visibility: str):
+    """
+    Set the visibility level of a product.
+
+    Example:
+    $ hippo product set-visibility <product-id> <visibility>
+    """
+
+    global CLIENT
+    sc.product.set_visibility(client=CLIENT, id=id, visibility=visibility)
+    CONSOLE.print(f"Visibility set to {visibility} for product {id}.")
+
+
 @product_app.command("delete")
 def product_delete(id: str):
     """
@@ -146,6 +160,21 @@ def collection_cache(id: str):
     response = sc.collections.cache(client=CLIENT, cache=CACHE, id=id)
 
     CONSOLE.print(f"Cached collection {id} including {len(response)} files")
+
+
+@collection_app.command("set-visibility")
+def collection_set_visibility(id: str, visibility: str):
+    """
+    Set the visibility level of a collection.
+
+    Example:
+    $ hippo collection set-visibility <collection-id> <visibility>
+    """
+    global CLIENT
+    sc.collections.set_collection_visibility(
+        client=CLIENT, collection_id=id, visibility=visibility
+    )
+    CONSOLE.print(f"Visibility set to {visibility} for collection {id}.")
 
 
 @collection_app.command("uncache")
