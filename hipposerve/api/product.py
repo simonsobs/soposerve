@@ -15,9 +15,9 @@ from hipposerve.api.models.product import (
     UpdateProductRequest,
     UpdateProductResponse,
 )
-from hipposerve.database import Privilege, ProductMetadata
+from hipposerve.database import Privilege, ProductMetadata, Visibility
 from hipposerve.service import product, users
-
+from hipposerve.service.versioning import VersionRevision
 product_router = APIRouter(prefix="/product")
 
 DEFAULT_USER_USER_NAME = "default_user"
@@ -49,6 +49,7 @@ async def create_product(
         sources=model.sources,
         user=calling_user,
         storage=request.app.storage,
+        visibility=model.visibility,
     )
 
     logger.info(
@@ -77,8 +78,8 @@ async def read_product(
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
-        item = (await product.read_by_id(id)).to_metadata()
-
+        item = await product.read_by_id(id, calling_user)
+        item = item.to_metadata()
         response = ReadProductResponse(
             current_present=item.current,
             current=item.version if item.current else None,
@@ -113,8 +114,8 @@ async def read_tree(
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
-        requested_item = await product.read_by_id(id)
-        current_item = await product.walk_to_current(requested_item)
+        requested_item = await product.read_by_id(id,user=calling_user)
+        current_item = await product.walk_to_current(requested_item,calling_user)
         history = await product.walk_history(current_item)
 
         if not current_item.current:
@@ -157,7 +158,7 @@ async def read_files(
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
-        item = await product.read_by_id(id=id)
+        item = await product.read_by_id(id=id,user = calling_user)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
@@ -196,7 +197,7 @@ async def update_product(
     await check_user_for_privilege(calling_user, Privilege.UPDATE_PRODUCT)
 
     try:
-        item = await product.read_by_id(id=id)
+        item = await product.read_by_id(id=id, user=calling_user)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
@@ -223,6 +224,7 @@ async def update_product(
         drop_sources=model.drop_sources,
         storage=request.app.storage,
         level=model.level,
+        visibility=model.visibility,
     )
 
     logger.info(
@@ -255,7 +257,7 @@ async def confirm_product(
     await check_user_for_privilege(calling_user, Privilege.CONFIRM_PRODUCT)
 
     try:
-        item = await product.read_by_id(id=id)
+        item = await product.read_by_id(id=id,user=calling_user)
         success = await product.confirm(
             product=item,
             storage=request.app.storage,
@@ -273,6 +275,57 @@ async def confirm_product(
 
     logger.info("Successfully confirmed product {} (id: {})", item.name, item.id)
 
+@product_router.get("/{id}/set-visibility/{visibility}")
+async def set_visibility(
+    id: PydanticObjectId,
+    visibility: str,
+    calling_user: UserDependency,
+) -> dict:
+    """
+    Update the visibility of a product version.
+    Only owners or administrators can change visibility.
+    """
+
+    logger.info("Set visibility request for {} from {}", id, calling_user.name)
+
+    try:
+        visibility_enum = Visibility(visibility)
+        logger.info("Set visibility request for {} ", visibility)
+
+        item = await product.read_by_id(id, calling_user)
+
+        # Check if user has permission to change visibility
+        if item.owner.id != calling_user.id and not any(
+            priv in calling_user.privileges for priv in [
+                Privilege.UPDATE_PRODUCT,
+                Privilege.DELETE_PRODUCT
+            ]
+        ):
+
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to change this product's visibility"
+            )
+
+        # Update metadata with new visibility
+        updated_product = await product.update_metadata(
+            product=item,
+            name=item.name,
+            description=item.description,
+            metadata=item.metadata,
+            owner=item.owner,
+            visibility=visibility_enum,
+            level=VersionRevision.VISIBILITY_REV,
+        )
+
+        logger.info("Successfully updated visibility for {} (id: {})", updated_product.name, updated_product.id)
+
+        return {"message": f"Visibility updated to {visibility}"}
+    
+    except product.ProductNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
+        )
 
 @product_router.delete("/{id}")
 async def delete_product(
@@ -290,7 +343,7 @@ async def delete_product(
     await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
     try:
-        item = await product.read_by_id(id=id)
+        item = await product.read_by_id(id=id,user=calling_user)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -327,7 +380,7 @@ async def delete_tree(
     await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
     try:
-        item = await product.read_by_id(id=id)
+        item = await product.read_by_id(id=id,user=calling_user)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -364,11 +417,18 @@ async def search(
 
     items = await product.search_by_name(name=text)
 
+    # Filter items based on visibility
+    visible_items = [
+        item.to_metadata()
+        for item in items
+        if await product.check_visibility_access(item, calling_user)
+    ]
+
     logger.info(
         "Successfully found {} product(s) matching {} requested by {}",
-        len(items),
+        len(visible_items),
         text,
         calling_user.name,
     )
 
-    return [item.to_metadata() for item in items]
+    return visible_items
