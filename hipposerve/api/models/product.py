@@ -46,6 +46,7 @@ class UpdateProductRequest(BaseModel):
     level: VersionRevision = VersionRevision.MINOR
     visibility: str = "collaboration"
 
+
 class UpdateProductResponse(BaseModel):
     version: str
     id: PydanticObjectId

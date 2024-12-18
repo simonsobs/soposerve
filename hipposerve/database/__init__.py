@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from hippometa import ALL_METADATA_TYPE
 
+
 class Visibility(Enum):
     PUBLIC = "public"  # Accessible to everyone
     COLLABORATION = "collaboration"  # Accessible to logged-in users
@@ -135,6 +136,7 @@ class ProductMetadata(BaseModel):
     collections: list[PydanticObjectId]
 
     visibility: Visibility = Visibility.COLLABORATION
+
 
 class Product(Document, ProductMetadata):
     name: Indexed(str, pymongo.TEXT)

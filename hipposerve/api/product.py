@@ -18,6 +18,7 @@ from hipposerve.api.models.product import (
 from hipposerve.database import Privilege, ProductMetadata, Visibility
 from hipposerve.service import product, users
 from hipposerve.service.versioning import VersionRevision
+
 product_router = APIRouter(prefix="/product")
 
 DEFAULT_USER_USER_NAME = "default_user"
@@ -114,8 +115,8 @@ async def read_tree(
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
-        requested_item = await product.read_by_id(id,user=calling_user)
-        current_item = await product.walk_to_current(requested_item,calling_user)
+        requested_item = await product.read_by_id(id, user=calling_user)
+        current_item = await product.walk_to_current(requested_item, calling_user)
         history = await product.walk_history(current_item)
 
         if not current_item.current:
@@ -158,7 +159,7 @@ async def read_files(
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
     try:
-        item = await product.read_by_id(id=id,user = calling_user)
+        item = await product.read_by_id(id=id, user=calling_user)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
@@ -257,7 +258,7 @@ async def confirm_product(
     await check_user_for_privilege(calling_user, Privilege.CONFIRM_PRODUCT)
 
     try:
-        item = await product.read_by_id(id=id,user=calling_user)
+        item = await product.read_by_id(id=id, user=calling_user)
         success = await product.confirm(
             product=item,
             storage=request.app.storage,
@@ -274,6 +275,7 @@ async def confirm_product(
         )
 
     logger.info("Successfully confirmed product {} (id: {})", item.name, item.id)
+
 
 @product_router.get("/{id}/set-visibility/{visibility}")
 async def set_visibility(
@@ -296,15 +298,12 @@ async def set_visibility(
 
         # Check if user has permission to change visibility
         if item.owner.id != calling_user.id and not any(
-            priv in calling_user.privileges for priv in [
-                Privilege.UPDATE_PRODUCT,
-                Privilege.DELETE_PRODUCT
-            ]
+            priv in calling_user.privileges
+            for priv in [Privilege.UPDATE_PRODUCT, Privilege.DELETE_PRODUCT]
         ):
-
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have permission to change this product's visibility"
+                detail="You don't have permission to change this product's visibility",
             )
 
         # Update metadata with new visibility
@@ -318,14 +317,19 @@ async def set_visibility(
             level=VersionRevision.VISIBILITY_REV,
         )
 
-        logger.info("Successfully updated visibility for {} (id: {})", updated_product.name, updated_product.id)
+        logger.info(
+            "Successfully updated visibility for {} (id: {})",
+            updated_product.name,
+            updated_product.id,
+        )
 
         return {"message": f"Visibility updated to {visibility}"}
-    
+
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
         )
+
 
 @product_router.delete("/{id}")
 async def delete_product(
@@ -343,7 +347,7 @@ async def delete_product(
     await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
     try:
-        item = await product.read_by_id(id=id,user=calling_user)
+        item = await product.read_by_id(id=id, user=calling_user)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
@@ -380,7 +384,7 @@ async def delete_tree(
     await check_user_for_privilege(calling_user, Privilege.DELETE_PRODUCT)
 
     try:
-        item = await product.read_by_id(id=id,user=calling_user)
+        item = await product.read_by_id(id=id, user=calling_user)
     except product.ProductNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."

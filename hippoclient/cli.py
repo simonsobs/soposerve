@@ -68,8 +68,9 @@ def product_set_visibility(id: str, visibility: str):
     """
 
     global CLIENT
-    response = sc.product.set_visibility(client=CLIENT, id=id, visibility=visibility)
+    sc.product.set_visibility(client=CLIENT, id=id, visibility=visibility)
     CONSOLE.print(f"Visibility set to {visibility} for product {id}.")
+
 
 @product_app.command("delete")
 def product_delete(id: str):
@@ -160,6 +161,7 @@ def collection_cache(id: str):
 
     CONSOLE.print(f"Cached collection {id} including {len(response)} files")
 
+
 @collection_app.command("set-visibility")
 def collection_set_visibility(id: str, visibility: str):
     """
@@ -169,9 +171,10 @@ def collection_set_visibility(id: str, visibility: str):
     $ hippo collection set-visibility <collection-id> <visibility>
     """
     global CLIENT
-    response = sc.collections.set_collection_visibility(client=CLIENT, collection_id=id, visibility=visibility)
+    sc.collections.set_collection_visibility(
+        client=CLIENT, collection_id=id, visibility=visibility
+    )
     CONSOLE.print(f"Visibility set to {visibility} for collection {id}.")
-
 
 
 @collection_app.command("uncache")

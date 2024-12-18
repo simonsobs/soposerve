@@ -9,9 +9,9 @@ import xxhash
 from hippometa import ALL_METADATA_TYPE
 from hippometa.simple import SimpleMetadata
 from hipposerve.api.models.product import ReadProductResponse
-from hipposerve.database import ProductMetadata
+from hipposerve.database import ProductMetadata, Visibility
 from hipposerve.service.product import PostUploadFile
-from hipposerve.database import Visibility  
+
 from .core import Client, MultiCache, console
 
 
@@ -22,7 +22,7 @@ def create(
     metadata: ALL_METADATA_TYPE,
     sources: list[Path],
     source_descriptions: list[str | None],
-    visibility: str="collaboration",
+    visibility: str = "collaboration",
 ) -> str:
     """
     Create a product in hippo.
@@ -60,8 +60,9 @@ def create(
 
     # Validate visibility
     if visibility not in ["public", "collaboration", "private"]:
-         raise ValueError("Invalid visibility level. Choose from 'public', 'collaboration', or 'private'.")
-
+        raise ValueError(
+            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'."
+        )
 
     # Check and validate the sources.
     assert len(sources) == len(source_descriptions)
@@ -383,12 +384,16 @@ def set_visibility(client: Client, id: str, visibility: str) -> None:
     try:
         visibility_enum = Visibility(visibility)  # Convert string to Visibility enum
     except ValueError:
-        raise ValueError("Invalid visibility level. Choose from 'public', 'collaboration', or 'private'.")
+        raise ValueError(
+            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'."
+        )
 
     response = client.get(f"/product/{id}/set-visibility/{visibility}")
 
     response.raise_for_status()
 
     if client.verbose:
-        console.print(f"Successfully updated product {id} to {visibility} visibility.", style="bold green")
-
+        console.print(
+            f"Successfully updated product {id} to {visibility_enum.value} visibility.",
+            style="bold green",
+        )

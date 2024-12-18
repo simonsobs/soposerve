@@ -79,7 +79,7 @@ def test_upload_product_again(
                     name="test_file", size=100, checksum="test_checksum"
                 ).model_dump()
             ],
-            "visibility":"collaboration",
+            "visibility": "collaboration",
         },
     )
 

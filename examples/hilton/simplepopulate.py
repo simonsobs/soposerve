@@ -2,6 +2,7 @@
 Populates the simple example server with a bunch of ACT maps.
 """
 
+import argparse
 from pathlib import Path
 
 from hippoclient import Client
@@ -24,15 +25,17 @@ reporting this). Fix for erroneous redshift for ACT-CL J1356.4+0339 (moves from
 z = 0.354 to z = 0.282; thanks to Brandon Wolfe for reporting this). Otherwise,
 identical to v1.0.
 """
-import argparse
 
-parser = argparse.ArgumentParser(description="Populate ACT maps to the server with visbility.")
+
+parser = argparse.ArgumentParser(
+    description="Populate ACT maps to the server with visbility."
+)
 parser.add_argument(
-    "--visibility", 
-    type=str, 
+    "--visibility",
+    type=str,
     choices=["public", "private", "collaboration"],
     default="collaboration",
-    help="Set visibility for the products."
+    help="Set visibility for the products.",
 )
 args = parser.parse_args()
 

@@ -4,13 +4,13 @@ Methods for interacting with the collections layer of the hippo API
 
 from pathlib import Path
 
+from hippoclient.product import set_visibility as set_product_visibility
 from hipposerve.api.models.relationships import ReadCollectionResponse
+from hipposerve.database import Visibility
 
 from .core import Client, MultiCache, console
 from .product import cache as cache_product
 from .product import uncache as uncache_product
-from hippoclient.product import set_visibility as set_product_visibility
-from hipposerve.database import Visibility
 
 
 def create(
@@ -276,7 +276,9 @@ def uncache(client: Client, cache: MultiCache, id: str) -> None:
         uncache_product(client, cache, product.id)
 
 
-def set_collection_visibility(client: Client, collection_id: str, visibility: str) -> None:
+def set_collection_visibility(
+    client: Client, collection_id: str, visibility: str
+) -> None:
     """
     Update the visibility of all products in a collection.
 
@@ -301,18 +303,31 @@ def set_collection_visibility(client: Client, collection_id: str, visibility: st
     try:
         visibility_enum = Visibility(visibility)
     except ValueError:
-        raise ValueError("Invalid visibility level. Choose from 'public', 'collaboration', or 'private'.")
+        raise ValueError(
+            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'."
+        )
 
     # Fetch the collection details
     collection = read(client, collection_id)
 
     # Update visibility for each product in the collection
-    console.print(f"Updating visibility to '{visibility}' for all products in collection '{collection.name}'...", style="blue")
+    console.print(
+        f"Updating visibility to '{visibility}' for all products in collection '{collection.name}'...",
+        style="blue",
+    )
     for product in collection.products:
         try:
             set_product_visibility(client, product.id, visibility_enum.value)
-            console.print(f"Successfully updated visibility for product {product.id}.", style="green")
+            console.print(
+                f"Successfully updated visibility for product {product.id}.",
+                style="green",
+            )
         except Exception as e:
-            console.print(f"Failed to update product {product.id}: {str(e)}", style="red")
+            console.print(
+                f"Failed to update product {product.id}: {str(e)}", style="red"
+            )
 
-    console.print(f"Successfully updated visibility for all products in collection '{collection.name}'.", style="bold green")
+    console.print(
+        f"Successfully updated visibility for all products in collection '{collection.name}'.",
+        style="bold green",
+    )

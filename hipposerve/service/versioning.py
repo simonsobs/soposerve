@@ -13,8 +13,7 @@ class VersionRevision(Enum):
     MAJOR = 0
     MINOR = 1
     PATCH = 2
-    VISIBILITY_REV= -1
-
+    VISIBILITY_REV = -1
 
 
 def revise_version(current: str, level: VersionRevision) -> str:
