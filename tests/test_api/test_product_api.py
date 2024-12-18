@@ -36,6 +36,7 @@ def test_api_product(test_api_client: TestClient, test_api_user: str):
             "description": TEST_PRODUCT_DESCRIPTION,
             "metadata": {"metadata_type": "simple"},
             "sources": TEST_PRODUCT_SOURCES,
+            "visibility": "collaboration",
         },
     )
 
@@ -78,6 +79,7 @@ def test_upload_product_again(
                     name="test_file", size=100, checksum="test_checksum"
                 ).model_dump()
             ],
+            "visibility":"collaboration",
         },
     )
 
