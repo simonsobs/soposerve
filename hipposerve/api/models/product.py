@@ -15,6 +15,7 @@ class CreateProductRequest(BaseModel):
     description: str
     metadata: ALL_METADATA_TYPE
     sources: list[PreUploadFile]
+    visibility: str
 
 
 class CreateProductResponse(BaseModel):
@@ -43,7 +44,7 @@ class UpdateProductRequest(BaseModel):
     replace_sources: list[PreUploadFile] = []
     drop_sources: list[str] = []
     level: VersionRevision = VersionRevision.MINOR
-
+    visibility: str = "collaboration"
 
 class UpdateProductResponse(BaseModel):
     version: str
