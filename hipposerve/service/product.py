@@ -19,6 +19,7 @@ from hipposerve.database import (
     Product,
     ProductMetadata,
     User,
+    Visibility,Privilege,
 )
 from hipposerve.service import storage as storage_service
 from hipposerve.service import utils, versioning
@@ -37,6 +38,8 @@ class ProductExists(Exception):
 class ProductNotFound(Exception):
     pass
 
+class PermissionError(Exception):
+    pass
 
 class PreUploadFile(BaseModel):
     name: str
@@ -94,6 +97,7 @@ async def create(
     sources: list[PreUploadFile],
     user: User,
     storage: Storage,
+    visibility: Visibility = Visibility.COLLABORATION,
 ) -> tuple[Product, dict[str, str]]:
     presigned, pre_upload_sources = await presign_uploads(
         sources=sources, storage=storage, user=user
@@ -116,6 +120,7 @@ async def create(
         parent_of=[],
         collections=[],
         collection_policies=[],
+        visibility=visibility
     )
 
     await product.create()
@@ -123,7 +128,7 @@ async def create(
     return product, presigned
 
 
-async def read_by_name(name: str, version: str | None) -> Product:
+async def read_by_name(name: str, version: str | None, user: User | None = None ) -> Product:
     """
     If version is None, we grab the latest version of a product.
     """
@@ -143,11 +148,16 @@ async def read_by_name(name: str, version: str | None) -> Product:
 
     if potential is None:
         raise ProductNotFound
+    
+    # Check visibility access
+    if not await check_visibility_access(potential, user):
+        raise PermissionError(f"User '{user}' is not authorized to access this product with visbility {potential.visibility}.")  
+
 
     return potential
 
 
-async def read_by_id(id: PydanticObjectId) -> Product:
+async def read_by_id(id: PydanticObjectId, user: User | None = None ) -> Product:
     try:
         potential = await Product.get(document_id=id, **LINK_POLICY)
     except (InvalidId, ValidationError):
@@ -156,6 +166,10 @@ async def read_by_id(id: PydanticObjectId) -> Product:
     if potential is None:
         raise ProductNotFound
 
+    # Check visibility access
+    if not await check_visibility_access(potential, user):
+        raise PermissionError(f"User '{user}' is not authorized to access this product with visbility {potential.visibility}.") 
+                             # to avoid revealing existence of private products
     return potential
 
 
@@ -205,7 +219,7 @@ async def walk_history(product: Product) -> dict[str, ProductMetadata]:
     return versions
 
 
-async def walk_to_current(product: Product) -> Product:
+async def walk_to_current(product: Product,user: User | None = None) -> Product:
     """
     Walk the list of products until you get to the one
     marked 'current'.
@@ -213,7 +227,7 @@ async def walk_to_current(product: Product) -> Product:
 
     # Re-read the product from the database, in case it
     # is stale!
-    product = await read_by_id(id=product.id)
+    product = await read_by_id(id=product.id,user=user)
 
     while not product.current:
         product = await Product.find_one(
@@ -280,6 +294,7 @@ async def update_metadata(
     description: str | None,
     metadata: ALL_METADATA_TYPE | None,
     owner: User | None,
+    visibility: Visibility,
     level: versioning.VersionRevision,
 ) -> Product:
     """
@@ -287,6 +302,12 @@ async def update_metadata(
     the variables as `None` and this will simply rev the version. That should
     be used when only updating sources.
     """
+    if level == versioning.VersionRevision.VISIBILITY_REV:
+        product.visibility = visibility
+        product.updated = utils.current_utc_time()
+        await product.save()
+        return product
+
 
     if not product.current:
         raise versioning.VersioningError(
@@ -296,11 +317,12 @@ async def update_metadata(
 
     # We don't actually 'update' the database; we actually create a new
     # product and link it in.
-
+    
     new = Product(
         name=product.name if name is None else name,
         description=product.description if description is None else description,
         metadata=product.metadata if metadata is None else metadata,
+        visibility=product.visibility if visibility is None else visibility,
         uploaded=product.uploaded,
         updated=utils.current_utc_time(),
         current=True,
@@ -343,6 +365,25 @@ async def update_metadata(
 
     return new
 
+async def check_visibility_access(product: Product, user: User | None) -> bool:
+    """
+    Check if a user has access to a product based on its visibility.
+    """
+    if product.visibility == Visibility.PUBLIC:
+        return True
+    if user is None:
+        return False
+    if product.visibility == Visibility.COLLABORATION:
+        return True
+    if product.visibility == Visibility.PRIVATE:
+        return user.id == product.owner.id or any(
+            priv in user.privileges for priv in [
+                Privilege.READ_PRODUCT,
+                Privilege.UPDATE_PRODUCT,
+                Privilege.DELETE_PRODUCT
+            ]
+        )
+    return False
 
 async def update_sources(
     product: Product,
@@ -414,6 +455,7 @@ async def update(
     drop_sources: list[str],
     storage: Storage,
     level: versioning.VersionRevision,
+    visibility: Visibility = Visibility.COLLABORATION,
 ) -> tuple[Product, dict[str, str]]:
     new_product = await update_metadata(
         product=product,
@@ -421,6 +463,7 @@ async def update(
         description=description,
         metadata=metadata,
         owner=owner,
+        visibility=visibility,
         level=level,
     )
 
@@ -430,7 +473,7 @@ async def update(
     # b) Beanie won't allow fetching specific links on that object. fetch_link()
     #    or .fetch() fails silently.
     # So we just re-fetch our object from the database.
-    new_product = await read_by_id(new_product.id)
+    new_product = await read_by_id(new_product.id,product.owner)
 
     if any([len(new_sources) > 0, len(replace_sources) > 0, len(drop_sources) > 0]):
         try:
