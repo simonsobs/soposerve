@@ -56,3 +56,8 @@
     layout: grid;
     grid-size: 3;
 }
+
+.metadata-textarea {
+    column-span: 3;
+    row-span: 2;
+}
