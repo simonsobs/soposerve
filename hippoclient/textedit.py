@@ -3,6 +3,8 @@ The text editor flow for hippo. Uses textual to launch a TUI app and edit
 the text associated with a collection or product.
 """
 
+import ast
+import json
 from pathlib import Path
 
 import xxhash
@@ -25,7 +27,7 @@ from textual.widgets import (
     TextArea,
 )
 
-from hippometa import ALL_METADATA
+from hippometa import ALL_METADATA, ALL_METADATA_TYPE
 
 from . import product
 from .core import Client
@@ -37,6 +39,7 @@ class EditorApp(App):
     _description = reactive("")
     _sources = reactive(None)
     _metadata = reactive(None)
+    _selected_metadata_class: ALL_METADATA_TYPE | None
     _current_version: str
     _projected_version: str
     _version: int = 2
@@ -82,6 +85,7 @@ class EditorApp(App):
                 with Vertical(classes="description"):
                     yield Label("Product Description:", variant="accent")
                     yield TextArea(
+                        classes="textarea",
                         text=self._description,
                         language="markdown",
                         id="product-description",
@@ -163,35 +167,19 @@ class EditorApp(App):
             with TabPane("Metadata", id="metadata-tab"):
                 class_schema = self._metadata.model_json_schema()
                 class_title = class_schema["title"]
-                class_fields = class_schema["properties"]
                 yield Label("Metadata Type:", variant="primary")
                 metadata_options = []
-                for v in ALL_METADATA:
+                for v in ALL_METADATA.values():
                     if v is None:
                         continue
                     schema = v.model_json_schema()
                     name = schema["title"]
                     metadata_options.append(name)
-                yield Select.from_values(metadata_options, value=class_title)
+                yield Select.from_values(
+                    metadata_options, value=class_title, id="metadata-selector"
+                )
                 with Horizontal(classes="metadata-inputs-container"):
-                    for field_key, field_data in class_fields.items():
-                        if (
-                            field_key == "metadata_type"
-                            or "additionalProperties" in field_data
-                        ):
-                            continue
-                        with Vertical():
-                            yield Label(field_data["title"], variant="accent")
-                            if "enum" in field_data:
-                                yield Select.from_values(
-                                    field_data["enum"],
-                                    value=getattr(self._metadata, field_key),
-                                )
-                            else:
-                                yield Input(
-                                    value=getattr(self._metadata, field_key),
-                                    placeholder=f"Enter {field_data['title'].lower()}...",
-                                )
+                    None
                 with Horizontal(classes="save-or-cancel"):
                     yield Button("Save", variant="success", id="save")
                     yield Button("Cancel", variant="error", id="cancel")
@@ -242,6 +230,89 @@ class EditorApp(App):
         # if existing_source_checkbox.has_focus and new_source_checkbox.value == True:
         #     new_source_checkbox.value = False
 
+    def generate_metadata_fields(self):
+        original_class_schema = self._metadata.model_json_schema()
+        original_class_json = self._metadata.model_dump(mode="json")
+        original_class_schema = self._metadata.model_json_schema()
+        original_class_title = original_class_schema["title"]
+        is_original_selected = (
+            original_class_title
+            == self._selected_metadata_class.model_json_schema()["title"]
+        )
+        # any_of_types = { field_key: getattr(field_data, "anyOf", None) for field_key, field_data in self._selected_metadata_class.model_json_schema()["properties"].items()}
+        # json_model = self._selected_metadata_class().model_dump(mode="json")
+
+        for field_key, field_data in self._selected_metadata_class.model_json_schema()[
+            "properties"
+        ].items():
+            if field_key == "metadata_type":
+                continue
+            vertical = Vertical()
+            self.query_one(".metadata-inputs-container").mount(vertical)
+            vertical.mount(Label(field_data["title"], variant="accent"))
+            if "enum" in field_data:
+                vertical.mount(
+                    Select.from_values(
+                        field_data["enum"],
+                        id=field_key,
+                        value=str(original_class_json[field_key])
+                        if is_original_selected
+                        else Select.BLANK,
+                    )
+                )
+            elif "additionalProperties" in field_data:
+                vertical.add_class("metadata-textarea")
+                vertical.mount(
+                    TextArea.code_editor(
+                        classes="textarea",
+                        language="json",
+                        text=json.dumps(original_class_json[field_key], indent=2)
+                        if is_original_selected
+                        else "",
+                        id=field_key,
+                    )
+                )
+            else:
+                vertical.mount(
+                    Input(
+                        value=str(original_class_json[field_key])
+                        if is_original_selected
+                        else "",
+                        id=field_key,
+                        placeholder=f"Enter {field_data['title'].lower()}...",
+                    )
+                )
+
+    @on(Select.Changed)
+    def select_changed(self, event: Select.Changed) -> None:
+        if event.select.id == "metadata-selector":
+            selected_class_title = event.select.value
+            if selected_class_title is Select.BLANK:
+                # if _selected_metadata_class is None, revert back to stored _metadata value
+                if self._selected_metadata_class is None:
+                    class_schema = self._metadata.model_json_schema()
+                    class_title = class_schema["title"]
+                    event.select.value = class_title
+                # if _selected_metadata_class exists, revert back to stored value of _selected_metadata_class
+                else:
+                    saved_class_schema = (
+                        self._selected_metadata_class.model_json_schema()
+                    )
+                    saved_class_schema_title = saved_class_schema["title"]
+                    event.select.value = saved_class_schema_title
+            else:
+                metadata_class = next(
+                    v
+                    for v in ALL_METADATA.values()
+                    if v.schema()["title"] == selected_class_title
+                )
+                self._selected_metadata_class = metadata_class
+            self.query_one(".metadata-inputs-container").remove_children(Vertical)
+            self.query_one(".metadata-inputs-container").remove_children(Label)
+            self.query_one(".metadata-inputs-container").remove_children(Input)
+            self.query_one(".metadata-inputs-container").remove_children(Select)
+            self.generate_metadata_fields()
+
     def get_new_source(self):
         file_path = self.query_one("#new-source-file-path").value
         source_desc = self.query_one("#new-source-file-desc").value
@@ -278,6 +349,126 @@ class EditorApp(App):
                 source_data.append(source_metadata)
         return source_data
 
+    def get_metadata_type(self, field_data):
+        if "anyOf" in field_data:
+            options = [x for x in field_data["anyOf"]]
+            true_type = [x for x in options if x["type"] != "null"][0]
+            return {
+                "true_type": true_type["type"],
+                "is_optional": ({"type": "null"} in options),
+            }
+        elif "enum" in field_data:
+            return {"true_type": "enum", "is_optional": False}
+        elif "additionalProperties" in field_data:
+            return {
+                "true_type": field_data["type"],
+                "is_optional": False,
+                "empty_value": {},
+            }
+        return {"true_type": "string", "is_optional": False}
+
+    def get_metadata_changes(self):
+        original_metadata_schema = self._metadata.model_json_schema()
+        original_metadata_properties = original_metadata_schema["properties"]
+        original_metadata_key_name = original_metadata_properties["metadata_type"][
+            "default"
+        ]
+
+        if type(self._metadata) is self._selected_metadata_class:
+            new_metadata_values = self._metadata.model_dump(mode="json")
+            for field_key, field_data in original_metadata_properties.items():
+                if field_key == "metadata_type":
+                    continue
+                metadata_type = self.get_metadata_type(field_data)
+                input_field = self.query_one(f"#{field_key}")
+                input_field_value = (
+                    input_field.text
+                    if input_field.has_class("textarea")
+                    else input_field.value
+                )
+                if "additionalProperties" in field_data:
+                    new_metadata_values[field_key] = (
+                        metadata_type["empty_value"]
+                        if bool(input_field_value) is False
+                        else ast.literal_eval(input_field_value)
+                    )
+                    continue
+                if input_field_value == "None" and metadata_type["is_optional"] is True:
+                    new_metadata_values[field_key] = None
+                    continue
+                if metadata_type["true_type"] == "array":
+                    new_metadata_values[field_key] = (
+                        None
+                        if bool(input_field_value) is False
+                        and metadata_type["is_optional"] is True
+                        else input_field_value.split(",")
+                    )
+                    continue
+                if metadata_type["true_type"] == "number":
+                    new_metadata_values[field_key] = (
+                        None
+                        if bool(input_field_value) is False
+                        and metadata_type["is_optional"] is True
+                        else int(input_field_value)
+                    )
+                    continue
+                new_metadata_values[field_key] = (
+                    None
+                    if bool(input_field_value) is False
+                    and metadata_type["is_optional"] is True
+                    else input_field_value
+                )
+            return ALL_METADATA[original_metadata_key_name](**new_metadata_values)
+        else:
+            new_metadata_values = {}
+            selected_metadata_schema = self._selected_metadata_class.model_json_schema()
+            selected_metadata_properties = selected_metadata_schema["properties"]
+            selected_metadata_key_name = selected_metadata_properties["metadata_type"][
+                "default"
+            ]
+
+            for field_key, field_data in selected_metadata_properties.items():
+                if field_key == "metadata_type":
+                    new_metadata_values[field_key] = selected_metadata_key_name
+                    continue
+                metadata_type = self.get_metadata_type(field_data)
+                input_field = self.query_one(f"#{field_key}")
+                input_field_value = (
+                    input_field.text
+                    if input_field.has_class("textarea")
+                    else input_field.value
+                )
+                if "additionalProperties" in field_data:
+                    new_metadata_values[field_key] = (
+                        metadata_type["empty_value"]
+                        if bool(input_field_value) is False
+                        else ast.literal_eval(input_field_value)
+                    )
+                    continue
+                if metadata_type["true_type"] == "array":
+                    new_metadata_values[field_key] = (
+                        None
+                        if bool(input_field_value) is False
+                        and metadata_type["is_optional"] is True
+                        else input_field_value.split(",")
+                    )
+                    continue
+                if metadata_type["true_type"] == "number":
+                    new_metadata_values[field_key] = (
+                        None
+                        if bool(input_field_value) is False
+                        and metadata_type["is_optional"] is True
+                        else int(input_field_value)
+                    )
+                    continue
+                new_metadata_values[field_key] = (
+                    None
+                    if bool(input_field_value) is False
+                    and metadata_type["is_optional"] is True
+                    else input_field_value
+                )
+            return ALL_METADATA[selected_metadata_key_name](**new_metadata_values)
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
         if event.button.id == "save":
@@ -287,8 +478,7 @@ class EditorApp(App):
                 self.query_one("#product-title").value,
                 self.query_one("#product-description").text,
                 self._version,
-                None,
-                # self._metadata,
+                self.get_metadata_changes().model_dump(),
                 self.get_new_source(),
                 self.get_replace_sources(),
                 self._drop_sources,
