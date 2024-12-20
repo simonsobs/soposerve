@@ -111,11 +111,12 @@ class EditorApp(App):
                 for source in self._sources:
                     with Horizontal(classes="sources existing-source"):
                         with Vertical():
-                            yield Label("File Name:", variant="accent")
+                            yield Label("Filename:", variant="accent")
                             yield Input(
                                 value=source.name,
                                 placeholder="",
                                 id=f"edit-source-name-{source.uuid}",
+                                tooltip="Enter the absolute filepath to a file of the same name to update the file; leave this field as-is if only editing other fields (i.e., source description)",
                             )
                         with Vertical():
                             yield Label("Source Description:", variant="accent")
@@ -140,7 +141,7 @@ class EditorApp(App):
                             )
                 with Horizontal(classes="sources new-source"):
                     with Vertical():
-                        yield Label("File Path:", variant="accent")
+                        yield Label("Filepath:", variant="accent")
                         yield Input(
                             value=None,
                             placeholder="Path to new source file...",
@@ -239,8 +240,6 @@ class EditorApp(App):
             original_class_title
             == self._selected_metadata_class.model_json_schema()["title"]
         )
-        # any_of_types = { field_key: getattr(field_data, "anyOf", None) for field_key, field_data in self._selected_metadata_class.model_json_schema()["properties"].items()}
-        # json_model = self._selected_metadata_class().model_dump(mode="json")
 
         for field_key, field_data in self._selected_metadata_class.model_json_schema()[
             "properties"
@@ -313,19 +312,23 @@ class EditorApp(App):
             self.query_one(".metadata-inputs-container").remove_children(Select)
             self.generate_metadata_fields()
 
+    def get_file_metadata(self, path, source_description):
+        source = Path(path)
+        with source.open("rb") as file:
+            file_info = {
+                "name": source.name,
+                "size": source.stat().st_size,
+                "checksum": f"xxh64:{xxhash.xxh64(file.read()).hexdigest()}",
+                "description": source_description,
+            }
+            return file_info
+
     def get_new_source(self):
         file_path = self.query_one("#new-source-file-path").value
         source_desc = self.query_one("#new-source-file-desc").value
         if file_path:
-            source = Path(file_path)
-            with source.open("rb") as file:
-                file_info = {
-                    "name": source.name,
-                    "size": source.stat().st_size,
-                    "checksum": f"xxh64:{xxhash.xxh64(file.read()).hexdigest()}",
-                    "description": source_desc,
-                }
-                return [file_info]
+            new_source_metadata = self.get_file_metadata(file_path, source_desc)
+            return [new_source_metadata]
         else:
             return []
 
@@ -337,15 +340,17 @@ class EditorApp(App):
             is_set_to_delete = self.query_one(
                 f"#delete_source_checkbox_{source.uuid}"
             ).value
-            if (
-                source_name != source.name or source_desc != source.description
-            ) and is_set_to_delete is False:
+            if source_name == source.name and is_set_to_delete is False:
                 source_metadata = {
-                    "name": source_name,
+                    "name": source.name,
                     "size": source.size,
                     "checksum": source.checksum,
-                    "description": source.description,
+                    "description": source_desc,
                 }
+                source_data.append(source_metadata)
+                continue
+            if source_name != source.name and is_set_to_delete is False:
+                source_metadata = self.get_file_metadata(source_name, source_desc)
                 source_data.append(source_metadata)
         return source_data
 
