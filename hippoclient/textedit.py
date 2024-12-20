@@ -373,106 +373,62 @@ class EditorApp(App):
         return {"true_type": "string", "is_optional": False}
 
     def get_metadata_changes(self):
-        original_metadata_schema = self._metadata.model_json_schema()
-        original_metadata_properties = original_metadata_schema["properties"]
-        original_metadata_key_name = original_metadata_properties["metadata_type"][
-            "default"
-        ]
-
-        if type(self._metadata) is self._selected_metadata_class:
-            new_metadata_values = self._metadata.model_dump(mode="json")
-            for field_key, field_data in original_metadata_properties.items():
-                if field_key == "metadata_type":
-                    continue
-                metadata_type = self.get_metadata_type(field_data)
-                input_field = self.query_one(f"#{field_key}")
-                input_field_value = (
-                    input_field.text
-                    if input_field.has_class("textarea")
-                    else input_field.value
+        metadata_schema = (
+            self._metadata.model_json_schema()
+            if self._selected_metadata_class is None
+            else self._selected_metadata_class.model_json_schema()
+        )
+        metadata_properties = metadata_schema["properties"]
+        metadata_key_name = metadata_properties["metadata_type"]["default"]
+        new_metadata_values = (
+            self._metadata.model_dump(mode="json")
+            if type(self._metadata) is self._selected_metadata_class
+            else {}
+        )
+        for field_key, field_data in metadata_properties.items():
+            if field_key == "metadata_type":
+                new_metadata_values[field_key] = metadata_key_name
+                continue
+            metadata_type = self.get_metadata_type(field_data)
+            input_field = self.query_one(f"#{field_key}")
+            input_field_value = (
+                input_field.text
+                if input_field.has_class("textarea")
+                else input_field.value
+            )
+            if "additionalProperties" in field_data:
+                new_metadata_values[field_key] = (
+                    metadata_type["empty_value"]
+                    if bool(input_field_value) is False
+                    else ast.literal_eval(input_field_value)
                 )
-                if "additionalProperties" in field_data:
-                    new_metadata_values[field_key] = (
-                        metadata_type["empty_value"]
-                        if bool(input_field_value) is False
-                        else ast.literal_eval(input_field_value)
-                    )
-                    continue
-                if input_field_value == "None" and metadata_type["is_optional"] is True:
-                    new_metadata_values[field_key] = None
-                    continue
-                if metadata_type["true_type"] == "array":
-                    new_metadata_values[field_key] = (
-                        None
-                        if bool(input_field_value) is False
-                        and metadata_type["is_optional"] is True
-                        else input_field_value.split(",")
-                    )
-                    continue
-                if metadata_type["true_type"] == "number":
-                    new_metadata_values[field_key] = (
-                        None
-                        if bool(input_field_value) is False
-                        and metadata_type["is_optional"] is True
-                        else int(input_field_value)
-                    )
-                    continue
+                continue
+            if input_field_value == "None" and metadata_type["is_optional"] is True:
+                new_metadata_values[field_key] = None
+                continue
+            if metadata_type["true_type"] == "array":
                 new_metadata_values[field_key] = (
                     None
                     if bool(input_field_value) is False
                     and metadata_type["is_optional"] is True
-                    else input_field_value
+                    else input_field_value.split(",")
                 )
-            return ALL_METADATA[original_metadata_key_name](**new_metadata_values)
-        else:
-            new_metadata_values = {}
-            selected_metadata_schema = self._selected_metadata_class.model_json_schema()
-            selected_metadata_properties = selected_metadata_schema["properties"]
-            selected_metadata_key_name = selected_metadata_properties["metadata_type"][
-                "default"
-            ]
-
-            for field_key, field_data in selected_metadata_properties.items():
-                if field_key == "metadata_type":
-                    new_metadata_values[field_key] = selected_metadata_key_name
-                    continue
-                metadata_type = self.get_metadata_type(field_data)
-                input_field = self.query_one(f"#{field_key}")
-                input_field_value = (
-                    input_field.text
-                    if input_field.has_class("textarea")
-                    else input_field.value
-                )
-                if "additionalProperties" in field_data:
-                    new_metadata_values[field_key] = (
-                        metadata_type["empty_value"]
-                        if bool(input_field_value) is False
-                        else ast.literal_eval(input_field_value)
-                    )
-                    continue
-                if metadata_type["true_type"] == "array":
-                    new_metadata_values[field_key] = (
-                        None
-                        if bool(input_field_value) is False
-                        and metadata_type["is_optional"] is True
-                        else input_field_value.split(",")
-                    )
-                    continue
-                if metadata_type["true_type"] == "number":
-                    new_metadata_values[field_key] = (
-                        None
-                        if bool(input_field_value) is False
-                        and metadata_type["is_optional"] is True
-                        else int(input_field_value)
-                    )
-                    continue
+                continue
+            if metadata_type["true_type"] == "number":
                 new_metadata_values[field_key] = (
                     None
                     if bool(input_field_value) is False
                     and metadata_type["is_optional"] is True
-                    else input_field_value
+                    else int(input_field_value)
                 )
-            return ALL_METADATA[selected_metadata_key_name](**new_metadata_values)
+                continue
+            new_metadata_values[field_key] = (
+                None
+                if bool(input_field_value) is False
+                and metadata_type["is_optional"] is True
+                else input_field_value
+            )
+        return ALL_METADATA[metadata_key_name](**new_metadata_values)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
