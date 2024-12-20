@@ -10,7 +10,7 @@ from hippometa import ALL_METADATA_TYPE
 from hippometa.simple import SimpleMetadata
 from hipposerve.api.models.product import ReadProductResponse
 from hipposerve.database import ProductMetadata
-from hipposerve.service.product import PostUploadFile
+from hipposerve.service.product import PostUploadFile, PreUploadFile
 
 from .core import Client, MultiCache, console
 
@@ -193,6 +193,53 @@ def read(client: Client, id: str) -> ProductMetadata:
         console.print(f"Successfully read product ({model.name})")
 
     return model
+
+
+def update(
+    client: Client,
+    id: str,
+    name: str | None,
+    description: str | None,
+    level: int,
+    metadata: ALL_METADATA_TYPE | None,
+    new_sources: list[PreUploadFile] = [],
+    replace_sources: list[PreUploadFile] = [],
+    drop_sources: list[str] = [],
+) -> bool:
+    """
+    Update a product in hippo.
+
+    Arguments
+    ----------
+    client: Client
+        The client to use for interacting with the hippo API.
+    id : str
+        The ID of the product to update.
+    name : str
+        The new name of the product.
+    description : str
+        The new description of the product.
+    """
+
+    response = client.post(
+        f"/product/{id}/update",
+        json={
+            "name": name,
+            "description": description,
+            "level": level,
+            "metadata": metadata,
+            "new_sources": new_sources,
+            "replace_sources": replace_sources,
+            "drop_sources": drop_sources,
+        },
+    )
+
+    response.raise_for_status()
+
+    if client.verbose:
+        console.print(f"Successfully updated product {id}.", style="bold green")
+
+    return
 
 
 def delete(client: Client, id: str) -> bool:
