@@ -172,6 +172,10 @@ class Collection(Document):
     products: list[BackLink[Product]] = Field(
         json_schema_extra={"original_field": "collections"}
     )
+    child_collections: list[Link["Collection"]] = []
+    parent_collections: list[BackLink["Collection"]] = Field(
+        json_schema_extra={"original_field": "child_collections"}
+    )
 
 
 BEANIE_MODELS = [User, File, Product, Collection]
