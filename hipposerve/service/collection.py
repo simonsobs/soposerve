@@ -32,9 +32,7 @@ async def create(
 async def read(
     id: PydanticObjectId,
 ):
-    collection = await Collection.find(
-        Collection.id == id, fetch_links=True
-    ).first_or_none()
+    collection = await Collection.find_one(Collection.id == id, fetch_links=True)
 
     if collection is None:
         raise CollectionNotFound

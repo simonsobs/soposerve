@@ -87,13 +87,14 @@ async def read_collection(
             )
             for x in item.child_collections
         ],
-        parent_collection=ReadCollectionCollectionResponse(
-            id=item.parent_collection.id,
-            name=item.parent_collection.name,
-            description=item.parent_collection.description,
-        )
-        if item.parent_collection
-        else None,
+        parent_collections=[
+            ReadCollectionCollectionResponse(
+                id=x.id,
+                name=x.name,
+                description=x.description,
+            )
+            for x in item.parent_collections
+        ],
     )
 
 
@@ -219,10 +220,9 @@ async def delete_collection(
         # Check if we have a parent; if we do, we need to remove its link to us.
         coll = await collection.read(id=id)
 
-        if coll.parent_collection:
-            await collection.remove_child(
-                parent_id=coll.parent_collection.id, child_id=id
-            )
+        if coll.parent_collections:
+            for parent in coll.parent_collections:
+                await collection.remove_child(parent_id=parent.id, child_id=id)
 
         await collection.delete(id=id)
         logger.info("Successfully deleted collection {} from {}", id, calling_user.name)

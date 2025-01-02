@@ -53,4 +53,4 @@ class ReadCollectionResponse(BaseModel):
     description: str
     products: list[ReadCollectionProductResponse] | None
     child_collections: list[ReadCollectionCollectionResponse] | None
-    parent_collection: ReadCollectionCollectionResponse | None
+    parent_collections: list[ReadCollectionCollectionResponse] | None
