@@ -5,6 +5,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 exclude=["*tests*", "*examples*", "*htmlcov*"]
 
+[tool.setuptools.package-data]
+static = ["hipposerve/web/static/*.svg", "hipposerve/web/templates/*.html"]
+
 [project]
 name = "hipposerve"
 version = "0.0.1a1"

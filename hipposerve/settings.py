@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     "GitHub client secret"
     web_github_required_organisation_membership: str | None = None
     "Required GitHub organisation membership for login, if None any organisation is allowed."
+
+    model_config = SettingsConfigDict(secrets_dir="/run/secrets")
 
 
 SETTINGS = Settings()

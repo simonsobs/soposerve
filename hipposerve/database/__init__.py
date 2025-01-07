@@ -165,12 +165,31 @@ class Product(Document, ProductMetadata):
         )
 
 
-class Collection(Document):
-    # TODO: Implement updated time for collections.
-    name: Indexed(str, pymongo.TEXT)
+class CollectionMetadata(BaseModel):
+    """
+    Base model for a collection.
+    """
+
+    id: PydanticObjectId
+
+    name: str
     description: str
+
+    products: list[ProductMetadata]
+    child_collections: list[PydanticObjectId]
+    parent_collections: list[PydanticObjectId]
+
+
+class Collection(Document, CollectionMetadata):
+    # TODO: Implement updated time for collections.
+
+    name: Indexed(str, pymongo.TEXT)
     products: list[BackLink[Product]] = Field(
         json_schema_extra={"original_field": "collections"}
+    )
+    child_collections: list[Link["Collection"]] = []
+    parent_collections: list[BackLink["Collection"]] = Field(
+        json_schema_extra={"original_field": "child_collections"}
     )
 
 
