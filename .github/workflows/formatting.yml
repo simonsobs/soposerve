@@ -1,4 +1,4 @@
-name: CI
+name: Formatting (Ruff)
 on: push
 jobs:
   build:
