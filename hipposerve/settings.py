@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     web: bool = False
     "Serve the web frontend."
+    web_root: str = "/web"
 
     web_jwt_secret: str | None = None
     "Secret key for JWT (32 bytes hex)"

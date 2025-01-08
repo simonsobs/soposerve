@@ -342,7 +342,12 @@ async def read_apikey(request: Request, user: LoggedInUser):
         refresh_key=True,
     )
     return templates.TemplateResponse(
-        "apikey.html", {"request": request, "user": updated_user}
+        "apikey.html",
+        {
+            "request": request,
+            "user": updated_user,
+            "web_root": SETTINGS.web_root,
+        },
     )
 
 
@@ -381,5 +386,6 @@ async def login(request: Request):
             "only_allow_github_login": SETTINGS.web_only_allow_github_login,
             "allow_github_login": SETTINGS.web_allow_github_login,
             "unauthorized_details": unauthorized_details,
+            "web_root": SETTINGS.web_root,
         },
     )
