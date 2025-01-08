@@ -62,7 +62,6 @@ async def collection_view(
     request: Request, id: PydanticObjectId, user: PotentialLoggedInUser
 ):
     collection_instance = await collection.read(id)
-
     return templates.TemplateResponse(
         "collection.html",
         {"request": request, "collection": collection_instance, "user": user},

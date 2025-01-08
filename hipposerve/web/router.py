@@ -8,7 +8,8 @@ from fastapi.templating import Jinja2Templates
 
 web_router = APIRouter(prefix="/web")
 
-potential_routes = ["", "hippo/"]
+# potential_routes = ["", "hippo/"]
+potential_routes = [""]
 
 for route in potential_routes:
     try:
