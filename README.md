@@ -8,6 +8,8 @@ HIPPO
 The HIerarchical Product Post Office
 ------------------------------------
 
+![Docker Image Version](https://img.shields.io/docker/v/simonsobs/hippo)
+
 Hippo is a piece of software aimed at making FAIR (Findable, Attributable, Interoperable,
 and Reuseable) data access easier. Through the use of the very flexible MongoDB for
 _true_ metadata storage and MinIO as a data storage backend, hippo provides metadata-driven
@@ -80,3 +82,24 @@ There are a number of important configuration variables:
 Secrets can be loaded from `/run/secrets` automatically, so long as they have the same file name as their environment variable.
 
 For GitHub integration, your callback URL needs to be $URL/web.
+
+
+Deployment Guide
+----------------
+
+To deploy, you need to set up a MongoDB server and a Minio server. This will involve:
+
+- Creating a MongoDB password, saved as a secret.
+- Creating a MongoDB URI with this password, saved as a secret.
+- Creating a Minio access token, saved as a secret.
+- Creating a WEB_JWT_SECRET, saved as a secret.
+- Creating the GitHub client ID and secret, saved as a secret.
+
+Then, you can deploy your MongoDB and Minio servers. Do not forget to set up storage
+for their backends to ensure persistence across restarts.
+
+Note that we provide a docker compose file in the main repository as an example. This
+should show you how the containers interact.
+
+With the two backends set up, you can deploy the container. You can build it yourself,
+or use the hosted version.
