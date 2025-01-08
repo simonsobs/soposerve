@@ -371,7 +371,9 @@ async def update_compliance(request: Request, user: LoggedInUser):
 
 @router.get("/user")
 async def read_user(request: Request, user: LoggedInUser):
-    return templates.TemplateResponse("user.html", {"request": request, "user": user})
+    return templates.TemplateResponse(
+        "user.html", {"request": request, "user": user, "web_root": SETTINGS.web_root}
+    )
 
 
 @router.get("/login", name="login")

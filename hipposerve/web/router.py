@@ -24,5 +24,7 @@ for route in potential_routes:
                 directory=f"{route}hipposerve/web/static", follow_symlink=True
             ),
         }
+
+        break
     except (FileNotFoundError, RuntimeError):
         continue
