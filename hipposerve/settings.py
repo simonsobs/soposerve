@@ -11,7 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     minio_url: str
-    minio_presign_url: str | None
+    minio_presign_url: str | None = None
     minio_access: str
     minio_secret: str
 
