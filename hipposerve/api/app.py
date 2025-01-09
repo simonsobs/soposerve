@@ -30,6 +30,7 @@ async def lifespan(app: FastAPI):
     app.storage = Storage(
         url=SETTINGS.minio_url,
         presign_url=SETTINGS.minio_presign_url,
+        upgrade_presign_url_to_https=SETTINGS.minio_upgrade_presign_url_to_https,
         access_key=SETTINGS.minio_access,
         secret_key=SETTINGS.minio_secret,
     )
