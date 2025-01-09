@@ -5,21 +5,26 @@ The main FastAPI endpoints.
 from contextlib import asynccontextmanager
 
 from beanie import init_beanie
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
 from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
 from starlette.datastructures import URL
+from starlette.exceptions import HTTPException
 from starlette.middleware.cors import CORSMiddleware
 
 from hipposerve.api.product import product_router
 from hipposerve.api.relationships import relationship_router
 from hipposerve.api.users import users_router
 from hipposerve.database import BEANIE_MODELS
+from hipposerve.service.collection import CollectionNotFound
+from hipposerve.service.product import ProductNotFound
 from hipposerve.service.users import UserNotFound
 from hipposerve.settings import SETTINGS
 from hipposerve.storage import Storage
-from hipposerve.web.auth import UnauthorizedException
+from hipposerve.web.auth import PotentialLoggedInUser, UnauthorizedException
+from hipposerve.web.router import templates
 
 
 @asynccontextmanager
@@ -94,6 +99,91 @@ if SETTINGS.web:  # pragma: no cover
         login_url_with_params = URL(login_url).include_query_params(detail=exc.detail)
         response = RedirectResponse(str(login_url_with_params))
         return response
+
+    @app.exception_handler(HTTPException)
+    async def page_not_found_handler(
+        request: Request,
+        exc: HTTPException,
+        user: PotentialLoggedInUser = Depends(PotentialLoggedInUser),
+    ):
+        return templates.TemplateResponse(
+            "404.html",
+            {
+                "request": request,
+                "error_details": {
+                    "type": "generic",
+                },
+                "user": user,
+                "web_root": SETTINGS.web_root,
+            },
+            status_code=404,
+        )
+
+    @app.exception_handler(CollectionNotFound)
+    async def collection_not_found_handler(
+        request: Request,
+        exc: CollectionNotFound,
+        user: PotentialLoggedInUser = Depends(PotentialLoggedInUser),
+    ):
+        requested_id = request.path_params["id"]
+        return templates.TemplateResponse(
+            "404.html",
+            {
+                "request": request,
+                "error_details": {
+                    "type": "collection",
+                    "requested_id": requested_id,
+                },
+                "user": user,
+                "web_root": SETTINGS.web_root,
+            },
+            status_code=404,
+        )
+
+    @app.exception_handler(ProductNotFound)
+    async def product_not_found_handler(
+        request: Request,
+        exc: ProductNotFound,
+        user: PotentialLoggedInUser = Depends(PotentialLoggedInUser),
+    ):
+        requested_id = request.path_params["id"]
+        return templates.TemplateResponse(
+            "404.html",
+            {
+                "request": request,
+                "error_details": {
+                    "type": "product",
+                    "requested_id": requested_id,
+                },
+                "user": user,
+                "web_root": SETTINGS.web_root,
+            },
+            status_code=404,
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(
+        request: Request,
+        exc: RequestValidationError,
+        user: PotentialLoggedInUser = Depends(PotentialLoggedInUser),
+    ):
+        requested_item_type = (
+            "collection" if request.url.path.find("collections") else "product"
+        )
+        requested_id = request.path_params["id"]
+        return templates.TemplateResponse(
+            "404.html",
+            {
+                "request": request,
+                "error_details": {
+                    "type": requested_item_type,
+                    "requested_id": requested_id,
+                },
+                "user": user,
+                "web_root": SETTINGS.web_root,
+            },
+            status_code=404,
+        )
 
 
 if SETTINGS.add_cors:
