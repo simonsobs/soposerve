@@ -29,6 +29,7 @@ async def lifespan(app: FastAPI):
     await init_beanie(app.db, document_models=BEANIE_MODELS)
     app.storage = Storage(
         url=SETTINGS.minio_url,
+        presign_url=SETTINGS.minio_presign_url,
         access_key=SETTINGS.minio_access,
         secret_key=SETTINGS.minio_secret,
     )
