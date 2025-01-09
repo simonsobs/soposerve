@@ -7,6 +7,8 @@ import io
 import pytest
 import requests
 
+from hipposerve.storage import Storage
+
 
 @pytest.fixture(scope="session")
 def simple_uploaded_file(storage):
@@ -54,3 +56,19 @@ def test_non_existing_object(storage):
         uuid="1234-1234-1234",
         bucket="testbucket",
     )
+
+
+def test_storage_url_replacement(simple_uploaded_file, storage):
+    # Get a new Storage object, with a different presign_url.
+    new_storage = Storage(
+        url=storage.url,
+        access_key=storage.access_key,
+        secret_key=storage.secret_key,
+        presign_url="example.com",
+        upgrade_presign_url_to_https=True,
+    )
+
+    get = new_storage.get(**simple_uploaded_file)
+
+    assert "example.com" in get
+    assert "https://" in get

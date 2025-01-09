@@ -11,22 +11,26 @@ from minio.error import S3Error
 from pydantic import BaseModel, ConfigDict
 
 
-def replace_host(url: str, old: str, new: str | None) -> str:
+def replace_host(url: str, old: str, new: str | None, upgrade: bool) -> str:
     """
     Replaces the host in a URL.
     """
 
     if new is not None:
-        return url.replace(old, new)
-    else:
-        return url
+        url = url.replace(old, new)
+
+    if upgrade:
+        url = url.replace("http://", "https://")
+
+    return url
 
 
 class Storage(BaseModel):
     url: str
     access_key: str
     secret_key: str
-    presigned_url: str | None = None
+    presign_url: str | None = None
+    upgrade_presign_url_to_https: bool = False
 
     client: Minio | None = None
     expires: datetime.timedelta = datetime.timedelta(days=1)
@@ -72,7 +76,12 @@ class Storage(BaseModel):
             expires=self.expires,
         )
 
-        return replace_host(base_url, old=self.url, new=self.presigned_url)
+        return replace_host(
+            base_url,
+            old=self.url,
+            new=self.presign_url,
+            upgrade=self.upgrade_presign_url_to_https,
+        )
 
     def confirm(self, name: str, uploader: str, uuid: str, bucket: str) -> bool:
         """
@@ -112,7 +121,12 @@ class Storage(BaseModel):
             expires=self.expires,
         )
 
-        return replace_host(base_url, old=self.url, new=self.presigned_url)
+        return replace_host(
+            base_url,
+            old=self.url,
+            new=self.presign_url,
+            upgrade=self.upgrade_presign_url_to_https,
+        )
 
     def delete(self, name: str, uploader: str, uuid: str, bucket: str) -> str:
         """
