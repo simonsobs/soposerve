@@ -11,10 +11,22 @@ from minio.error import S3Error
 from pydantic import BaseModel, ConfigDict
 
 
+def replace_host(url: str, old: str, new: str | None) -> str:
+    """
+    Replaces the host in a URL.
+    """
+
+    if new is not None:
+        return url.replace(old, new)
+    else:
+        return url
+
+
 class Storage(BaseModel):
     url: str
     access_key: str
     secret_key: str
+    presigned_url: str | None = None
 
     client: Minio | None = None
     expires: datetime.timedelta = datetime.timedelta(days=1)
@@ -50,7 +62,7 @@ class Storage(BaseModel):
 
         self.bucket(name=bucket)
 
-        return self.client.presigned_put_object(
+        base_url = self.client.presigned_put_object(
             bucket_name=bucket,
             object_name=self.object_name(
                 filename=name,
@@ -59,6 +71,8 @@ class Storage(BaseModel):
             ),
             expires=self.expires,
         )
+
+        return replace_host(base_url, old=self.url, new=self.presigned_url)
 
     def confirm(self, name: str, uploader: str, uuid: str, bucket: str) -> bool:
         """
@@ -88,7 +102,7 @@ class Storage(BaseModel):
 
         self.bucket(name=bucket)
 
-        return self.client.presigned_get_object(
+        base_url = self.client.presigned_get_object(
             bucket_name=bucket,
             object_name=self.object_name(
                 filename=name,
@@ -97,6 +111,8 @@ class Storage(BaseModel):
             ),
             expires=self.expires,
         )
+
+        return replace_host(base_url, old=self.url, new=self.presigned_url)
 
     def delete(self, name: str, uploader: str, uuid: str, bucket: str) -> str:
         """

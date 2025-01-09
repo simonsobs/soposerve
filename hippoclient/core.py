@@ -80,8 +80,8 @@ class ClientSettings(BaseSettings):
         return (
             init_settings,
             dotenv_settings,
-            JsonConfigSettingsSource(settings_cls),
             env_settings,
+            JsonConfigSettingsSource(settings_cls),
             file_secret_settings,
         )
 

@@ -61,9 +61,10 @@ actually provide file storage for your server, with MongoDB handling the metadat
 
 There are a number of important configuration variables:
 
-- `MINIO_URL`: hostname of the MINIO server.
+- `MINIO_URL`: hostname of the MINIO server as seen by the server.
 - `MINIO_ACCESS`: the MINIO access token (username).
 - `MINIO_SECRET`: the MINIO access secret (password).
+- `MINIO_PRESIGN_URL`: hostname of the MINIO server as seen by external clients.
 - `MONGO_URI`: the full URI for the mongo instance including password.
 - `TITLE`: the title of the HIPPO instance.
 - `DESCRIPTION`: the description of the HIPPO instance.
