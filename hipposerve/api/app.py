@@ -100,24 +100,37 @@ if SETTINGS.web:  # pragma: no cover
         response = RedirectResponse(str(login_url_with_params))
         return response
 
+    def not_found_template(
+        request: Request,
+        type: str,
+        requested_id: str | None,
+        user: PotentialLoggedInUser,
+    ):
+        error_details = {
+            "type": type,
+        }
+
+        if error_details["type"] != "generic":
+            error_details["requested_id"] = requested_id
+
+        return templates.TemplateResponse(
+            "404.html",
+            {
+                "request": request,
+                "error_details": error_details,
+                "user": user,
+                "web_root": SETTINGS.web_root,
+            },
+            status_code=404,
+        )
+
     @app.exception_handler(HTTPException)
     async def page_not_found_handler(
         request: Request,
         exc: HTTPException,
         user: PotentialLoggedInUser = Depends(PotentialLoggedInUser),
     ):
-        return templates.TemplateResponse(
-            "404.html",
-            {
-                "request": request,
-                "error_details": {
-                    "type": "generic",
-                },
-                "user": user,
-                "web_root": SETTINGS.web_root,
-            },
-            status_code=404,
-        )
+        return not_found_template(request, "generic", None, user)
 
     @app.exception_handler(CollectionNotFound)
     async def collection_not_found_handler(
@@ -126,19 +139,7 @@ if SETTINGS.web:  # pragma: no cover
         user: PotentialLoggedInUser = Depends(PotentialLoggedInUser),
     ):
         requested_id = request.path_params["id"]
-        return templates.TemplateResponse(
-            "404.html",
-            {
-                "request": request,
-                "error_details": {
-                    "type": "collection",
-                    "requested_id": requested_id,
-                },
-                "user": user,
-                "web_root": SETTINGS.web_root,
-            },
-            status_code=404,
-        )
+        return not_found_template(request, "collection", requested_id, user)
 
     @app.exception_handler(ProductNotFound)
     async def product_not_found_handler(
@@ -147,19 +148,7 @@ if SETTINGS.web:  # pragma: no cover
         user: PotentialLoggedInUser = Depends(PotentialLoggedInUser),
     ):
         requested_id = request.path_params["id"]
-        return templates.TemplateResponse(
-            "404.html",
-            {
-                "request": request,
-                "error_details": {
-                    "type": "product",
-                    "requested_id": requested_id,
-                },
-                "user": user,
-                "web_root": SETTINGS.web_root,
-            },
-            status_code=404,
-        )
+        return not_found_template(request, "product", requested_id, user)
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
@@ -167,23 +156,14 @@ if SETTINGS.web:  # pragma: no cover
         exc: RequestValidationError,
         user: PotentialLoggedInUser = Depends(PotentialLoggedInUser),
     ):
-        requested_item_type = (
-            "collection" if request.url.path.find("collections") else "product"
-        )
+        requested_item_type = "generic"
+        if request.url.path.find("collections"):
+            requested_item_type = "collection"
+        elif request.url.path.find("products"):
+            requested_item_type = "product"
+
         requested_id = request.path_params["id"]
-        return templates.TemplateResponse(
-            "404.html",
-            {
-                "request": request,
-                "error_details": {
-                    "type": requested_item_type,
-                    "requested_id": requested_id,
-                },
-                "user": user,
-                "web_root": SETTINGS.web_root,
-            },
-            status_code=404,
-        )
+        return not_found_template(request, requested_item_type, requested_id, user)
 
 
 if SETTINGS.add_cors:
