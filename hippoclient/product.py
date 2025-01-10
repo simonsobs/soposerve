@@ -106,8 +106,16 @@ def create(
             if client.verbose:
                 console.print("Uploading file:", source.name)
 
+            # TODO: Catch this, then reset the file by seeking to 0, instead of following redirects.
+            # WIthout upgrades to https this fails as the file has laredy been partially seeked as part of
+            # the upload process
+            # TODO: Try multipart uplaods with post(s)?
             individual_response = client.put(
-                response.json()["upload_urls"][source.name], data=file
+                response.json()["upload_urls"][source.name].replace(
+                    "http://", "https://"
+                ),
+                data=file,
+                follow_redirects=True,
             )
 
             individual_response.raise_for_status()
