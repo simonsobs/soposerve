@@ -423,6 +423,11 @@ async def read_user(request: Request, user: LoggedInUser):
 async def login(request: Request):
     query_params = dict(request.query_params)
     unauthorized_details = query_params.get("detail", None)
+    if SETTINGS.web_only_allow_github_login:
+        return RedirectResponse(
+            url=f"https://github.com/login/oauth/authorize?client_id={SETTINGS.web_github_client_id}",
+            status_code=302,
+        )
     return templates.TemplateResponse(
         "login.html",
         {
