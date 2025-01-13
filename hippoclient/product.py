@@ -215,10 +215,25 @@ def update(
         The client to use for interacting with the hippo API.
     id : str
         The ID of the product to update.
-    name : str
+    name : str | None
         The new name of the product.
-    description : str
+    description : str | None
         The new description of the product.
+    level : int
+        The new version level where 0 is major, 1 is minor, and 2 is patch.
+    metadata : ALL_METADATA_TYPE
+        The new product metadata to update.
+    new_sources : list[PreUploadFile]
+        A list of new sources to add to the product.
+    replace_sources : list[PreUploadFile]
+        A list of sources to replace in a product.
+    drop_sources : list[str]
+        A list of source IDs to delete from a product.
+
+    Raises
+    ------
+    httpx.HTTPStatusError
+        If a request to the API fails
     """
 
     response = client.post(
@@ -239,7 +254,7 @@ def update(
     if client.verbose:
         console.print(f"Successfully updated product {id}.", style="bold green")
 
-    return
+    return True
 
 
 def delete(client: Client, id: str) -> bool:
