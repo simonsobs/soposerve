@@ -5,6 +5,7 @@ Routes for the product service.
 from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, Request, status
 from loguru import logger
+from pydantic import BaseModel
 
 from hipposerve.api.auth import UserDependency, check_user_for_privilege
 from hipposerve.api.models.product import (
@@ -277,10 +278,14 @@ async def confirm_product(
     logger.info("Successfully confirmed product {} (id: {})", item.name, item.id)
 
 
-@product_router.get("/{id}/set-visibility/{visibility}")
+class VisibilityUpdate(BaseModel):
+    visibility: Visibility
+
+
+@product_router.post("/{id}/set-visibility")
 async def set_visibility(
     id: PydanticObjectId,
-    visibility: str,
+    visbility: VisibilityUpdate,
     calling_user: UserDependency,
 ) -> dict:
     """
@@ -291,8 +296,8 @@ async def set_visibility(
     logger.info("Set visibility request for {} from {}", id, calling_user.name)
 
     try:
-        visibility_enum = Visibility(visibility)
-        logger.info("Set visibility request for {} ", visibility)
+        visibility_enum = visbility.visibility
+        logger.info("Set visibility request for {} ", visibility_enum)
 
         item = await product.read_by_id(id, calling_user)
 
@@ -323,7 +328,7 @@ async def set_visibility(
             updated_product.id,
         )
 
-        return {"message": f"Visibility updated to {visibility}"}
+        return {"message": f"Visibility updated to {visibility_enum}"}
 
     except product.ProductNotFound:
         raise HTTPException(

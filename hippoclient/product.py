@@ -382,18 +382,20 @@ def set_visibility(client: Client, id: str, visibility: str) -> None:
     """
     # Validate the provided visibility level
     try:
-        visibility_enum = Visibility(visibility)  # Convert string to Visibility enum
+        visibility_enum = Visibility(visibility)
     except ValueError:
         raise ValueError(
             "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'."
         )
 
-    response = client.get(f"/product/{id}/set-visibility/{visibility}")
+    response = client.post(
+        f"/product/{id}/set-visibility", json={"visibility": visibility_enum.value}
+    )
 
     response.raise_for_status()
 
     if client.verbose:
         console.print(
-            f"Successfully updated product {id} to {visibility_enum.value} visibility.",
+            f"Successfully updated product {id} to {visibility_enum.value} visibility",
             style="bold green",
         )
