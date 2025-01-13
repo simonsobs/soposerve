@@ -297,9 +297,9 @@ async def set_visibility(
         item = await product.read_by_id(id, calling_user)
 
         # Check if user has permission to change visibility
-        if item.owner.id != calling_user.id and not any(
-            priv in calling_user.privileges
-            for priv in [Privilege.UPDATE_PRODUCT, Privilege.DELETE_PRODUCT]
+        if (
+            item.owner.id != calling_user.id
+            and Privilege.VISIBILITY_UPDATE not in calling_user.privileges
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

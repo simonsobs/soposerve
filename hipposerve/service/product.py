@@ -386,11 +386,7 @@ async def check_visibility_access(product: Product, user: User | None) -> bool:
     if product.visibility == Visibility.PRIVATE:
         return user.id == product.owner.id or any(
             priv in user.privileges
-            for priv in [
-                Privilege.READ_PRODUCT,
-                Privilege.UPDATE_PRODUCT,
-                Privilege.DELETE_PRODUCT,
-            ]
+            for priv in [Privilege.READ_PRODUCT, Privilege.VISIBILITY_UPDATE]
         )
     return False
 

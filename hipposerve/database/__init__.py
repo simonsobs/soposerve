@@ -29,6 +29,9 @@ class Privilege(Enum):
     DELETE_PRODUCT = "delete_products"
     UPDATE_PRODUCT = "update_products"
 
+    # Visibility management.
+    VISIBILITY_UPDATE = "update_visibility"
+
     # Collection management. Note that _for now_ users can update any
     # collection
     CREATE_COLLECTION = "create_collection"
