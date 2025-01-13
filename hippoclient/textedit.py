@@ -70,10 +70,18 @@ class EditorApp(App):
         self._metadata = _product.metadata
 
     def compose(self) -> ComposeResult:
-        # """Create child widgets for the app."""
+        """
+        This function builds the Textual GUI components. The GUI contains a footer
+        and a tabbed display. The footer contains keyboard shortcuts to help
+        navigate the tabbed display. The available tabs and their descriptions are:
+          Details: Enables edits to product title, product description, and version level
+          Sources: Enables adding, replacing or deleting sources
+          Metadata: Enables changing metadata type and/or editing metadata fields
+        """
         yield Footer()
 
         with TabbedContent():
+            # Construct the Details tab
             with TabPane("Details", id="details-tab"):
                 with Vertical(classes="title"):
                     yield Label("Product Title:", variant="accent")
@@ -107,6 +115,7 @@ class EditorApp(App):
                     yield Button("Save", variant="success", id="save")
                     yield Button("Cancel", variant="error", id="cancel")
 
+            # Construct the Sources tab
             with TabPane("Sources", id="sources-tab"):
                 for source in self._sources:
                     with Horizontal(classes="sources existing-source"):
@@ -116,7 +125,11 @@ class EditorApp(App):
                                 value=source.name,
                                 placeholder="",
                                 id=f"edit-source-name-{source.uuid}",
-                                tooltip="Enter the absolute filepath to a file of the same name to update the file; leave this field as-is if only editing other fields (i.e., source description)",
+                                tooltip=(
+                                    "Enter the absolute filepath to a file of the same name to "
+                                    "update the file; leave this field as-is if only editing "
+                                    "other fields (i.e., source description)"
+                                ),
                             )
                         with Vertical():
                             yield Label("Source Description:", variant="accent")
@@ -165,17 +178,16 @@ class EditorApp(App):
                     yield Button("Save", variant="success", id="save")
                     yield Button("Cancel", variant="error", id="cancel")
 
+            # Construct the Metadata tab
             with TabPane("Metadata", id="metadata-tab"):
                 class_schema = self._metadata.model_json_schema()
                 class_title = class_schema["title"]
                 yield Label("Metadata Type:", variant="primary")
-                metadata_options = []
-                for v in ALL_METADATA.values():
-                    if v is None:
-                        continue
-                    schema = v.model_json_schema()
-                    name = schema["title"]
-                    metadata_options.append(name)
+                metadata_options = [
+                    v.model_json_schema()["title"]
+                    for v in ALL_METADATA.values()
+                    if v is not None
+                ]
                 yield Select.from_values(
                     metadata_options, value=class_title, id="metadata-selector"
                 )
@@ -197,6 +209,7 @@ class EditorApp(App):
         return ".".join([f"{x}" for x in split])
 
     def update_projected_version(self):
+        """Update the Textual GUI's "Version Bump" string (ie 1.0.0 -> 1.0.1)"""
         self._projected_version = self.project_version()
         version_label = self.query_one("#versionproject")
         version_label.update(f"{self._current_version} → {self._projected_version}")
@@ -212,6 +225,7 @@ class EditorApp(App):
 
     @on(Checkbox.Changed)
     def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
+        """Handle checkbox changes; currently only 'Delete Source?' field has a checkbox"""
         if event.checkbox.has_class("delete-source-checkbox"):
             split_id = event.checkbox.id.split("_")
             uuid = split_id[len(split_id) - 1]
@@ -221,15 +235,6 @@ class EditorApp(App):
             else:
                 self._drop_sources.append(toggled_source[0].name)
             return
-        # selected_checkbox_id = None
-        # if event.checkbox.has_focus:
-        #     selected_checkbox_id = event.checkbox.id
-        # new_source_checkbox = self.query_one("#new-primary-source-checkbox")
-        # existing_source_checkbox = self.query_one("#edit-primary-source-checkbox")
-        # if new_source_checkbox.has_focus and existing_source_checkbox.value == True:
-        #     existing_source_checkbox.value = False
-        # if existing_source_checkbox.has_focus and new_source_checkbox.value == True:
-        #     new_source_checkbox.value = False
 
     def generate_metadata_fields(self):
         original_class_schema = self._metadata.model_json_schema()
@@ -303,7 +308,7 @@ class EditorApp(App):
                 metadata_class = next(
                     v
                     for v in ALL_METADATA.values()
-                    if v.schema()["title"] == selected_class_title
+                    if v.model_json_schema()["title"] == selected_class_title
                 )
                 self._selected_metadata_class = metadata_class
             self.query_one(".metadata-inputs-container").remove_children(Vertical)
