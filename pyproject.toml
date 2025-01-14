@@ -42,7 +42,8 @@ dev = [
     "testcontainers",
     "coverage",
     "pytest-cov",
-    "pytest-asyncio"
+    "pytest-asyncio",
+    "pytest-xprocess"
 ]
 
 [project.scripts]

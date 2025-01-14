@@ -106,11 +106,46 @@ def create(
             if client.verbose:
                 console.print("Uploading file:", source.name)
 
-            individual_response = client.put(
-                response.json()["upload_urls"][source.name], data=file
-            )
+            retry = True
+            upload_url = response.json()["upload_urls"][source.name]
 
-            individual_response.raise_for_status()
+            # We need to handle our own redirects because otherwise the head of the file will be incorrect,
+            # and we will end up with Content-Length errors.
+            while retry:
+                if client.use_multipart_upload:
+                    if client.verbose:
+                        console.print("Using multipart upload")
+                    individual_response = client.put(
+                        upload_url,
+                        files={"upload-file": (source.name, file)},
+                        follow_redirects=False,
+                    )
+                else:
+                    if client.verbose:
+                        console.print("Using regular upload")
+                    individual_response = client.put(
+                        upload_url.strip(),
+                        data=file,
+                        follow_redirects=True,
+                    )
+
+                if client.verbose:
+                    console.print(individual_response.content.decode("utf-8"))
+
+                if individual_response.status_code in [301, 302, 307, 308]:
+                    if client.verbose:
+                        console.print(
+                            f"Redirected to {individual_response.headers['Location']} from {upload_url}"
+                        )
+                    upload_url = individual_response.headers["Location"]
+                    file.seek(0)
+                    continue
+                else:
+                    retry = False
+                    if client.verbose:
+                        console.print("Retry set to false, file uploaded or failed")
+                    individual_response.raise_for_status()
+                    break
 
             if client.verbose:
                 console.print("Successfully uploaded file:", source.name)

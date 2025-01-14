@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     minio_url: str
     minio_presign_url: str | None = None
     minio_upgrade_presign_url_to_https: bool = False
+    minio_secure: bool = False
+    minio_cert_check: bool = False
+
     minio_access: str
     minio_secret: str
 
