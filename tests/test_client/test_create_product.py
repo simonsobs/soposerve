@@ -14,7 +14,7 @@ def test_upload_no_multipart(server, tmp_path):
         api_key=server["test_user_api_key"],
         host=server["url"],
         verbose=True,
-        use_multipart_size=0,
+        use_multipart_upload=False,
     )
 
     with open(tmp_path / "test.bin", "wb") as f:
@@ -38,7 +38,7 @@ def test_upload_with_multipart(server, tmp_path):
         api_key=server["test_user_api_key"],
         host=server["url"],
         verbose=True,
-        use_multipart_size=32 * 1024,
+        use_multipart_upload=True,
     )
 
     with open(tmp_path / "test.bin", "wb") as f:
