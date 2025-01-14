@@ -31,6 +31,8 @@ async def lifespan(app: FastAPI):
         url=SETTINGS.minio_url,
         presign_url=SETTINGS.minio_presign_url,
         upgrade_presign_url_to_https=SETTINGS.minio_upgrade_presign_url_to_https,
+        secure=SETTINGS.minio_secure,
+        cert_check=SETTINGS.minio_cert_check,
         access_key=SETTINGS.minio_access,
         secret_key=SETTINGS.minio_secret,
     )

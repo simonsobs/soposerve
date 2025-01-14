@@ -30,7 +30,10 @@ class Storage(BaseModel):
     access_key: str
     secret_key: str
     presign_url: str | None = None
+
     upgrade_presign_url_to_https: bool = False
+    secure: bool = False
+    cert_check: bool = False
 
     client: Minio | None = None
     expires: datetime.timedelta = datetime.timedelta(days=1)
@@ -42,9 +45,8 @@ class Storage(BaseModel):
             self.url,
             access_key=self.access_key,
             secret_key=self.secret_key,
-            # TODO: Come back and make these secure..?
-            secure=False,
-            cert_check=False,
+            secure=self.secure,
+            cert_check=self.cert_check,
         )
 
     def object_name(self, filename: str, uploader: str, uuid: str) -> str:
