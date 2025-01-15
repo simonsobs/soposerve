@@ -159,13 +159,16 @@ if SETTINGS.web:  # pragma: no cover
         user: PotentialLoggedInUser = Depends(PotentialLoggedInUser),
     ):
         requested_item_type = "generic"
-        if request.url.path.find("collections"):
-            requested_item_type = "collection"
-        elif request.url.path.find("products"):
-            requested_item_type = "product"
-
-        requested_id = request.path_params["id"]
-        return not_found_template(request, requested_item_type, requested_id, user)
+        requested_id = None
+        try:
+            requested_id = request.path_params["id"]
+            if request.url.path.find("collections"):
+                requested_item_type = "collection"
+            elif request.url.path.find("products"):
+                requested_item_type = "product"
+            return not_found_template(request, requested_item_type, requested_id, user)
+        except KeyError:
+            return not_found_template(request, requested_item_type, requested_id, user)
 
 
 if SETTINGS.add_cors:
