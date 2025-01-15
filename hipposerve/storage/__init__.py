@@ -11,10 +11,29 @@ from minio.error import S3Error
 from pydantic import BaseModel, ConfigDict
 
 
+def replace_host(url: str, old: str, new: str | None, upgrade: bool) -> str:
+    """
+    Replaces the host in a URL.
+    """
+
+    if new is not None:
+        url = url.replace(old, new)
+
+    if upgrade:
+        url = url.replace("http://", "https://")
+
+    return url
+
+
 class Storage(BaseModel):
     url: str
     access_key: str
     secret_key: str
+    presign_url: str | None = None
+
+    upgrade_presign_url_to_https: bool = False
+    secure: bool = False
+    cert_check: bool = False
 
     client: Minio | None = None
     expires: datetime.timedelta = datetime.timedelta(days=1)
@@ -26,9 +45,8 @@ class Storage(BaseModel):
             self.url,
             access_key=self.access_key,
             secret_key=self.secret_key,
-            # TODO: Come back and make these secure..?
-            secure=False,
-            cert_check=False,
+            secure=self.secure,
+            cert_check=self.cert_check,
         )
 
     def object_name(self, filename: str, uploader: str, uuid: str) -> str:
@@ -50,7 +68,7 @@ class Storage(BaseModel):
 
         self.bucket(name=bucket)
 
-        return self.client.presigned_put_object(
+        base_url = self.client.presigned_put_object(
             bucket_name=bucket,
             object_name=self.object_name(
                 filename=name,
@@ -58,6 +76,13 @@ class Storage(BaseModel):
                 uuid=uuid,
             ),
             expires=self.expires,
+        )
+
+        return replace_host(
+            base_url,
+            old=self.url,
+            new=self.presign_url,
+            upgrade=self.upgrade_presign_url_to_https,
         )
 
     def confirm(self, name: str, uploader: str, uuid: str, bucket: str) -> bool:
@@ -88,7 +113,7 @@ class Storage(BaseModel):
 
         self.bucket(name=bucket)
 
-        return self.client.presigned_get_object(
+        base_url = self.client.presigned_get_object(
             bucket_name=bucket,
             object_name=self.object_name(
                 filename=name,
@@ -96,6 +121,13 @@ class Storage(BaseModel):
                 uuid=uuid,
             ),
             expires=self.expires,
+        )
+
+        return replace_host(
+            base_url,
+            old=self.url,
+            new=self.presign_url,
+            upgrade=self.upgrade_presign_url_to_https,
         )
 
     def delete(self, name: str, uploader: str, uuid: str, bucket: str) -> str:

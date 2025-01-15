@@ -20,7 +20,7 @@
                 {% if collection.products | length > 0 %}
                     {% for product in collection.products %}
                     <tr class="small">
-                        <td><a href='../products/{{ product.id | e}}'>{{ product.name }}</a></td>
+                        <td><a href='{{ web_root }}/products/{{ product.id | e}}'>{{ product.name }}</a></td>
                         <td>{{ product.uploaded.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                         <td>{{ product.version }}</td>
                     </tr>
@@ -81,7 +81,7 @@
                         data-bs-toggle="tooltip"
                         title="{{ parent_collections[index].name }}"
                     >
-                        <a href="../collections/{{parent_collections[index].id | e}}">{{parent_collections[index].name|truncate(11, True)}}</a>
+                        <a href="{{ web_root }}/collections/{{parent_collections[index].id | e}}">{{parent_collections[index].name|truncate(11, True)}}</a>
                     </text>
                 {% endfor %}
                 <path
@@ -142,7 +142,7 @@
                             data-bs-toggle="tooltip"
                             title="{{ child_collections[index].name }}"
                         >
-                            <a href="../collections/{{child_collections[index].id | e}}">{{child_collections[index].name|truncate(11, True)}}</a>
+                            <a href="{{ web_root }}/collections/{{child_collections[index].id | e}}">{{child_collections[index].name|truncate(11, True)}}</a>
                         </text>
                     {% endif %}
                 {% endfor %}
