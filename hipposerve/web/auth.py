@@ -199,6 +199,14 @@ async def get_current_user(
         if potential_origin == "cross-origin":
             raise UnauthorizedException()
 
+    if SETTINGS.web_jwt_check_origin:
+        # Don't use the Origin header as it's often not set (e.g. it is never set
+        # on GET requests as the browser already checked that). Let's just use the
+        # Sec-Fetch-Site header instead.
+        potential_origin = request.headers.get("Sec-Fetch-Site")
+        if potential_origin == "cross-origin":
+            raise UnauthorizedException()
+
     try:
         user = await users_service.read_by_id(id=token_data.user_id)
     except users_service.UserNotFound:
