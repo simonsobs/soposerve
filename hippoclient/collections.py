@@ -296,7 +296,7 @@ def set_collection_visibility(
     ValueError
         If an invalid visibility level is provided.
     httpx.HTTPStatusError
-        If a request to the API fails.
+        If user permission fails.
     """
 
     # Validate visibility and set visibility_enum
@@ -307,22 +307,13 @@ def set_collection_visibility(
 
     # Update visibility for each product in the collection
     console.print(
-        f"Updating visibility to '{visibility}' for all products in collection '{collection.name}'...",
+        f"Updating visibility to '{visibility}' for all products in collection '{collection.name}'",
         style="blue",
     )
     for product in collection.products:
-        try:
-            set_product_visibility(client, product.id, visibility_enum.value)
-            console.print(
-                f"Successfully updated visibility for product {product.id}.",
-                style="green",
-            )
-        except Exception as e:
-            console.print(
-                f"Failed to update product {product.id}: {str(e)}", style="red"
-            )
+        set_product_visibility(client, product.id, visibility_enum.value)
 
     console.print(
-        f"Successfully updated visibility for all products in collection '{collection.name}'.",
+        f"Successfully updated visibility for all products in collection '{collection.name}'",
         style="bold green",
     )
