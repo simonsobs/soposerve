@@ -30,6 +30,7 @@
                     <th class="px-2">Name</th>
                     <th class="px-2" colspan="2">Description</th>
                     <th class="px-2">Uploaded</th>
+                    <th class="px-2">Visibility</th>
                     <th class="px-2">Owner</th>
                 </tr>
             </thead>
@@ -39,6 +40,7 @@
                     <td class="px-2"><a href='{{ web_root }}/products/{{ product.id | e }}'>{{ product.name }}</a></td>
                     <td class="px-2" colspan="2">{{ product.description }}</td>
                     <td class="px-2">{{ product.uploaded.strftime("%Y-%m-%d") }}</td>
+                    <td class="px-2">{{ product.visibility.value }}</td>
                     <td class="px-2">{{ product.owner.name }}</td>
                 </tr>
                 {% endfor %}

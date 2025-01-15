@@ -9,7 +9,7 @@ import xxhash
 from hippometa import ALL_METADATA_TYPE
 from hippometa.simple import SimpleMetadata
 from hipposerve.api.models.product import ReadProductResponse
-from hipposerve.database import ProductMetadata
+from hipposerve.database import ProductMetadata, Visibility
 from hipposerve.service.product import PostUploadFile
 
 from .core import Client, MultiCache, console
@@ -22,6 +22,7 @@ def create(
     metadata: ALL_METADATA_TYPE,
     sources: list[Path],
     source_descriptions: list[str | None],
+    visibility: str = "collaboration",
 ) -> str:
     """
     Create a product in hippo.
@@ -57,6 +58,12 @@ def create(
         If a request to the API fails
     """
 
+    # Validate visibility
+    if visibility not in ["public", "collaboration", "private"]:
+        raise ValueError(
+            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'."
+        )
+
     # Check and validate the sources.
     assert len(sources) == len(source_descriptions)
 
@@ -88,6 +95,7 @@ def create(
             "description": description,
             "metadata": metadata.model_dump(),
             "sources": source_metadata,
+            "visibility": visibility,
         },
     )
 
@@ -387,3 +395,40 @@ def uncache(client: Client, cache: MultiCache, id: str) -> None:
                 console.print(f"Removed file {source.name} ({source.uuid}) from cache")
 
     return
+
+
+def set_visibility(client: Client, id: str, visibility: str) -> None:
+    """
+    Update the visibility of a product.
+
+    Arguments
+    ---------
+    client: Client
+        The client to use for interacting with the hippo API.
+    collection_id : str
+        The ID of the product whose visibility is being updated.
+    visibility : str
+        The new visibility level ('public', 'collaboration', or 'private').
+
+    Raises
+    ------
+    ValueError
+        If an invalid visibility level is provided.
+    """
+    # Validate the provided visibility level
+    try:
+        visibility_enum = Visibility(visibility)  # Convert string to Visibility enum
+    except ValueError:
+        raise ValueError(
+            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'."
+        )
+
+    response = client.get(f"/product/{id}/set-visibility/{visibility}")
+
+    response.raise_for_status()
+
+    if client.verbose:
+        console.print(
+            f"Successfully updated product {id} to {visibility_enum.value} visibility.",
+            style="bold green",
+        )

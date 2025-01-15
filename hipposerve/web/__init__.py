@@ -41,10 +41,10 @@ async def index(request: Request, user: PotentialLoggedInUser):
 
 @web_router.get("/products/{id}")
 async def product_view(request: Request, id: str, user: PotentialLoggedInUser):
-    product_instance = await product.read_by_id(id)
+    product_instance = await product.read_by_id(id, user)
     sources = await product.read_files(product_instance, storage=request.app.storage)
     # Grab the history!
-    latest_version = await product.walk_to_current(product_instance)
+    latest_version = await product.walk_to_current(product_instance, user)
     version_history = await product.walk_history(latest_version)
 
     return templates.TemplateResponse(

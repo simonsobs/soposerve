@@ -2,6 +2,7 @@
 Populates the simple example server with a bunch of ACT maps.
 """
 
+import argparse
 from pathlib import Path
 
 from hippoclient import Client
@@ -24,6 +25,21 @@ reporting this). Fix for erroneous redshift for ACT-CL J1356.4+0339 (moves from
 z = 0.354 to z = 0.282; thanks to Brandon Wolfe for reporting this). Otherwise,
 identical to v1.0.
 """
+
+
+parser = argparse.ArgumentParser(
+    description="Populate ACT maps to the server with visbility."
+)
+parser.add_argument(
+    "--visibility",
+    type=str,
+    choices=["public", "private", "collaboration"],
+    default="collaboration",
+    help="Set visibility for the products.",
+)
+args = parser.parse_args()
+
+USER_VISIBILITY = args.visibility
 
 catalogs = {
     "DR5_cluster-catalog_v1.1.fits": CatalogMetadata(
@@ -130,6 +146,7 @@ if __name__ == "__main__":
             metadata=catalogs[catalog],
             sources=[Path(catalog)],
             source_descriptions=["Catalog file"],
+            visibility=USER_VISIBILITY,
         )
 
         add_to_collection(
@@ -145,6 +162,7 @@ if __name__ == "__main__":
         metadata=mask,
         sources=[Path("DR5_cluster-search-area-mask_v1.0.fits")],
         source_descriptions=["Mask file"],
+        visibility=USER_VISIBILITY,
     )
 
     add_to_collection(
