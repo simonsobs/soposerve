@@ -5,6 +5,7 @@ Methods for interacting with the product layer of the hippo API.
 from pathlib import Path
 
 import xxhash
+from tqdm import tqdm
 
 from hippometa import ALL_METADATA_TYPE
 from hippometa.simple import SimpleMetadata
@@ -111,26 +112,57 @@ def create(
 
             # We need to handle our own redirects because otherwise the head of the file will be incorrect,
             # and we will end up with Content-Length errors.
+
             while retry:
                 if client.use_multipart_upload:
                     if client.verbose:
-                        console.print("Using multipart upload")
-                    individual_response = client.put(
-                        upload_url,
-                        files={"upload-file": (source.name, file)},
-                        follow_redirects=False,
-                    )
+                        console.print(
+                            "Multipart upload requested, but not available at "
+                            "this time (fallback to regular upload)"
+                        )
+
+                    # Implementing multi-part uploads will require a significant
+                    # shift in the way that pre-signed URLs are generated. One
+                    # must first submit a request to the s3 service to
+                    # 'initiate' a multi-part upload, and then use the returned
+                    # upload ID to generate pre-signed URLs for each part of the
+                    # upload (i.e. many URLs!) Once complete, you must then
+                    # 'complete' the upload with the upload ID and information
+                    # returned from the requests for each part. This would
+                    # require a significant change to the 'confirm' API
+                    # endpoint.
+
+                if client.verbose:
+                    console.print("Using regular upload")
+
+                if client.verbose:
+                    with tqdm(
+                        desc="Uploading",
+                        total=source.stat().st_size,
+                        unit="B",
+                        unit_scale=True,
+                        unit_divisor=1024,
+                    ) as t:
+
+                        def read_chunkwise():
+                            while True:
+                                chunk = file.read(1024 * 64)
+                                if not chunk:
+                                    break
+                                t.update(len(chunk))
+                                yield chunk
+
+                        individual_response = client.put(
+                            upload_url.strip(),
+                            data=read_chunkwise(),
+                            follow_redirects=True,
+                        )
                 else:
-                    if client.verbose:
-                        console.print("Using regular upload")
                     individual_response = client.put(
                         upload_url.strip(),
                         data=file,
                         follow_redirects=True,
                     )
-
-                if client.verbose:
-                    console.print(individual_response.content.decode("utf-8"))
 
                 if individual_response.status_code in [301, 302, 307, 308]:
                     if client.verbose:
