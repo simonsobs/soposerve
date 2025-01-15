@@ -5,8 +5,10 @@ and uses the MinIO tools.
 
 import datetime
 import os
+from math import ceil
 
 from minio import Minio
+from minio.api import Part, genheaders
 from minio.error import S3Error
 from pydantic import BaseModel, ConfigDict
 
@@ -63,7 +65,9 @@ class Storage(BaseModel):
 
     def put(self, name: str, uploader: str, uuid: str, bucket: str) -> str:
         """
-        Returns a specific URL for HTTP PUT requests.
+        Returns a pre-signed URL for PUT requests (i.e. small uploads).
+
+        For large uploads, you will need to use the multipart upload functionality.
         """
 
         self.bucket(name=bucket)
@@ -83,6 +87,84 @@ class Storage(BaseModel):
             old=self.url,
             new=self.presign_url,
             upgrade=self.upgrade_presign_url_to_https,
+        )
+
+    def put_multipart(
+        self, name: str, uploader: str, uuid: str, bucket: str, size: int, batch: int
+    ) -> tuple[str, list[str]]:
+        """
+        Initiates a multipart upload. Returns a list of pre-signed URLs and the
+        upload ID. Each one of these URLs should have ``batch`` data uploaded to
+        it.
+        """
+
+        self.bucket(name=bucket)
+
+        object_name = self.object_name(
+            filename=name,
+            uploader=uploader,
+            uuid=uuid,
+        )
+
+        # First - initiate the multipart upload to get the UploadID.
+        upload_id = self.client._create_multipart_upload(
+            bucket_name=bucket,
+            object_name=object_name,
+            headers=genheaders(None, None, None, None, None),
+        )
+
+        # Second - generate n pre-signed URLs for each part.
+        urls = [
+            replace_host(
+                url=self.client.get_presigned_url(
+                    method="PUT",
+                    bucket_name=bucket,
+                    object_name=object_name,
+                    expires=self.expires,
+                    # Parts must use one-based indexing.
+                    extra_query_params={
+                        "partNumber": str(i + 1),
+                        "uploadId": upload_id,
+                    },
+                ),
+                old=self.url,
+                new=self.presign_url,
+                upgrade=self.upgrade_presign_url_to_https,
+            )
+            for i in range(int(ceil(size / batch)))
+        ]
+
+        return upload_id, urls
+
+    def complete_multipart(
+        self,
+        name: str,
+        uploader: str,
+        uuid: str,
+        bucket: str,
+        upload_id: str,
+        headers: list[dict[str, str]],
+        sizes: list[int],
+    ) -> None:
+        """
+        Completion after a multipart upload. If this doesn't occur, a multipart upload will not
+        succeed. Requires information from the client (list[Part]) that uploaded the data.
+        """
+
+        self.bucket(bucket)
+
+        self.client._complete_multipart_upload(
+            bucket_name=bucket,
+            object_name=self.object_name(
+                filename=name,
+                uploader=uploader,
+                uuid=uuid,
+            ),
+            upload_id=upload_id,
+            parts=[
+                Part(part_number=i + 1, etag=headers[i]["etag"], size=sizes[i])
+                for i in range(len(headers))
+            ],
         )
 
     def confirm(self, name: str, uploader: str, uuid: str, bucket: str) -> bool:

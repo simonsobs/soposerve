@@ -4,6 +4,7 @@ Service drivers for interacting with the storage layer.
 
 import os
 import uuid
+from math import ceil
 
 from asyncer import asyncify
 
@@ -17,6 +18,7 @@ def UUID():
 
 
 GLOBAL_BUCKET_NAME = "global"
+MAXIMUM_SINGLE_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
 
 
 async def create(
@@ -27,23 +29,67 @@ async def create(
     checksum: str,
     storage: Storage,
 ) -> tuple[File, str]:
+    multipart = size > MAXIMUM_SINGLE_UPLOAD_SIZE
+    number_of_parts = int(ceil(size / MAXIMUM_SINGLE_UPLOAD_SIZE))
+    uuid = UUID()
+
+    if multipart:
+        upload_id, put = await asyncify(storage.put_multipart)(
+            name=name,
+            uploader=uploader,
+            uuid=uuid,
+            bucket=GLOBAL_BUCKET_NAME,
+            size=size,
+            batch=MAXIMUM_SINGLE_UPLOAD_SIZE,
+        )
+    else:
+        upload_id = None
+        put = [
+            await asyncify(storage.put)(
+                name=name, uploader=uploader, uuid=uuid, bucket=GLOBAL_BUCKET_NAME
+            )
+        ]
+
     file = File(
         # Strip any paths that were passed to us through
         # the layers, just in case.
         name=os.path.basename(name),
         description=description,
         uploader=uploader,
-        uuid=UUID(),
+        uuid=uuid,
         bucket=GLOBAL_BUCKET_NAME,
         size=size,
         checksum=checksum,
-    )
-
-    put = await asyncify(storage.put)(
-        name=file.name, uploader=file.uploader, uuid=file.uuid, bucket=file.bucket
+        multipart=multipart,
+        number_of_parts=number_of_parts,
+        upload_id=upload_id,
+        multipart_closed=not multipart,
     )
 
     return file, put
+
+
+async def finalize(
+    file: File,
+    storage: Storage,
+    response_headers: list[dict[str, str]],
+    sizes: list[int],
+):
+    """
+    Multipart uploads must come with a finalize step, including responses from
+    the storage server along the way.
+    """
+
+    await asyncify(storage.complete_multipart)(
+        name=file.name,
+        uploader=file.uploader,
+        uuid=file.uuid,
+        bucket=file.bucket,
+        upload_id=file.upload_id,
+        headers=response_headers,
+        sizes=sizes,
+    )
+    return
 
 
 async def confirm(file: File, storage: Storage) -> bool:

@@ -88,6 +88,12 @@ class FileMetadata(BaseModel):
 
 
 class File(Document, FileMetadata):
+    # Information for multi-part uploads (private)
+    multipart: bool = False
+    number_of_parts: int = 1
+    upload_id: str | None = None
+    multipart_closed: bool = True
+
     def to_metadata(self) -> FileMetadata:
         return FileMetadata(
             id=self.id,
