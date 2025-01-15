@@ -58,11 +58,8 @@ def create(
         If a request to the API fails
     """
 
-    # Validate visibility
-    if visibility not in ["public", "collaboration", "private"]:
-        raise ValueError(
-            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'"
-        )
+    # Validate visibility and set visibility level
+    visibility_enum = Visibility.validate_and_set(visibility)
 
     # Check and validate the sources.
     assert len(sources) == len(source_descriptions)
@@ -95,7 +92,7 @@ def create(
             "description": description,
             "metadata": metadata.model_dump(),
             "sources": source_metadata,
-            "visibility": visibility,
+            "visibility": visibility_enum.value,
         },
     )
 
@@ -380,7 +377,7 @@ def set_visibility(client: Client, id: str, visibility: str) -> None:
     ValueError
         If an invalid visibility level is provided.
     """
-    # Validate visibility and set visibility_enum
+    # Validate and set the provided visibility level
     visibility_enum = Visibility.validate_and_set(visibility)
 
     response = client.post(

@@ -6,6 +6,7 @@ from beanie import PydanticObjectId
 from pydantic import BaseModel
 
 from hippometa import ALL_METADATA_TYPE
+from hipposerve.database import Visibility
 from hipposerve.service.product import PostUploadFile, PreUploadFile, ProductMetadata
 from hipposerve.service.versioning import VersionRevision
 
@@ -15,7 +16,7 @@ class CreateProductRequest(BaseModel):
     description: str
     metadata: ALL_METADATA_TYPE
     sources: list[PreUploadFile]
-    visibility: str
+    visibility: Visibility = Visibility.COLLABORATION
 
 
 class CreateProductResponse(BaseModel):
@@ -44,7 +45,7 @@ class UpdateProductRequest(BaseModel):
     replace_sources: list[PreUploadFile] = []
     drop_sources: list[str] = []
     level: VersionRevision = VersionRevision.MINOR
-    visibility: str = "collaboration"
+    visibility: Visibility = Visibility.COLLABORATION
 
 
 class UpdateProductResponse(BaseModel):
