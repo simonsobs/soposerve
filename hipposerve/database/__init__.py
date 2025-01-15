@@ -17,6 +17,17 @@ class Visibility(Enum):
     COLLABORATION = "collaboration"  # Accessible to logged-in users
     PRIVATE = "private"  # Accessible only to the owner and admin
 
+    # Validate Enum values
+    @classmethod
+    def validate_and_set(cls, value: str) -> "Visibility":
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(
+                f"{value} is not a valid visibility level"
+                f" (must be one of {', '.join([member.value for member in cls])})"
+            )
+
 
 class Privilege(Enum):
     # Product management. Note that _for now_ users can update any other

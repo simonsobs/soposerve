@@ -299,13 +299,8 @@ def set_collection_visibility(
         If a request to the API fails.
     """
 
-    # Validate visibility
-    try:
-        visibility_enum = Visibility(visibility)
-    except ValueError:
-        raise ValueError(
-            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'."
-        )
+    # Validate visibility and set visibility_enum
+    visibility_enum = Visibility.validate_and_set(visibility)
 
     # Fetch the collection details
     collection = read(client, collection_id)

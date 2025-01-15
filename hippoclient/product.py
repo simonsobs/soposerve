@@ -61,7 +61,7 @@ def create(
     # Validate visibility
     if visibility not in ["public", "collaboration", "private"]:
         raise ValueError(
-            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'."
+            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'"
         )
 
     # Check and validate the sources.
@@ -380,13 +380,8 @@ def set_visibility(client: Client, id: str, visibility: str) -> None:
     ValueError
         If an invalid visibility level is provided.
     """
-    # Validate the provided visibility level
-    try:
-        visibility_enum = Visibility(visibility)
-    except ValueError:
-        raise ValueError(
-            "Invalid visibility level. Choose from 'public', 'collaboration', or 'private'."
-        )
+    # Validate visibility and set visibility_enum
+    visibility_enum = Visibility.validate_and_set(visibility)
 
     response = client.post(
         f"/product/{id}/set-visibility", json={"visibility": visibility_enum.value}

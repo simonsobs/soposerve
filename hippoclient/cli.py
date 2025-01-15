@@ -69,7 +69,7 @@ def product_set_visibility(id: str, visibility: str):
 
     global CLIENT
     sc.product.set_visibility(client=CLIENT, id=id, visibility=visibility)
-    CONSOLE.print(f"Visibility set to {visibility} for product {id}.")
+    CONSOLE.print(f"Visibility set to {visibility} for product {id}")
 
 
 @product_app.command("delete")
@@ -174,7 +174,7 @@ def collection_set_visibility(id: str, visibility: str):
     sc.collections.set_collection_visibility(
         client=CLIENT, collection_id=id, visibility=visibility
     )
-    CONSOLE.print(f"Visibility set to {visibility} for collection {id}.")
+    CONSOLE.print(f"Visibility set to {visibility} for collection {id}")
 
 
 @collection_app.command("uncache")
