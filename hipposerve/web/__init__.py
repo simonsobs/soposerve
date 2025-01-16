@@ -6,9 +6,12 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
+from typing import Literal
+
 from beanie import PydanticObjectId
 from fastapi import Request
 
+from hipposerve.database import Collection
 from hipposerve.service import collection, product
 from hipposerve.settings import SETTINGS
 
@@ -20,6 +23,17 @@ from .search import router as search_router
 
 web_router.include_router(search_router)
 web_router.include_router(auth_router)
+
+
+def get_overflow_content(lst: list[Collection], type: Literal["collection", "product"]):
+    if len(lst) < 6:
+        return None
+
+    overflow_content = ""
+    for n in range(6, len(lst) + 1):
+        overflow_content += f'<a href="{SETTINGS.web_root}/{type}s/{lst[n - 1].id}">{lst[n - 1].name}</a><br>'
+
+    return overflow_content
 
 
 @web_router.get("/")
@@ -65,11 +79,19 @@ async def collection_view(
     request: Request, id: PydanticObjectId, user: PotentialLoggedInUser
 ):
     collection_instance = await collection.read(id)
+    parents_overflow_content = get_overflow_content(
+        collection_instance.parent_collections, "collection"
+    )
+    children_overflow_content = get_overflow_content(
+        collection_instance.child_collections, "collection"
+    )
     return templates.TemplateResponse(
         "collection.html",
         {
             "request": request,
             "collection": collection_instance,
+            "parents_overflow_content": parents_overflow_content,
+            "children_overflow_content": children_overflow_content,
             "user": user,
             "web_root": SETTINGS.web_root,
         },

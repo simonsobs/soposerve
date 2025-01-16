@@ -36,137 +36,14 @@
         </table>
     </div>
     {% if collection.parent_collections | length > 0 or collection.child_collections | length > 0 %}
-    {% set collection_dependencies = [collection.child_collections, collection.parent_collections] %}
     <div class="row">
         <h3>Collections</h3>
-        {% set parent_collections_t = [{"name": "parent a", "id": 100}] %}
-        {% set child_collections_t = [
-            {"name": "short", "id": 1},
-            {"name": "blah blah blah blah blah", "id": 2},
-            {"name": "this is poorly named", "id": 3},
-            {"name": "the golden child, if you will", "id": 4},
-            {"name": "child 5", "id": 5},
-            {"name": "child 6", "id": 6},
-            {"name": "child 7", "id": 7},
-        ] %}
-        {% set parent_collections = collection.parent_collections %}
-        {% set child_collections = collection.child_collections %}
-        {% set parent_length = parent_collections|length %}
-        {% set child_length = child_collections|length %}
-        {% set max_svg_width = 750 %}
-        {% set svg_width = ((parent_length if parent_length > child_length else child_length) * 125) if (parent_length < 6 and child_length < 6) else max_svg_width %}
-        {% set svg_height = 250 %}
-        {% set max_index_for_spacing = 6 %}
-        {% set y_adjustment = 0 if parent_length else 50 %}
-        <svg width="{{ svg_width }}" height="{{ svg_height }}">
-            <defs>
-                <marker 
-                  id='head' 
-                  orient="auto" 
-                  markerWidth='3' 
-                  markerHeight='4' 
-                  refX='0.1' 
-                  refY='2'
-                >
-                  <path d='M0,0 V4 L2,2 Z' fill="black" />
-                </marker>
-            </defs>
-            {% if parent_length %}
-                <!-- There can only be one parent -->
-                {% for index in range(parent_length) %}
-                    <text
-                        text-anchor="middle"
-                        x="{{ svg_width / 2 }}"
-                        y="15"
-                        data-bs-toggle="tooltip"
-                        title="{{ parent_collections[index].name }}"
-                    >
-                        <a href="{{ web_root }}/collections/{{parent_collections[index].id | e}}">{{parent_collections[index].name|truncate(11, True)}}</a>
-                    </text>
-                {% endfor %}
-                <path
-                    id='arrow-line'
-                    marker-end='url(#head)'
-                    stroke-width='2'
-                    fill='none'
-                    stroke='black'
-                    d="M{{ svg_width / 2 }},25, {{svg_width / 2}},50"
-                />
-            {% endif %}
-            <circle 
-                fill="#198754"
-                r="4"
-                cx="{{svg_width / 2 - 45}}"
-                cy="{{65 - y_adjustment}}"
-                data-bs-toggle="tooltip"
-                title="You are currently viewing this collection"
-            />
-            <text
-                text-anchor="middle"
-                x="{{ svg_width / 2 }}"
-                y="{{70 - y_adjustment }}"
-                data-bs-toggle="tooltip"
-                title="{{ collection.name }}"
-                class="fw-bold"
-                >{{collection.name|truncate(11, True)}}</text>
-            {% if child_length %}
-                {% if child_length != 1 %}
-                <path
-                    stroke-width="2"
-                    stroke="black"
-                    d="M{{ svg_width / 2 }},{{75 - y_adjustment}}, {{ svg_width / 2}},{{100 - y_adjustment}}"
-                />
-                {% endif %}
-                {% set y2_adjustment = y_adjustment if child_length > 1 else (y_adjustment + 20) %}
-                {% set dx_divisor = (max_index_for_spacing if child_length >= (max_index_for_spacing + 1) else child_length) + 1 %}
-                {% set dx_divisor_t = 7 %}
-                {% for index in range(child_length) if index <= 5 %}
-                    <path
-                        stroke-width="2"
-                        stroke="black"
-                        d="M{{ svg_width / 2 }},{{100 - y2_adjustment}} {{ ( svg_width / (dx_divisor) ) * (index + 1) }},{{100 - y2_adjustment}}"
-                    />
-                    <path
-                        id='arrow-line'
-                        marker-end='url(#head)'
-                        stroke-width='2'
-                        fill='none'
-                        stroke='black'
-                        d="M{{ ( svg_width / (dx_divisor) ) * (index + 1) }},{{99 - y2_adjustment}}, {{ ( svg_width / (dx_divisor) ) * (index + 1) }},{{120 - y2_adjustment}}"
-                    />
-                    {% if index <= 4 %}
-                        <text
-                            text-anchor="middle"
-                            x="{{ ( svg_width / (dx_divisor) ) * (index + 1) }}"
-                            y="{{140 - y2_adjustment}}"
-                            data-bs-toggle="tooltip"
-                            title="{{ child_collections[index].name }}"
-                        >
-                            <a href="{{ web_root }}/collections/{{child_collections[index].id | e}}">{{child_collections[index].name|truncate(11, True)}}</a>
-                        </text>
-                    {% endif %}
-                {% endfor %}
-                {% if child_length > 5 %}
-                    {% set remaining_children = [] %}
-                    {% for index in range(5, child_length) %}
-                        {% set _ = remaining_children.append(child_collections[index].id|e + "__id|name__" + child_collections[index].name + "__child|separator__") %}
-                    {% endfor %}
-                    <text
-                        text-anchor="middle"
-                        x="{{ ( svg_width / (dx_divisor) ) * (max_index_for_spacing) }}"
-                        y="{{140 - y2_adjustment}}"
-                        id="remaining-children-popover-trigger"
-                        data-remaining-children="{{''.join(remaining_children)}}"
-                        >
-                        <!--Using a link with a noop function will allow keyboard accessibility to toggle popover-->
-                        <a
-                            href="#"
-                            onclick="noop(event)"
-                        >...</a>
-                    </text>
-                {% endif %}
-            {% endif %}
-        </svg>
+        {% set parents = collection.parent_collections %}
+        {% set children = collection.child_collections %}
+        {% set current_item_name = collection.name %}
+        {% set current_item_id = collection.id %}
+        {% set relationship_type = "collection" %}
+        {% include "parent_child_diagram.html" %}
     </div>
     {% endif %}
 </div>
@@ -174,41 +51,14 @@
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const popoverTriggerEl = document.querySelector('#remaining-children-popover-trigger')
-        
-        if (!popoverTriggerEl) return
-
-        const remainingChildren = popoverTriggerEl
-            .getAttribute('data-remaining-children')
-            .split('__child|separator__')
-            .slice(0, -1);
-
-        const content = remainingChildren.map(
-            childString => {
-                const childData = childString.split("__id|name__")
-                return `
-                    <a href="${childData[0]}">
-                        ${childData[1]}
-                    </a><br>
-                `
-            }
-        )
-        new bootstrap.Popover(popoverTriggerEl, {
-            html: true,
-            content: content.join(''),
-            trigger: "click hover",
-            title: `Additional child collection${remainingChildren.length === 1 ? '' : 's'}:`,
-        })
-    })
-
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     })
 
-    function noop(e) {
-        e.preventDefault()
-    }
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+    const popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl)
+    })
 </script>
 {% endblock %}

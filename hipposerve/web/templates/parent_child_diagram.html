@@ -1,0 +1,148 @@
+{% set parent_length = parents|length %}
+{% set child_length = children|length %}
+{% set max_items_rendered = 5 %}
+{% set max_index_for_spacing = max_items_rendered + 1 %}
+{% set max_svg_width = 750 %}
+{% set svg_width = ((parent_length if parent_length > child_length else child_length) * 125) if (parent_length <= max_items_rendered and child_length <= max_items_rendered) else max_svg_width %}
+{% set svg_height = 250 %}
+{% set y_adjustment = 0 if parent_length == 1 else (50 if parent_length < 1 else -20) %}
+<svg width="{{ svg_width }}" height="{{ svg_height }}">
+    <defs>
+        <marker 
+          id='head' 
+          orient="auto" 
+          markerWidth='3' 
+          markerHeight='4' 
+          refX='0.1' 
+          refY='2'
+        >
+          <path d='M0,0 V4 L2,2 Z' fill="black" />
+        </marker>
+    </defs>
+    {% if parent_length %}
+        {% set dx_divisor = (max_index_for_spacing if parent_length >= (max_index_for_spacing + 1) else parent_length) + 1 %}
+        {% for index in range(parent_length) %}
+            {% if index < max_items_rendered %}
+                <text
+                    text-anchor="middle"
+                    x="{{ ( svg_width / (dx_divisor) ) * (index + 1) }}"
+                    y="15"
+                    data-bs-toggle="tooltip"
+                    title="{{ parents[index].name }}"
+                >
+                    <a href="{{ web_root }}/{{relationship_type}}s/{{parents[index].id | e}}">{{parents[index].name|truncate(11, True)}}</a>
+                </text>
+            {% endif %}
+            {% if parent_length > 1 and index <= max_items_rendered %}
+                <path
+                    stroke-width="2"
+                    stroke="black"
+                    d="M{{ svg_width / 2 }},44 {{ ( svg_width / (dx_divisor) ) * (index + 1) }},44"
+                />
+                <path
+                    stroke-width="2"
+                    stroke="black"
+                    d="M{{ ( svg_width / (dx_divisor) ) * (index + 1) }},25, {{ ( svg_width / (dx_divisor) ) * (index + 1) }},45"
+                />
+            {% endif %}
+        {% endfor %}
+        {% if parent_length > max_items_rendered %}
+            <text
+                text-anchor="middle"
+                x="{{ ( svg_width / (dx_divisor) ) * (max_index_for_spacing) }}"
+                y="15"
+                data-bs-toggle="popover"
+                data-bs-title="Additional parent {{relationship_type}}{{'' if parent_length == (max_items_rendered + 1) else 's'}}"
+                data-bs-html="true"
+                data-bs-trigger="click hover"
+                data-bs-content="{{parents_overflow_content}}"
+            >
+                <!--Using a link with a noop function will allow keyboard accessibility to toggle popover-->
+                <a
+                    href="#"
+                    onclick="noop(event)"
+                >...</a>
+            </text>
+        {% endif %}
+        {% set y3_adjustment = 0 if parent_length == 1 else 20 %}
+        <path
+            id='arrow-line'
+            marker-end='url(#head)'
+            stroke-width='2'
+            fill='none'
+            stroke='black'
+            d="M{{ svg_width / 2 }},{{25 + y3_adjustment}}, {{svg_width / 2}},{{50 + y3_adjustment}}"
+        />
+    {% endif %}
+    <circle 
+        fill="#198754"
+        r="4"
+        cx="{{svg_width / 2 - 45}}"
+        cy="{{65 - y_adjustment}}"
+        data-bs-toggle="tooltip"
+        title="You are currently viewing this {{relationship_type}}"
+    />
+    <text
+        text-anchor="middle"
+        x="{{ svg_width / 2 }}"
+        y="{{70 - y_adjustment }}"
+        data-bs-toggle="tooltip"
+        title="{{ current_item_name }}"
+        class="fw-bold"
+        >{{current_item_name|truncate(11, True)}}</text>
+    {% if child_length %}
+        {% if child_length != 1 %}
+        <path
+            stroke-width="2"
+            stroke="black"
+            d="M{{ svg_width / 2 }},{{75 - y_adjustment}}, {{ svg_width / 2}},{{100 - y_adjustment}}"
+        />
+        {% endif %}
+        {% set y2_adjustment = y_adjustment if child_length > 1 else (y_adjustment + 20) %}
+        {% set dx_divisor = (max_index_for_spacing if child_length >= (max_index_for_spacing + 1) else child_length) + 1 %}
+        {% for index in range(child_length) if index <= max_items_rendered %}
+            <path
+                stroke-width="2"
+                stroke="black"
+                d="M{{ svg_width / 2 }},{{100 - y2_adjustment}} {{ ( svg_width / (dx_divisor) ) * (index + 1) }},{{100 - y2_adjustment}}"
+            />
+            <path
+                id='arrow-line'
+                marker-end='url(#head)'
+                stroke-width='2'
+                fill='none'
+                stroke='black'
+                d="M{{ ( svg_width / (dx_divisor) ) * (index + 1) }},{{99 - y2_adjustment}}, {{ ( svg_width / (dx_divisor) ) * (index + 1) }},{{120 - y2_adjustment}}"
+            />
+            {% if index <= max_items_rendered - 1 %}
+                <text
+                    text-anchor="middle"
+                    x="{{ ( svg_width / (dx_divisor) ) * (index + 1) }}"
+                    y="{{140 - y2_adjustment}}"
+                    data-bs-toggle="tooltip"
+                    title="{{ children[index].name }}"
+                >
+                    <a href="{{ web_root }}/{{relationship_type}}s/{{children[index].id | e}}">{{children[index].name|truncate(11, True)}}</a>
+                </text>
+            {% endif %}
+        {% endfor %}
+        {% if child_length > max_items_rendered %}
+            <text
+                text-anchor="middle"
+                x="{{ ( svg_width / (dx_divisor) ) * (max_index_for_spacing) }}"
+                y="{{140 - y2_adjustment}}"
+                data-bs-toggle="popover"
+                data-bs-title="Additional child {{relationship_type}}{{'' if child_length == (max_items_rendered + 1) else 's'}}"
+                data-bs-html="true"
+                data-bs-trigger="click hover"
+                data-bs-content="{{children_overflow_content}}"
+            >
+                <!--Using a link with a noop function will allow keyboard accessibility to toggle popover-->
+                <a
+                    href="#"
+                    onclick="noop(event)"
+                >...</a>
+            </text>
+        {% endif %}
+    {% endif %}
+</svg>
