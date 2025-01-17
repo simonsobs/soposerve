@@ -1,13 +1,18 @@
 {% set parent_length = parents|length %}
 {% set child_length = children|length %}
-{% set max_items_rendered = 5 %}
-{% set max_index_for_spacing = max_items_rendered + 1 %}
-{% set max_svg_width = 750 %}
-{% set svg_width = ((parent_length if parent_length > child_length else child_length) * 125) if (parent_length <= max_items_rendered and child_length <= max_items_rendered) else max_svg_width %}
+<!-- we only render 5 items but, if necessary, we render a 6th element for overflow data -->
+{% set max_items_rendered = 6 %}
+<!-- spacing is calculated based on number of items rendered + 1 -->
+{% set max_num_of_equal_widths = max_items_rendered + 1 %}
+<!-- arbitrarily set item width at 125px -->
+{% set item_width = 125 %}
+{% set max_svg_width = max_items_rendered * item_width %}
+{% set svg_width = ((parent_length if parent_length > child_length else child_length) * item_width) if (parent_length < max_items_rendered and child_length < max_items_rendered) else max_svg_width %}
 {% set svg_height = 250 %}
 {% set y_adjustment = 0 if parent_length == 1 else (50 if parent_length < 1 else -20) %}
 <svg width="{{ svg_width }}" height="{{ svg_height }}">
     <defs>
+        <!-- define a down arrow to be used in the diagram -->
         <marker 
           id='head' 
           orient="auto" 
@@ -19,13 +24,19 @@
           <path d='M0,0 V4 L2,2 Z' fill="black" />
         </marker>
     </defs>
+
+    <!--BEGIN SVG ELEMENTS FOR PARENT(S) -->
     {% if parent_length %}
-        {% set dx_divisor = (max_index_for_spacing if parent_length >= (max_index_for_spacing + 1) else parent_length) + 1 %}
+        <!-- used to divide up the svg_width when calculating x position of items' text and lines -->
+        {% set num_of_parent_equal_widths = max_num_of_equal_widths if parent_length >= max_items_rendered else (parent_length + 1) %}
+        {% set x1 = svg_width / num_of_parent_equal_widths %}
         {% for index in range(parent_length) %}
-            {% if index < max_items_rendered %}
+            {% set x2 = x1 * (index + 1) %}
+            <!-- render links to items up until the max -->
+            {% if index < (max_items_rendered - 1) %}
                 <text
                     text-anchor="middle"
-                    x="{{ ( svg_width / (dx_divisor) ) * (index + 1) }}"
+                    x="{{x2}}"
                     y="15"
                     data-bs-toggle="tooltip"
                     title="{{ parents[index].name }}"
@@ -33,26 +44,30 @@
                     <a href="{{ web_root }}/{{relationship_type}}s/{{parents[index].id | e}}">{{parents[index].name|truncate(11, True)}}</a>
                 </text>
             {% endif %}
-            {% if parent_length > 1 and index <= max_items_rendered %}
+            <!-- with multiple parents, we need some lines to show the connection -->
+            {% if parent_length > 1 and index < max_items_rendered %}
+                <!-- draw a vertical line from the text -->
                 <path
                     stroke-width="2"
                     stroke="black"
-                    d="M{{ svg_width / 2 }},44 {{ ( svg_width / (dx_divisor) ) * (index + 1) }},44"
+                    d="M{{x2}},25, {{x2}},45"
                 />
+                <!-- draw a horizontal line that connects with the vertical line above and to neighboring horizontal line(s) -->
                 <path
                     stroke-width="2"
                     stroke="black"
-                    d="M{{ ( svg_width / (dx_divisor) ) * (index + 1) }},25, {{ ( svg_width / (dx_divisor) ) * (index + 1) }},45"
+                    d="M{{x1}},44 {{x2}},44"
                 />
             {% endif %}
         {% endfor %}
-        {% if parent_length > max_items_rendered %}
+        <!-- create the "overflow" item that renders the remaining items as links in a Bootstrap popover -->
+        {% if parent_length >= max_items_rendered %}
             <text
                 text-anchor="middle"
-                x="{{ ( svg_width / (dx_divisor) ) * (max_index_for_spacing) }}"
+                x="{{ x1 * max_items_rendered }}"
                 y="15"
                 data-bs-toggle="popover"
-                data-bs-title="Additional parent {{relationship_type}}{{'' if parent_length == (max_items_rendered + 1) else 's'}}"
+                data-bs-title="Additional parent {{relationship_type}}{{'' if parent_length == max_items_rendered else 's'}}"
                 data-bs-html="true"
                 data-bs-trigger="click hover"
                 data-bs-content="{{parents_overflow_content}}"
@@ -65,6 +80,7 @@
             </text>
         {% endif %}
         {% set y3_adjustment = 0 if parent_length == 1 else 20 %}
+        <!-- draw vertical line with down arrow pointing from parent(s) to currently-viewed item -->
         <path
             id='arrow-line'
             marker-end='url(#head)'
@@ -74,6 +90,10 @@
             d="M{{ svg_width / 2 }},{{25 + y3_adjustment}}, {{svg_width / 2}},{{50 + y3_adjustment}}"
         />
     {% endif %}
+    <!-- END -->
+
+    <!-- BEGIN SVG ELEMENTS FOR CURRENT ITEM -->
+    <!-- render a green circle next to the currently-viewed item, similar to the UI indiciating which version is being viewed -->
     <circle 
         fill="#198754"
         r="4"
@@ -82,6 +102,7 @@
         data-bs-toggle="tooltip"
         title="You are currently viewing this {{relationship_type}}"
     />
+    <!-- render text for current item -->
     <text
         text-anchor="middle"
         x="{{ svg_width / 2 }}"
@@ -90,7 +111,11 @@
         title="{{ current_item_name }}"
         class="fw-bold"
         >{{current_item_name|truncate(11, True)}}</text>
+    <!-- END -->
+
+    <!-- BEGIN SVG ELEMENTS FOR CHILD(REN) -->
     {% if child_length %}
+        <!-- draw vertical line from current item's text that will connect to the horizontal line used to connect children -->
         {% if child_length != 1 %}
         <path
             stroke-width="2"
@@ -98,26 +123,35 @@
             d="M{{ svg_width / 2 }},{{75 - y_adjustment}}, {{ svg_width / 2}},{{100 - y_adjustment}}"
         />
         {% endif %}
+        <!-- set a y adjustment based on whether or not the vertical line above is present -->
         {% set y2_adjustment = y_adjustment if child_length > 1 else (y_adjustment + 20) %}
-        {% set dx_divisor = (max_index_for_spacing if child_length >= (max_index_for_spacing + 1) else child_length) + 1 %}
-        {% for index in range(child_length) if index <= max_items_rendered %}
+        <!-- used to divide up the svg_width when calculating x position of items' text and lines -->
+        {% set num_of_child_equal_widths = max_num_of_equal_widths if child_length >= max_items_rendered else (child_length + 1) %}
+        {% set x1 = svg_width / num_of_child_equal_widths %}
+        {% for index in range(child_length) %}
+            {% set x2 = x1 * (index + 1) %}
+            {% if child_length > 1 and index < max_items_rendered %}
+            <!-- draw a horizontal line that connects with the vertical line above and to neighboring horizontal line(s) -->
             <path
                 stroke-width="2"
                 stroke="black"
-                d="M{{ svg_width / 2 }},{{100 - y2_adjustment}} {{ ( svg_width / (dx_divisor) ) * (index + 1) }},{{100 - y2_adjustment}}"
+                d="M{{x1}},{{100 - y2_adjustment}} {{x2}},{{100 - y2_adjustment}}"
             />
+            <!-- draw a vertical line with down arrow from the horizontal line to each item's text -->
             <path
                 id='arrow-line'
                 marker-end='url(#head)'
                 stroke-width='2'
                 fill='none'
                 stroke='black'
-                d="M{{ ( svg_width / (dx_divisor) ) * (index + 1) }},{{99 - y2_adjustment}}, {{ ( svg_width / (dx_divisor) ) * (index + 1) }},{{120 - y2_adjustment}}"
+                d="M{{x2}},{{99 - y2_adjustment}}, {{x2}},{{120 - y2_adjustment}}"
             />
-            {% if index <= max_items_rendered - 1 %}
+            {% endif %}
+            <!-- render links to items up until the max -->
+            {% if index < (max_items_rendered - 1) %}
                 <text
                     text-anchor="middle"
-                    x="{{ ( svg_width / (dx_divisor) ) * (index + 1) }}"
+                    x="{{x2}}"
                     y="{{140 - y2_adjustment}}"
                     data-bs-toggle="tooltip"
                     title="{{ children[index].name }}"
@@ -126,13 +160,14 @@
                 </text>
             {% endif %}
         {% endfor %}
-        {% if child_length > max_items_rendered %}
+        <!-- create the "overflow" item that renders the remaining items as links in a Bootstrap popover -->
+        {% if child_length >= max_items_rendered %}
             <text
                 text-anchor="middle"
-                x="{{ ( svg_width / (dx_divisor) ) * (max_index_for_spacing) }}"
+                x="{{ x1 * max_items_rendered }}"
                 y="{{140 - y2_adjustment}}"
                 data-bs-toggle="popover"
-                data-bs-title="Additional child {{relationship_type}}{{'' if child_length == (max_items_rendered + 1) else 's'}}"
+                data-bs-title="Additional child {{relationship_type}}{{'' if child_length == max_items_rendered else 's'}}"
                 data-bs-html="true"
                 data-bs-trigger="click hover"
                 data-bs-content="{{children_overflow_content}}"
@@ -145,4 +180,5 @@
             </text>
         {% endif %}
     {% endif %}
+    <!-- END -->
 </svg>
