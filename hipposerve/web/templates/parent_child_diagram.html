@@ -4,36 +4,20 @@
 {% set max_items_rendered = 6 %}
 <!-- spacing is calculated based on number of items rendered + 1 -->
 {% set max_num_of_equal_spacing = max_items_rendered + 1 %}
-<!-- arbitrarily set item width at 125px -->
+<!-- arbitrarily set item height at 40px -->
 {% set item_height = 40 %}
 {% set max_svg_height = max_items_rendered * item_height %}
-{% set svg_width = 250 %}
+{% set svg_width = 300 %}
 {% set svg_height = ((parent_length if parent_length > child_length else child_length) * item_height) if (parent_length < max_items_rendered and child_length < max_items_rendered) else max_svg_height %}
 {% set item_width = 95 %}
 {% set horizontal_line_length = 20 %}
 {% set parent_x_adjustment = -1 * item_width if parent_length == 0 else item_width %}
 {% set x_margin = 10 %}
 {% set x_adjustment = parent_x_adjustment + x_margin %}
-{% set text_item_padding = 10 %}
+{% set text_item_padding = 15 %}
 {% set line_y_centering_adjustment = 5 %}
+{% set circle_radius = 5 %}
 <svg width="{{ svg_width }}" height="{{ svg_height }}" class="font-monospace">
-    <defs>
-        <!-- define a down arrow to be used in the diagram -->
-        <marker 
-          id='head' 
-          orient="auto" 
-          markerWidth='4' 
-          markerHeight='4'
-          refX='0'
-          refY='0'
-        >
-          <circle 
-              fill="#198754"
-              r="2.5"
-          />
-        </marker>
-    </defs>
-
     <!--BEGIN SVG ELEMENTS FOR PARENT(S) -->
     {% if parent_length %}
         <!-- used to divide up the svg_height when calculating y position of items' text and lines -->
@@ -54,6 +38,12 @@
             {% endif %}
             <!-- with multiple parents, we need some lines to show the connection -->
             {% if parent_length > 1 and index < max_items_rendered %}
+                <circle 
+                    r="{{circle_radius}}"
+                    cx="{{x_adjustment + text_item_padding}}"
+                    cy="{{y2 - line_y_centering_adjustment}}"
+                    fill="{{cmap.get(parents[index].id|string, '#000000')}}"
+                />
                 <!-- draw a horizontal line from parents to the the vertical line connecting the parents -->
                 <path
                     stroke-width="2"
@@ -88,6 +78,14 @@
                 >...</a>
             </text>
         {% endif %}
+        {% if parent_length == 1 %}
+        <circle
+            r="{{circle_radius}}"
+            cx="{{x_adjustment + text_item_padding}}"
+            cy="{{svg_height / 2 - line_y_centering_adjustment}}"
+            fill="{{cmap.get(parents[0].id|string, '#000000')}}"
+        />
+        {% endif %}
     {% endif %}
     <!-- END -->
 
@@ -96,6 +94,12 @@
     {% set parent_to_current_line_length = (horizontal_line_length * 2) if parent_length == 1 else horizontal_line_length %}
     <!-- render line from parent to current item if necessary -->
     {% if parent_length %}
+        <circle
+            r="{{circle_radius}}"
+            cx="{{current_item_starting_x_position - text_item_padding}}"
+            cy="{{svg_height / 2 - line_y_centering_adjustment}}"
+            fill="{{cmap.get(current_item_id|string, '#000000')}}"
+        />
         <path
             stroke-width='2'
             stroke='black'
@@ -114,6 +118,12 @@
     <!-- render line from current item to child(ren) if necessary -->
     {% if child_length %}
         {% set current_to_children_line_length = (horizontal_line_length * 2) if child_length == 1 else horizontal_line_length %}
+        <circle
+            r="{{circle_radius}}"
+            cx="{{current_item_starting_x_position + item_width + text_item_padding}}"
+            cy="{{svg_height / 2 - line_y_centering_adjustment}}"
+            fill="{{cmap.get(current_item_id|string, '#000000')}}"
+        />
         <path
             stroke-width='2'
             stroke='black'
@@ -133,6 +143,12 @@
         {% for index in range(child_length) %}
             {% set y2 = y1 * (index + 1) %}
             {% if child_length > 1 and index < max_items_rendered %}
+                <circle
+                    r="{{circle_radius}}"
+                    cx="{{child_starting_x_position + horizontal_line_length}}"
+                    cy="{{y2 - line_y_centering_adjustment}}"
+                    fill="{{cmap.get(children[index].id|string, '#000000')}}"
+                />
                 <!-- draw a horizontal line from the vertical line to each child text -->
                 <path
                     stroke-width='2'
@@ -163,7 +179,7 @@
         <!-- create the "overflow" item that renders the remaining items as links in a Bootstrap popover -->
         {% if child_length >= max_items_rendered %}
             <text
-                x="{{child_starting_x_position + horizontal_line_length}}"
+                x="{{child_starting_x_position + horizontal_line_length + text_item_padding}}"
                 y="{{ y1 * max_items_rendered }}"
                 data-bs-toggle="popover"
                 data-bs-title="Additional child {{relationship_type}}{{'' if child_length == max_items_rendered else 's'}}"
@@ -177,6 +193,14 @@
                     onclick="noop(event)"
                 >...</a>
             </text>
+        {% endif %}
+        {% if child_length == 1 %}
+            <circle
+                r="{{circle_radius}}"
+                cx="{{child_starting_x_position + horizontal_line_length}}"
+                cy="{{svg_height / 2 - line_y_centering_adjustment}}"
+                fill="{{cmap.get(children[0].id|string, '#000000')}}"
+            />
         {% endif %}
     {% endif %}
     <!-- END -->
