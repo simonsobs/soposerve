@@ -92,7 +92,8 @@ class File(Document, FileMetadata):
     multipart: bool = False
     number_of_parts: int = 1
     upload_id: str | None = None
-    multipart_closed: bool = True
+    multipart_batch_size: int | None = None
+    multipart_closed: bool = False
 
     def to_metadata(self) -> FileMetadata:
         return FileMetadata(

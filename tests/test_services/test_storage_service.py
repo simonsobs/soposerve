@@ -8,27 +8,40 @@ from hipposerve.service import storage as storage_service
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_create_storage_item(storage, created_user, database):
+    MULTIPART_SIZE = 50 * 1024 * 1024
+
+    FILE_CONTENT = b"Hello, World!"
+
     file, put = await storage_service.create(
         name="test_file.txt",
         description=None,
         uploader=created_user.name,
-        size=1234,
+        size=len(FILE_CONTENT),
         checksum="FakeChecksum",
         storage=storage,
+        multipart_size=MULTIPART_SIZE,
     )
 
     await file.save()
 
-    FILE_CONTENT = b"Hello, World!"
-
     # Upload the file
+    responses = []
+    sizes = [len(FILE_CONTENT)]
+
     with io.BytesIO(FILE_CONTENT) as f:
-        requests.put(put[0], f)
+        responses.append(requests.put(put[0], f).headers)
 
     # Check we got it by downloading through the service.
     get = await storage_service.read(
         file=file,
         storage=storage,
+    )
+
+    await storage_service.complete(
+        file=file,
+        storage=storage,
+        response_headers=responses,
+        sizes=sizes,
     )
 
     # Download the file
@@ -45,6 +58,8 @@ async def test_create_storage_item(storage, created_user, database):
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_create_storage_item_large(storage, created_user, database):
+    MULTIPART_SIZE = 50 * 1024 * 1024
+
     file, put = await storage_service.create(
         name="test_file.txt",
         description=None,
@@ -52,6 +67,7 @@ async def test_create_storage_item_large(storage, created_user, database):
         size=92 * 1024 * 1024,
         checksum="FakeChecksum",
         storage=storage,
+        multipart_size=MULTIPART_SIZE,
     )
 
     await file.save()
@@ -73,7 +89,7 @@ async def test_create_storage_item_large(storage, created_user, database):
             )
 
     # Run the confirmation step
-    await storage_service.finalize(
+    await storage_service.complete(
         file=file,
         storage=storage,
         response_headers=headers,

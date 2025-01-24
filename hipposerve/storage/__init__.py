@@ -7,6 +7,7 @@ import datetime
 import os
 from math import ceil
 
+from loguru import logger
 from minio import Minio
 from minio.api import Part, genheaders
 from minio.error import S3Error
@@ -63,39 +64,20 @@ class Storage(BaseModel):
 
         return
 
-    def put(self, name: str, uploader: str, uuid: str, bucket: str) -> str:
-        """
-        Returns a pre-signed URL for PUT requests (i.e. small uploads).
-
-        For large uploads, you will need to use the multipart upload functionality.
-        """
-
-        self.bucket(name=bucket)
-
-        base_url = self.client.presigned_put_object(
-            bucket_name=bucket,
-            object_name=self.object_name(
-                filename=name,
-                uploader=uploader,
-                uuid=uuid,
-            ),
-            expires=self.expires,
-        )
-
-        return replace_host(
-            base_url,
-            old=self.url,
-            new=self.presign_url,
-            upgrade=self.upgrade_presign_url_to_https,
-        )
-
-    def put_multipart(
+    def put(
         self, name: str, uploader: str, uuid: str, bucket: str, size: int, batch: int
     ) -> tuple[str, list[str]]:
         """
         Initiates a multipart upload. Returns a list of pre-signed URLs and the
         upload ID. Each one of these URLs should have ``batch`` data uploaded to
         it.
+
+        Returns
+        -------
+        upload_id : str
+            The upload ID for the multipart upload.
+        urls : list[str]
+            A list of pre-signed URLs to upload data to.
         """
 
         self.bucket(name=bucket)
@@ -121,7 +103,7 @@ class Storage(BaseModel):
                     bucket_name=bucket,
                     object_name=object_name,
                     expires=self.expires,
-                    # Parts must use one-based indexing.
+                    # Parts must use one-based indexing (s3 requirement)
                     extra_query_params={
                         "partNumber": str(i + 1),
                         "uploadId": upload_id,
@@ -136,7 +118,7 @@ class Storage(BaseModel):
 
         return upload_id, urls
 
-    def complete_multipart(
+    def complete(
         self,
         name: str,
         uploader: str,
@@ -162,7 +144,12 @@ class Storage(BaseModel):
             ),
             upload_id=upload_id,
             parts=[
-                Part(part_number=i + 1, etag=headers[i]["etag"], size=sizes[i])
+                # Sometimes the s3 server responds with ETag, sometimes etag. Lol.
+                Part(
+                    part_number=i + 1,
+                    etag={x.lower(): y for x, y in headers[i].items()}["etag"],
+                    size=sizes[i],
+                )
                 for i in range(len(headers))
             ],
         )
@@ -184,8 +171,13 @@ class Storage(BaseModel):
                 ),
             )
 
+            logger.debug(
+                f"Object {self.object_name(filename=name, uploader=uploader, uuid=uuid)} exists."
+            )
+
             return True
-        except S3Error:
+        except S3Error as e:
+            logger.info(e)
             return False
 
     def get(self, name: str, uploader: str, uuid: str, bucket: str) -> str:

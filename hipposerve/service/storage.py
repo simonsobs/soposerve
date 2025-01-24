@@ -18,7 +18,6 @@ def UUID():
 
 
 GLOBAL_BUCKET_NAME = "global"
-MAXIMUM_SINGLE_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB
 
 
 async def create(
@@ -28,27 +27,21 @@ async def create(
     size: int,
     checksum: str,
     storage: Storage,
+    multipart_size: int = 50 * 1024 * 1024,
 ) -> tuple[File, str]:
-    multipart = size > MAXIMUM_SINGLE_UPLOAD_SIZE
-    number_of_parts = int(ceil(size / MAXIMUM_SINGLE_UPLOAD_SIZE))
+    # All uploads are now multipart.
+    multipart = True
+    number_of_parts = int(ceil(size / multipart_size))
     uuid = UUID()
 
-    if multipart:
-        upload_id, put = await asyncify(storage.put_multipart)(
-            name=name,
-            uploader=uploader,
-            uuid=uuid,
-            bucket=GLOBAL_BUCKET_NAME,
-            size=size,
-            batch=MAXIMUM_SINGLE_UPLOAD_SIZE,
-        )
-    else:
-        upload_id = None
-        put = [
-            await asyncify(storage.put)(
-                name=name, uploader=uploader, uuid=uuid, bucket=GLOBAL_BUCKET_NAME
-            )
-        ]
+    upload_id, put = await asyncify(storage.put)(
+        name=name,
+        uploader=uploader,
+        uuid=uuid,
+        bucket=GLOBAL_BUCKET_NAME,
+        size=size,
+        batch=multipart_size,
+    )
 
     file = File(
         # Strip any paths that were passed to us through
@@ -63,24 +56,25 @@ async def create(
         multipart=multipart,
         number_of_parts=number_of_parts,
         upload_id=upload_id,
+        multipart_batch_size=multipart_size,
         multipart_closed=not multipart,
     )
 
     return file, put
 
 
-async def finalize(
+async def complete(
     file: File,
     storage: Storage,
     response_headers: list[dict[str, str]],
     sizes: list[int],
 ):
     """
-    Multipart uploads must come with a finalize step, including responses from
+    Multipart uploads must come with a complete step, including responses from
     the storage server along the way.
     """
 
-    await asyncify(storage.complete_multipart)(
+    await asyncify(storage.complete)(
         name=file.name,
         uploader=file.uploader,
         uuid=file.uuid,
@@ -89,6 +83,7 @@ async def finalize(
         headers=response_headers,
         sizes=sizes,
     )
+
     return
 
 

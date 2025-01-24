@@ -15,6 +15,8 @@ from hipposerve.service.product import PostUploadFile
 
 from .core import Client, MultiCache, console
 
+MULTIPART_UPLOAD_SIZE = 50 * 1024 * 1024
+
 
 def create(
     client: Client,
@@ -89,6 +91,7 @@ def create(
             "description": description,
             "metadata": metadata.model_dump(),
             "sources": source_metadata,
+            "mutlipart_batch_size": MULTIPART_UPLOAD_SIZE,
         },
     )
 
@@ -101,86 +104,77 @@ def create(
             f"Successfully created product {this_product_id} in remote database."
         )
 
+    responses = {}
+    sizes = {}
+
     # Upload the sources to the presigned URLs.
     for source in sources:
         with source.open("rb") as file:
             if client.verbose:
                 console.print("Uploading file:", source.name)
 
-            retry = True
-            upload_url = response.json()["upload_urls"][source.name]
+            upload_urls = response.json()["upload_urls"][source.name]
+            headers = []
+            size = []
 
             # We need to handle our own redirects because otherwise the head of the file will be incorrect,
             # and we will end up with Content-Length errors.
 
-            while retry:
-                if client.use_multipart_upload:
-                    if client.verbose:
-                        console.print(
-                            "Multipart upload requested, but not available at "
-                            "this time (fallback to regular upload)"
-                        )
+            with tqdm(
+                desc="Uploading",
+                total=source.stat().st_size,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+            ) as t:
+                file_position = 0
 
-                    # Implementing multi-part uploads will require a significant
-                    # shift in the way that pre-signed URLs are generated. One
-                    # must first submit a request to the s3 service to
-                    # 'initiate' a multi-part upload, and then use the returned
-                    # upload ID to generate pre-signed URLs for each part of the
-                    # upload (i.e. many URLs!) Once complete, you must then
-                    # 'complete' the upload with the upload ID and information
-                    # returned from the requests for each part. This would
-                    # require a significant change to the 'confirm' API
-                    # endpoint.
+                for upload_url in upload_urls:
+                    retry = True
 
-                if client.verbose:
-                    console.print("Using regular upload")
+                    while retry:
+                        file.seek(file_position)
 
-                if client.verbose:
-                    with tqdm(
-                        desc="Uploading",
-                        total=source.stat().st_size,
-                        unit="B",
-                        unit_scale=True,
-                        unit_divisor=1024,
-                    ) as t:
-
-                        def read_chunkwise():
-                            while True:
-                                chunk = file.read(1024 * 64)
-                                if not chunk:
-                                    break
-                                t.update(len(chunk))
-                                yield chunk
+                        data = file.read(MULTIPART_UPLOAD_SIZE)
 
                         individual_response = client.put(
                             upload_url.strip(),
-                            data=read_chunkwise(),
+                            data=data,
                             follow_redirects=True,
                         )
-                else:
-                    individual_response = client.put(
-                        upload_url.strip(),
-                        data=file,
-                        follow_redirects=True,
-                    )
 
-                if individual_response.status_code in [301, 302, 307, 308]:
-                    if client.verbose:
-                        console.print(
-                            f"Redirected to {individual_response.headers['Location']} from {upload_url}"
-                        )
-                    upload_url = individual_response.headers["Location"]
-                    file.seek(0)
-                    continue
-                else:
-                    retry = False
-                    if client.verbose:
-                        console.print("Retry set to false, file uploaded or failed")
-                    individual_response.raise_for_status()
-                    break
+                        if individual_response.status_code in [301, 302, 307, 308]:
+                            if client.verbose:
+                                console.print(
+                                    f"Redirected to {individual_response.headers['Location']} from {upload_url}"
+                                )
+                            upload_url = individual_response.headers["Location"]
+
+                            continue
+                        else:
+                            retry = False
+                            individual_response.raise_for_status()
+                            break
+
+                    headers.append(dict(individual_response.headers))
+                    size.append(len(data))
+
+                    file_position += MULTIPART_UPLOAD_SIZE
+                    t.update(len(data))
+
+            responses[source.name] = headers
+            sizes[source.name] = size
 
             if client.verbose:
                 console.print("Successfully uploaded file:", source.name)
+
+    # Close out the upload.
+    response = client.post(
+        f"/product/{this_product_id}/complete",
+        json={"headers": responses, "sizes": sizes},
+    )
+
+    response.raise_for_status()
 
     # Confirm the upload to hippo.
     response = client.post(f"/product/{this_product_id}/confirm")
