@@ -11,7 +11,7 @@ from hippometa import ALL_METADATA_TYPE
 from hippometa.simple import SimpleMetadata
 from hipposerve.api.models.product import ReadProductResponse
 from hipposerve.database import ProductMetadata
-from hipposerve.service.product import PostUploadFile
+from hipposerve.service.product import PostUploadFile, PreUploadFile
 
 from .core import Client, MultiCache, console
 
@@ -254,6 +254,68 @@ def read(client: Client, id: str) -> ProductMetadata:
         console.print(f"Successfully read product ({model.name})")
 
     return model
+
+
+def update(
+    client: Client,
+    id: str,
+    name: str | None,
+    description: str | None,
+    level: int,
+    metadata: ALL_METADATA_TYPE | None,
+    new_sources: list[PreUploadFile] = [],
+    replace_sources: list[PreUploadFile] = [],
+    drop_sources: list[str] = [],
+) -> bool:
+    """
+    Update a product in hippo.
+
+    Arguments
+    ----------
+    client: Client
+        The client to use for interacting with the hippo API.
+    id : str
+        The ID of the product to update.
+    name : str | None
+        The new name of the product.
+    description : str | None
+        The new description of the product.
+    level : int
+        The new version level where 0 is major, 1 is minor, and 2 is patch.
+    metadata : ALL_METADATA_TYPE
+        The new product metadata to update.
+    new_sources : list[PreUploadFile]
+        A list of new sources to add to the product.
+    replace_sources : list[PreUploadFile]
+        A list of sources to replace in a product.
+    drop_sources : list[str]
+        A list of source IDs to delete from a product.
+
+    Raises
+    ------
+    httpx.HTTPStatusError
+        If a request to the API fails
+    """
+
+    response = client.post(
+        f"/product/{id}/update",
+        json={
+            "name": name,
+            "description": description,
+            "level": level,
+            "metadata": metadata,
+            "new_sources": new_sources,
+            "replace_sources": replace_sources,
+            "drop_sources": drop_sources,
+        },
+    )
+
+    response.raise_for_status()
+
+    if client.verbose:
+        console.print(f"Successfully updated product {id}.", style="bold green")
+
+    return True
 
 
 def delete(client: Client, id: str) -> bool:
