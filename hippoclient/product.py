@@ -5,6 +5,7 @@ Methods for interacting with the product layer of the hippo API.
 from pathlib import Path
 
 import xxhash
+from tqdm import tqdm
 
 from hippometa import ALL_METADATA_TYPE
 from hippometa.simple import SimpleMetadata
@@ -13,6 +14,8 @@ from hipposerve.database import ProductMetadata
 from hipposerve.service.product import PostUploadFile, PreUploadFile
 
 from .core import Client, MultiCache, console
+
+MULTIPART_UPLOAD_SIZE = 50 * 1024 * 1024
 
 
 def create(
@@ -88,6 +91,7 @@ def create(
             "description": description,
             "metadata": metadata.model_dump(),
             "sources": source_metadata,
+            "mutlipart_batch_size": MULTIPART_UPLOAD_SIZE,
         },
     )
 
@@ -100,55 +104,77 @@ def create(
             f"Successfully created product {this_product_id} in remote database."
         )
 
+    responses = {}
+    sizes = {}
+
     # Upload the sources to the presigned URLs.
     for source in sources:
         with source.open("rb") as file:
             if client.verbose:
                 console.print("Uploading file:", source.name)
 
-            retry = True
-            upload_url = response.json()["upload_urls"][source.name]
+            upload_urls = response.json()["upload_urls"][source.name]
+            headers = []
+            size = []
 
             # We need to handle our own redirects because otherwise the head of the file will be incorrect,
             # and we will end up with Content-Length errors.
-            while retry:
-                if client.use_multipart_upload:
-                    if client.verbose:
-                        console.print("Using multipart upload")
-                    individual_response = client.put(
-                        upload_url,
-                        files={"upload-file": (source.name, file)},
-                        follow_redirects=False,
-                    )
-                else:
-                    if client.verbose:
-                        console.print("Using regular upload")
-                    individual_response = client.put(
-                        upload_url.strip(),
-                        data=file,
-                        follow_redirects=True,
-                    )
 
-                if client.verbose:
-                    console.print(individual_response.content.decode("utf-8"))
+            with tqdm(
+                desc="Uploading",
+                total=source.stat().st_size,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+            ) as t:
+                file_position = 0
 
-                if individual_response.status_code in [301, 302, 307, 308]:
-                    if client.verbose:
-                        console.print(
-                            f"Redirected to {individual_response.headers['Location']} from {upload_url}"
+                for upload_url in upload_urls:
+                    retry = True
+
+                    while retry:
+                        file.seek(file_position)
+
+                        data = file.read(MULTIPART_UPLOAD_SIZE)
+
+                        individual_response = client.put(
+                            upload_url.strip(),
+                            data=data,
+                            follow_redirects=True,
                         )
-                    upload_url = individual_response.headers["Location"]
-                    file.seek(0)
-                    continue
-                else:
-                    retry = False
-                    if client.verbose:
-                        console.print("Retry set to false, file uploaded or failed")
-                    individual_response.raise_for_status()
-                    break
+
+                        if individual_response.status_code in [301, 302, 307, 308]:
+                            if client.verbose:
+                                console.print(
+                                    f"Redirected to {individual_response.headers['Location']} from {upload_url}"
+                                )
+                            upload_url = individual_response.headers["Location"]
+
+                            continue
+                        else:
+                            retry = False
+                            individual_response.raise_for_status()
+                            break
+
+                    headers.append(dict(individual_response.headers))
+                    size.append(len(data))
+
+                    file_position += MULTIPART_UPLOAD_SIZE
+                    t.update(len(data))
+
+            responses[source.name] = headers
+            sizes[source.name] = size
 
             if client.verbose:
                 console.print("Successfully uploaded file:", source.name)
+
+    # Close out the upload.
+    response = client.post(
+        f"/product/{this_product_id}/complete",
+        json={"headers": responses, "sizes": sizes},
+    )
+
+    response.raise_for_status()
 
     # Confirm the upload to hippo.
     response = client.post(f"/product/{this_product_id}/confirm")

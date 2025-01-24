@@ -33,6 +33,7 @@ dependencies = [
     "pwdlib[argon2]",
     "python-multipart",
     "loguru",
+    "tqdm",
     "textual[syntax]"
 ]
 
