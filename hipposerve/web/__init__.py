@@ -24,13 +24,18 @@ web_router.include_router(auth_router)
 @web_router.get("/")
 async def index(request: Request, user: PotentialLoggedInUser):
     products = await product.read_most_recent(fetch_links=True, maximum=16)
+    filtered_products = [
+        product_item
+        for product_item in products
+        if await product.check_visibility_access(product_item, user)
+    ]
     collections = await collection.read_most_recent(fetch_links=True, maximum=16)
 
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
-            "products": products,
+            "products": filtered_products,
             "collections": collections,
             "user": user,
         },
@@ -62,7 +67,11 @@ async def collection_view(
     request: Request, id: PydanticObjectId, user: PotentialLoggedInUser
 ):
     collection_instance = await collection.read(id)
-
+    collection_instance.products = [
+        product_item
+        for product_item in collection_instance.products
+        if await product.check_visibility_access(product_item, user)
+    ]
     return templates.TemplateResponse(
         "collection.html",
         {"request": request, "collection": collection_instance, "user": user},
