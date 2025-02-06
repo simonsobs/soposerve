@@ -23,7 +23,12 @@ async def search_results_view(
     filter: str = "products",
 ):
     if filter == "products":
-        results = await product.search_by_name(q)
+        unfiltered_results = await product.search_by_name(q)
+        results = [
+            product_item
+            for product_item in unfiltered_results
+            if await product.check_visibility_access(product_item, user)
+        ]
     elif filter == "collections":
         results = await collection.search_by_name(q)
     else:
