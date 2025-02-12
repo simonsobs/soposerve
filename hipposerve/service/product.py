@@ -2,6 +2,7 @@
 The product service layer.
 """
 
+import asyncio
 import datetime
 from typing import Any, Literal
 
@@ -177,7 +178,6 @@ async def read_by_id(id: PydanticObjectId, user: User | None = None) -> Product:
         raise PermissionError(
             f"User '{user}' is not authorized to access this product with visbility {potential.visibility}."
         )
-        # to avoid revealing existence of private products
     return potential
 
 
@@ -281,7 +281,10 @@ async def read_files(product: Product, storage: Storage) -> list[PostUploadFile]
 
 
 async def read_most_recent(
-    fetch_links: bool = False, maximum: int = 16, current_only: bool = False
+    fetch_links: bool = False,
+    maximum: int = 16,
+    current_only: bool = False,
+    user: User | None = None,
 ) -> list[Product]:
     if current_only:
         found = Product.find(
@@ -292,8 +295,16 @@ async def read_most_recent(
         found = Product.find(
             fetch_links=fetch_links,
         )
-
-    return await found.sort(-Product.updated).to_list(maximum)
+    product_list = await found.sort(-Product.updated).to_list(maximum)
+    visibility_checks = await asyncio.gather(
+        *(check_visibility_access(product_item, user) for product_item in product_list)
+    )
+    filtered_products = [
+        product_item
+        for product_item, is_visible in zip(product_list, visibility_checks)
+        if is_visible
+    ]
+    return filtered_products
 
 
 async def update_metadata(

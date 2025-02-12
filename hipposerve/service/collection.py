@@ -5,10 +5,13 @@ Note that adding to and removing from collections is provided as part of
 the product service.
 """
 
+import asyncio
+
 from beanie import PydanticObjectId
 from beanie.operators import Text
 
-from hipposerve.database import Collection
+from hipposerve.database import Collection, User
+from hipposerve.service.product import check_visibility_access
 
 
 class CollectionNotFound(Exception):
@@ -29,24 +32,32 @@ async def create(
     return collection
 
 
-async def read(
-    id: PydanticObjectId,
-):
+async def read(id: PydanticObjectId):
     collection = await Collection.find(
         Collection.id == id, fetch_links=True
     ).first_or_none()
-
     if collection is None:
         raise CollectionNotFound
-
     return collection
 
 
 async def read_most_recent(
-    fetch_links: bool = False, maximum: int = 16
+    fetch_links: bool = False, maximum: int = 16, user: User | None = None
 ) -> list[Collection]:
     # TODO: Implement updated time for collections.
-    return await Collection.find(fetch_links=fetch_links).to_list(maximum)
+    collections = await Collection.find(fetch_links=fetch_links).to_list(maximum)
+    collections_visibility = await asyncio.gather(
+        *(
+            check_collection_visibility(collection_item, user)
+            for collection_item in collections
+        )
+    )
+    filtered_collections = [
+        collection_item
+        for collection_item, visibility in zip(collections, collections_visibility)
+        if visibility
+    ]
+    return filtered_collections
 
 
 async def search_by_name(name: str, fetch_links: bool = True) -> list[Collection]:
@@ -83,3 +94,15 @@ async def delete(
     await collection.delete()
 
     return
+
+
+async def check_collection_visibility(
+    collection_item: Collection, user: User | None = None
+) -> bool:
+    visibility_checks = await asyncio.gather(
+        *(
+            check_visibility_access(product_item, user)
+            for product_item in collection_item.products
+        )
+    )
+    return any(visibility_checks)

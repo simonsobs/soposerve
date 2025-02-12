@@ -6,6 +6,8 @@ NOTE: Code coverage is an explicit NON-goal for the web
       coverage metrics.
 """
 
+import asyncio
+
 from beanie import PydanticObjectId
 from fastapi import Request
 
@@ -23,19 +25,15 @@ web_router.include_router(auth_router)
 
 @web_router.get("/")
 async def index(request: Request, user: PotentialLoggedInUser):
-    products = await product.read_most_recent(fetch_links=True, maximum=16)
-    filtered_products = [
-        product_item
-        for product_item in products
-        if await product.check_visibility_access(product_item, user)
-    ]
-    collections = await collection.read_most_recent(fetch_links=True, maximum=16)
-
+    products = await product.read_most_recent(fetch_links=True, maximum=16, user=user)
+    collections = await collection.read_most_recent(
+        fetch_links=True, maximum=16, user=user
+    )
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
-            "products": filtered_products,
+            "products": products,
             "collections": collections,
             "user": user,
         },
@@ -67,10 +65,18 @@ async def collection_view(
     request: Request, id: PydanticObjectId, user: PotentialLoggedInUser
 ):
     collection_instance = await collection.read(id)
+    visibility_checks = await asyncio.gather(
+        *(
+            product.check_visibility_access(product_item, user)
+            for product_item in collection_instance.products
+        )
+    )
     collection_instance.products = [
         product_item
-        for product_item in collection_instance.products
-        if await product.check_visibility_access(product_item, user)
+        for product_item, visibility in zip(
+            collection_instance.products, visibility_checks
+        )
+        if visibility
     ]
     return templates.TemplateResponse(
         "collection.html",
