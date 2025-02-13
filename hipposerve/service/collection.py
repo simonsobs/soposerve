@@ -60,9 +60,7 @@ async def read_most_recent(
     return filtered_collections
 
 
-async def search_by_name(
-    name: str, fetch_links: bool = True, user: User | None = None
-) -> list[Collection]:
+async def search_by_name(name: str, fetch_links: bool = True) -> list[Collection]:
     """
     Search for Collections by name using the text index.
     """
@@ -72,18 +70,7 @@ async def search_by_name(
         .sort([("score", {"$meta": "textScore"})])
         .to_list()
     )
-    filtered_collections_with_visibility = await asyncio.gather(
-        *(
-            check_collection_visibility(collection_item, user)
-            for collection_item in results
-        )
-    )
-    filtered_collections = [
-        collection_item
-        for collection_item, visibility in filtered_collections_with_visibility
-        if visibility
-    ]
-    return filtered_collections
+    return results
 
 
 async def update(

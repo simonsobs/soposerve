@@ -2,6 +2,8 @@
 Utilities for product search and rendering search results.
 """
 
+import asyncio
+
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
@@ -25,7 +27,18 @@ async def search_results_view(
     if filter == "products":
         results = await product.search_by_name(q, user=user)
     elif filter == "collections":
-        results = await collection.search_by_name(q, user=user)
+        filtered_results = await collection.search_by_name(q)
+        filtered_collections_with_visibility = await asyncio.gather(
+            *(
+                collection.check_collection_visibility(collection_item, user)
+                for collection_item in filtered_results
+            )
+        )
+        results = [
+            collection_item
+            for collection_item, visibility in filtered_collections_with_visibility
+            if visibility
+        ]
     else:
         results = []
 

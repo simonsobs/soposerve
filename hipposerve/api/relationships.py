@@ -95,7 +95,7 @@ async def search_collection(
     logger.info("Request to search for collection: {} from {}", name, calling_user.name)
 
     await check_user_for_privilege(calling_user, Privilege.READ_COLLECTION)
-    results = await collection.search_by_name(name=name, user=calling_user)
+    results = await collection.search_by_name(name=name)
     logger.info(
         "Found {} collections for {} from {}", len(results), name, calling_user.name
     )
