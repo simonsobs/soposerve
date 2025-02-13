@@ -46,7 +46,7 @@ async def read_most_recent(
 ) -> list[Collection]:
     # TODO: Implement updated time for collections.
     collections = await Collection.find(fetch_links=fetch_links).to_list(maximum)
-    collections_visibility = await asyncio.gather(
+    filtered_collections_with_visibility = await asyncio.gather(
         *(
             check_collection_visibility(collection_item, user)
             for collection_item in collections
@@ -54,13 +54,15 @@ async def read_most_recent(
     )
     filtered_collections = [
         collection_item
-        for collection_item, visibility in zip(collections, collections_visibility)
+        for collection_item, visibility in filtered_collections_with_visibility
         if visibility
     ]
     return filtered_collections
 
 
-async def search_by_name(name: str, fetch_links: bool = True) -> list[Collection]:
+async def search_by_name(
+    name: str, fetch_links: bool = True, user: User | None = None
+) -> list[Collection]:
     """
     Search for Collections by name using the text index.
     """
@@ -70,8 +72,18 @@ async def search_by_name(name: str, fetch_links: bool = True) -> list[Collection
         .sort([("score", {"$meta": "textScore"})])
         .to_list()
     )
-
-    return results
+    filtered_collections_with_visibility = await asyncio.gather(
+        *(
+            check_collection_visibility(collection_item, user)
+            for collection_item in results
+        )
+    )
+    filtered_collections = [
+        collection_item
+        for collection_item, visibility in filtered_collections_with_visibility
+        if visibility
+    ]
+    return filtered_collections
 
 
 async def update(
@@ -105,4 +117,9 @@ async def check_collection_visibility(
             for product_item in collection_item.products
         )
     )
-    return any(visibility_checks)
+    collection_item.products = [
+        product_item
+        for product_item, visibility in zip(collection_item.products, visibility_checks)
+        if visibility
+    ]
+    return collection_item, any(visibility_checks)

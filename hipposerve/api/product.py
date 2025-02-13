@@ -424,20 +424,13 @@ async def search(
 
     await check_user_for_privilege(calling_user, Privilege.READ_PRODUCT)
 
-    items = await product.search_by_name(name=text)
-
-    # Filter items based on visibility
-    visible_items = [
-        item.to_metadata()
-        for item in items
-        if await product.check_visibility_access(item, calling_user)
-    ]
+    items = await product.search_by_name(name=text, user=calling_user)
 
     logger.info(
         "Successfully found {} product(s) matching {} requested by {}",
-        len(visible_items),
+        len(items),
         text,
         calling_user.name,
     )
 
-    return visible_items
+    return [item.to_metadata() for item in items]

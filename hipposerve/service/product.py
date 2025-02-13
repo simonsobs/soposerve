@@ -181,7 +181,9 @@ async def read_by_id(id: PydanticObjectId, user: User | None = None) -> Product:
     return potential
 
 
-async def search_by_name(name: str, fetch_links: bool = True) -> list[Product]:
+async def search_by_name(
+    name: str, user: User, fetch_links: bool = True
+) -> list[Product]:
     """
     Search for products by name using the text index.
     """
@@ -192,7 +194,16 @@ async def search_by_name(name: str, fetch_links: bool = True) -> list[Product]:
         .to_list()
     )
 
-    return results
+    visibility_checks = await asyncio.gather(
+        *(check_visibility_access(product_item, user) for product_item in results)
+    )
+    filtered_products = [
+        product_item
+        for product_item, is_visible in zip(results, visibility_checks)
+        if is_visible
+    ]
+
+    return filtered_products
 
 
 async def search_by_metadata(
