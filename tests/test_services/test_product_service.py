@@ -328,7 +328,7 @@ async def test_read_most_recent_products(database, created_user, storage):
         )
 
     products = await product.read_most_recent(
-        fetch_links=False, maximum=8, current_only=False
+        fetch_links=False, maximum=8, current_only=False, user=created_user
     )
 
     assert len(products) == 8
@@ -527,7 +527,7 @@ async def test_text_name_search(database, created_user, storage):
 
     # Search for them
 
-    results = await product.search_by_name("my favorite")
+    results = await product.search_by_name(name="my favorite", user=created_user)
 
     assert len(results) == 2
 

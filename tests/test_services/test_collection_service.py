@@ -20,8 +20,10 @@ async def test_update(created_collection):
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_search(created_collection):
-    read = (await collection.search_by_name(name=created_collection.name))[0]
+async def test_search(created_collection, created_user):
+    read = (
+        await collection.search_by_name(name=created_collection.name, user=created_user)
+    )[0]
 
     assert read.name == created_collection.name
 
